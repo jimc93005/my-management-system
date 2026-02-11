@@ -1,0 +1,20 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+<div class="container mt-4 center">
+    <div class="text-center">
+        <h1 style="color:blue"><strong>EDIT STUDENT</strong></h1>
+    <h3 >Edit details for {{student.first_name.upper}} {{student.surname.upper}}</h3>
+
+    </div>
+
+
+    <form action="{% url 'students_app:edit_student' student.id %}" method="POST">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'students_app:students_list' %}" class="btn btn-secondary center">Cancel</a>
+
+    </form>
+
+</div>
+{% endblock content%}

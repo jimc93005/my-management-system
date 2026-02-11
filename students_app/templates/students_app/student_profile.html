@@ -1,0 +1,292 @@
+{% extends "students_app/base.html" %}
+{% block content %}
+
+<div class="container py-5">
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="card-body p-4 bg-white">
+            <div class="d-flex flex-column flex-md-row align-items-center">
+                <div class="profile-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-3 mb-md-0 mr-md-4 shadow-sm" style="width: 80px; height: 80px; font-size: 1.8rem; font-weight: bold;">
+                    {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+                </div>
+                <div class="text-center text-md-left">
+                    <h2 class="font-weight-bold mb-1 text-dark">{{ student.first_name }} {{ student.surname }}</h2>
+                    <p class="text-muted mb-0"><i class="fas fa-id-card mr-2"></i>ID: <span class="text-primary font-weight-bold">#{{ student.student_id|default:"N/A" }}</span> | Class: {{ student.class_level }}</p>
+                </div>
+                <div class="ml-md-auto mt-3 mt-md-0">
+                    <a href="{% url 'students_app:add_grade' student.id %}" class="btn btn-primary px-4 shadow-sm rounded-pill">
+                        <i class="fas fa-plus mr-1"></i> Add Grades
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills custom-pills mb-4" id="profileTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active shadow-sm" id="bio-tab" data-toggle="tab" href="#bio" role="tab">Bio Information</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link shadow-sm" id="subjects-tab" data-toggle="tab" href="#subjects" role="tab">Subjects</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link shadow-sm" id="grades-tab" data-toggle="tab" href="#grades" role="tab">Academic Record</a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="profileTabsContent">
+
+        <div class="tab-pane fade show active" id="bio" role="tabpanel">
+            <div class="card border-0 shadow-sm border-radius-lg p-4">
+                <div class="row text-center text-md-left">
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Age</small><span class="h6">{{ student.age }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Gender</small><span class="h6">{{ student.gender }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Orphanhood</small><span class="h6">{{ student.orphanhood_status }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Year Enrolled</small><span class="h6">{{ student.year_enrolled }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Parent Contact</small><span class="h6 text-primary">{{ student.parent_contact }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Address</small><span class="h6">{{ student.address }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="subjects" role="tabpanel">
+            <div class="card border-0 shadow-sm p-4 text-center">
+                <h6 class="text-muted mb-3 font-weight-bold">Assigned Curriculum</h6>
+                <div class="d-flex flex-wrap justify-content-center">
+                    {% for sub in student.subject.all %}
+                        <div class="subject-badge m-2 shadow-sm border">{{ sub.name }}</div>
+                    {% empty %}
+                        <p class="text-muted italic">No subjects assigned yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="grades" role="tabpanel">
+            {% if term_reports %}
+                <div class="d-flex align-items-center mb-4 overflow-auto pb-2 border-bottom">
+                    <span class="text-muted mr-3 font-weight-bold text-uppercase small">Select Year:</span>
+                    <div class="nav nav-pills" role="tablist">
+                        {% for year, terms in term_reports.items %}
+                        <a class="btn btn-year-selector {% if forloop.first %}active{% endif %} mr-2"
+                           id="tab-year-{{ forloop.counter }}"
+                           data-toggle="pill"
+                           href="#pane-year-{{ forloop.counter }}"
+                           role="tab">
+                            {{ year }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="tab-content">
+                {% for year, terms in term_reports.items %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="pane-year-{{ forloop.counter }}" role="tabpanel">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-calendar-alt mr-2 text-primary"></i>{{ year }} Academic Cycle</h5>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3" data-toggle="modal" data-target="#delYear-{{ forloop.counter }}">
+                            <i class="fas fa-trash-alt mr-1"></i> Delete {{ year }} Grades
+                        </button>
+                    </div>
+
+                    <ul class="nav nav-tabs border-0 mb-4 bg-light rounded p-1" style="width: fit-content;" role="tablist">
+                        {% for term, data in terms.items %}
+                        <li class="nav-item">
+                            <a class="nav-link border-0 rounded font-weight-bold {% if forloop.first %}active{% endif %}"
+                               id="tab-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                               data-toggle="tab"
+                               href="#pane-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                               role="tab">
+                               Term {{ term }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="tab-content">
+                    {% for term, data in terms.items %}
+                    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+                         id="pane-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                         role="tabpanel">
+
+                        <div class="row mb-4">
+                            <div class="col-md-2">
+                                <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-primary">
+                                    <small class="text-muted d-block mb-1">AVERAGE</small>
+                                    <h4 class="font-weight-bold mb-0 text-primary">{{ data.average }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-success">
+                                    <small class="text-muted d-block mb-1">POSITION</small>
+                                    <h4 class="font-weight-bold mb-0 text-success">{{ data.position }} <small class="text-muted">/ {{ total_students }}</small></h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-info">
+                                    <small class="text-muted d-block mb-1">PROMOTION</small>
+                                    <h5 class="font-weight-bold mb-0 {% if data.average >= 50 %}text-success{% else %}text-danger{% endif %}">{{ data.promotion_status }}</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="d-flex h-100">
+                                    <a href="{% url 'students_app:school_report' student.id year term %}" class="btn btn-success flex-fill mr-2 d-flex align-items-center justify-content-center shadow-sm font-weight-bold rounded">
+                                        <i class="fas fa-print mr-2"></i> Print Report
+                                    </a>
+                                    <a href="{% url 'students_app:school_report' student.id year term %}?download=pdf" class="btn btn-info flex-fill d-flex align-items-center justify-content-center shadow-sm font-weight-bold rounded">
+                                        <i class="fas fa-file-pdf mr-2"></i> Download PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-dark text-white">
+                                        <tr style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                            <th class="border-0 px-4 py-3">Subject</th>
+                                            <th class="border-0 py-3 text-center">Score</th>
+                                            <th class="border-0 py-3">Remark</th>
+                                            <th class="border-0 py-3">Comment</th>
+                                            <th class="border-0 text-right px-4 py-3">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for grade in data.grades %}
+                                        <tr>
+                                            <td class="px-4 font-weight-bold text-dark">{{ grade.subject.name }}</td>
+                                            <td class="text-center">
+                                                <span class="badge badge-soft-primary p-2 px-3">{{ grade.score }}</span>
+                                            </td>
+                                            <td><small class="font-weight-bold text-uppercase text-secondary">{{ grade.get_remark }}</small></td>
+                                            <td><em class="text-muted small">"{{ grade.get_comment|default:'No comment provided' }}"</em></td>
+                                            <td class="text-right px-4">
+                                                <div class="btn-group shadow-sm border rounded">
+                                                    <a href="{% url 'students_app:edit_grade' grade.id %}" class="btn btn-sm btn-white text-primary px-3" title="Edit">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-white text-danger px-3 border-left" data-toggle="modal" data-target="#delG-{{ grade.id }}">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </div>
+
+                                                <div class="modal fade text-left" id="delG-{{ grade.id }}" tabindex="-1" role="dialog">
+                                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                                        <div class="modal-content border-0 shadow">
+                                                            <div class="modal-header bg-danger text-white border-0">
+                                                                <h5 class="modal-title font-weight-bold">Confirm Deletion</h5>
+                                                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                            </div>
+                                                            <div class="modal-body p-4 text-center">
+                                                                <p class="mb-0">Are you sure you want to delete the <strong>{{ grade.subject.name }}</strong> grade for this term?</p>
+                                                            </div>
+                                                            <div class="modal-footer bg-light border-0">
+                                                                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cancel</button>
+                                                                <form action="{% url 'students_app:delete_grade' grade.id %}" method="POST">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="btn btn-danger px-4 shadow-sm">Delete Permanently</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="bg-light border-top">
+                                        <tr class="small">
+                                            <td colspan="3" class="px-4 py-3">
+                                                <span class="text-muted text-uppercase font-weight-bold">Head Teacher's Remark:</span><br>
+                                                <span class="text-dark">{{ data.head_remark|default:"No general remark set." }}</span>
+                                            </td>
+                                            <td colspan="2" class="text-right px-4 py-3">
+                                                <span class="badge {% if data.average >= 50 %}badge-success{% else %}badge-danger{% endif %} p-2 px-3 shadow-sm">
+                                                    {{ data.promotion_status|upper }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="delT-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" tabindex="-1" role="dialog">
+                            <div class="modal-dialog modal-dialog-centered" role="document">
+                                <div class="modal-content border-0 shadow">
+                                    <div class="modal-header bg-warning text-dark border-0">
+                                        <h5 class="modal-title font-weight-bold">Delete Term {{ term }}</h5>
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    </div>
+                                    <div class="modal-body p-4 text-center">
+                                        <p>Warning: This will delete all grades for <strong>Term {{ term }}</strong> in <strong>{{ year }}</strong>.</p>
+                                    </div>
+                                    <div class="modal-footer bg-light border-0">
+                                        <form method="POST" action="{% url 'students_app:delete_term_grades' student.id year term %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-warning px-4">Confirm Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                    </div>
+
+                    <div class="modal fade" id="delYear-{{ forloop.counter }}" tabindex="-1" role="dialog">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header bg-danger text-white border-0">
+                                    <h5 class="modal-title font-weight-bold">Delete {{ year }} Data</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body p-4 text-center">
+                                    <p>Are you sure you want to wipe all records for the <strong>{{ year }}</strong> academic year?</p>
+                                </div>
+                                <div class="modal-footer bg-light border-0">
+                                    <form method="POST" action="{% url 'students_app:delete_year_grades' student.id year %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger px-4">Wipe Year Data</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm p-5 text-center bg-white">
+                    <i class="fas fa-folder-open fa-3x text-light mb-3"></i>
+                    <p class="text-muted mb-0 font-italic">No academic history found for this student. Start by adding grades.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .custom-pills .nav-link { color: #5f6368; border-radius: 8px; padding: 12px 20px; font-weight: 600; transition: 0.3s; margin-right: 10px; background: white; border: 1px solid #e0e0e0; }
+    .custom-pills .nav-link.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 4px 10px rgba(0,123,255,0.25); }
+
+    .btn-year-selector { background: white; border: 1px solid #dcdcdc; color: #555; border-radius: 6px; padding: 8px 16px; font-weight: bold; }
+    .btn-year-selector.active { background: #202124; color: white; border-color: #202124; box-shadow: 0 3px 6px rgba(0,0,0,0.16); }
+
+    .metric-card { border-radius: 10px; transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-3px); }
+
+    .subject-badge { background: white; border-radius: 6px; padding: 10px 15px; font-weight: 600; color: #3c4043; border: 1px solid #eee; }
+    .badge-soft-primary { background-color: #e8f0fe; color: #1967d2; font-weight: bold; }
+    .nav-tabs .nav-link { border: none; color: #5f6368; }
+    .nav-tabs .nav-link.active { background-color: transparent !important; border-bottom: 3px solid #007bff !important; color: #007bff !important; }
+    .table td { vertical-align: middle; }
+    .btn-white { background: white; color: #555; border: none; }
+    .btn-white:hover { background: #f8f9fa; }
+</style>
+
+{% endblock %}

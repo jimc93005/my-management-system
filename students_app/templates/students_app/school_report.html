@@ -1,0 +1,182 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+
+<div class="school-report" style="max-width: 900px; margin: auto;">
+
+   <!-- ===== SCHOOL HEADER ===== -->
+<div style="
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+">
+
+    <!-- LOGO -->
+    {% if school_profile.logo %}
+        <img src="{{ school_profile.logo.url }}"
+             alt="School Logo"
+             style="height: 100px; margin-bottom: 10px;">
+    {% endif %}
+
+    <!-- SCHOOL NAME -->
+    <h1 style="
+        margin: 0;
+        font-size: 38px;
+        font-weight: 800;
+        font-family: 'Georgia', 'Times New Roman', serif;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    ">
+        {{ school_profile.name }}
+    </h1>
+
+    <!-- SCHOOL MOTTO -->
+    {% if school_profile.motto %}
+        <p style="
+            margin: 6px 0 10px 0;
+            font-size: 15px;
+            font-style: italic;
+            font-family: 'Times New Roman', serif;
+        ">
+            "{{ school_profile.motto }}"
+        </p>
+    {% endif %}
+
+    <!-- CONTACTS SECTION -->
+    <div style="margin-top: 8px; font-size: 14px; font-family: Arial, sans-serif;">
+
+        {% if school_profile.contact %}
+            <p style="margin: 3px 0;">
+                <strong>Phone:</strong> {{ school_profile.contact }}
+            </p>
+        {% endif %}
+
+        {% if school_profile.email %}
+            <p style="margin: 3px 0;">
+                <strong>Email:</strong> {{ school_profile.email }}
+            </p>
+        {% endif %}
+
+        <p style="margin: 4px 0;">
+            <strong>Headteacher:</strong> {{ school_profile.headteacher_name }}
+        </p>
+
+    </div>
+
+</div>
+<!-- ===== END SCHOOL HEADER ===== -->
+
+<!-- ===== END SCHOOL HEADER ===== -->
+
+
+
+
+
+    <!-- ================= STUDENT INFO ================= -->
+    <h3 style="margin-bottom: 10px; text-decoration: underline;">Student Information</h3>
+
+    <table style="width: 100%; margin-bottom: 20px;">
+        <tr>
+            <td><strong>Student Name:</strong></td>
+            <td>{{ student.first_name }} {{ student.surname }}</td>
+        </tr>
+        <tr>
+            <td><strong>Class:</strong></td>
+            <td>{{ student.class_level }}</td>
+        </tr>
+        <tr>
+            <td><strong>Academic Year:</strong></td>
+            <td>{{ academic_year }}</td>
+        </tr>
+        <tr>
+            <td><strong>Term:</strong></td>
+            <td>Term {{ term }}</td>
+        </tr>
+    </table>
+
+    <!-- ================= RESULTS TABLE ================= -->
+    <h3 style="margin-bottom: 10px; text-decoration: underline;">Academic Results</h3>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #000; padding: 6px;">Subject</th>
+                <th style="border: 1px solid #000; padding: 6px;">Score</th>
+                <th style="border: 1px solid #000; padding: 6px;">remark</th>
+                <th style="border: 1px solid #000; padding: 6px;">comment</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grade in grades %}
+                <tr>
+                    <td style="border: 1px solid #000; padding: 6px;">
+                        {{ grade.subject.name }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        {{ grade.score }}
+                    </td>
+
+                     <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        {{ grade.get_remark }}
+                    </td>
+
+                     <td style="border: 1px solid #000; padding: 6px; ">
+                        {{ grade.get_comment}}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        No grades available
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ================= SUMMARY ================= -->
+    <h3 style="margin-bottom: 10px; text-decoration: underline;">Summary</h3>
+
+    <table style="width: 100%; margin-bottom: 20px;">
+        <tr>
+            <td><strong>Average Score:</strong></td>
+            <td>{{ average }}</td>
+        </tr>
+        <tr>
+            <td><strong>Position:</strong></td>
+            <td>{{ position }}</td>
+        </tr>
+        <tr>
+            <td><strong>Enrolment:</strong></td>
+            <td>{{ total_students }}</td>
+        </tr>
+        <tr>
+            <td><strong>Status:</strong></td>
+            <td>{{ promotion_status }}</td>
+        </tr>
+    </table>
+
+    <!-- ================= REMARKS ================= -->
+    <h3 style="margin-bottom: 10px; text-decoration: underline;">Remarks</h3>
+
+    <p><strong>Headteacher’s Remark:</strong> {{ head_remark }}</p>
+
+    <!-- ================= SIGNATURE ================= -->
+    <div style="margin-top: 40px;">
+        <p><strong>Headteacher:</strong> {{ school_profile.headteacher_name }}</p>
+
+        {% if school_profile.headteacher_signature %}
+            <img src="{{ school_profile.headteacher_signature.url }}" alt="Signature" style="height: 60px;">
+        {% endif %}
+    </div>
+
+</div>
+<a href="{% url 'students_app:school_report_pdf' student.id academic_year term %}"
+   class="btn btn-danger"
+   target="_blank">
+    Download PDF
+</a>
+
+
+{% endblock %}

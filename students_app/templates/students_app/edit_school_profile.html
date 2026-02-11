@@ -1,0 +1,185 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --bg-color: #f8fafc;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+    }
+
+    .edit-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 40px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .form-header i {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+    }
+
+    .form-header h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .field-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        color: var(--text-main);
+    }
+
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-wrapper i {
+        position: absolute;
+        left: 14px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        pointer-events: none;
+    }
+
+    /* Target Django's auto-generated fields */
+    .input-wrapper input,
+    .input-wrapper select,
+    .input-wrapper textarea {
+        width: 100%;
+        padding: 12px 12px 12px 42px; /* Extra padding on left for icon */
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: #fff;
+    }
+
+    .input-wrapper input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .error-text {
+        color: #dc2626;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.1s active;
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .submit-btn:hover {
+        background-color: var(--primary-hover);
+    }
+
+    .submit-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* Style for File Inputs specifically */
+    input[type="file"] {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="edit-container">
+    <div class="form-header">
+        <i class="fas fa-school"></i>
+        <h2>School Profile</h2>
+        <p style="color: var(--text-muted); margin-top: 5px;">Update your institution details</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label class="field-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}{% if field.field.required %} *{% endif %}
+                </label>
+
+                <div class="input-wrapper">
+                    {% if 'school' in field.name or 'name' in field.name %}
+                        <i class="fas fa-university"></i>
+                    {% elif 'email' in field.name %}
+                        <i class="fas fa-envelope"></i>
+                    {% elif 'phone' in field.name %}
+                        <i class="fas fa-phone"></i>
+                    {% elif 'address' in field.name or 'location' in field.name %}
+                        <i class="fas fa-map-marker-alt"></i>
+                    {% elif 'logo' in field.name or 'image' in field.name %}
+                        <i class="fas fa-image"></i>
+                    {% elif 'website' in field.name or 'url' in field.name %}
+                        <i class="fas fa-globe"></i>
+                    {% else %}
+                        <i class="fas fa-pen-to-square"></i>
+                    {% endif %}
+
+                    {{ field }}
+                </div>
+
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <span class="error-text"><i class="fas fa-exclamation-circle"></i> {{ error|striptags }}</span>
+                    {% endfor %}
+                {% endif %}
+
+                {% if field.help_text %}
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="submit-btn">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+    </form>
+</div>
+{% endblock content %}

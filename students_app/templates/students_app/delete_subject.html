@@ -1,0 +1,17 @@
+{% extends 'students_app\base.html' %}
+{% block content%}
+<div class="container mt-4 text-center">
+    <h3 class="text-danger">Delete Subject</h3>
+    <p>Are you sure you want to delete <strong>{{ subject.name}}</strong>?</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'students_app:subjects_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+
+
+
+</div>
+{% endblock content%}

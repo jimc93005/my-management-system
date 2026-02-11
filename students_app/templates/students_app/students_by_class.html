@@ -1,0 +1,235 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --secondary: #64748b;
+        --bg-soft: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-dark: #0f172a;
+    }
+
+    body { background-color: var(--bg-soft); font-family: 'Inter', sans-serif; }
+
+    .student-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Search Bar Styles */
+    .search-area {
+        background: white;
+        padding: 1rem 1.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-group {
+        position: relative;
+        max-width: 450px;
+    }
+
+    .search-group i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary);
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 15px 10px 45px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: border 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    /* Table Styles */
+    .table thead th {
+        background: #f8fafc;
+        color: var(--secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody td {
+        padding: 1.1rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .avatar {
+        width: 38px; height: 38px;
+        background: var(--primary);
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px;
+        font-weight: 700; margin-right: 12px;
+    }
+
+    /* Pagination Styles */
+    .pagination-footer {
+        padding: 1rem 1.5rem;
+        background: #ffffff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .pagination-info { font-size: 0.875rem; color: var(--secondary); }
+    .pagination-nav { display: flex; gap: 6px; }
+
+    .page-btn {
+        padding: 6px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-dark);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .page-btn:hover:not(.disabled) {
+        background: var(--bg-soft);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .page-btn.disabled { color: #cbd5e1; background: #f8fafc; cursor: not-allowed; }
+</style>
+
+<div class="container py-5">
+    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{% url 'students_app:class_list' %}" class="text-decoration-none text-muted">Classes</a></li>
+                    <li class="breadcrumb-item active text-primary fw-semibold">{{ class_level }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold m-0" style="color: var(--text-dark);">
+                <i class="fas fa-users-rectangle text-primary me-2"></i> {{ class_level }} Students
+            </h2>
+        </div>
+        <a href="{% url 'students_app:class_list' %}" class="btn btn-outline-secondary px-4 rounded-pill shadow-sm">
+            <i class="fas fa-arrow-left me-2"></i> Back to Classes
+        </a>
+    </div>
+
+    <div class="search-area shadow-sm">
+        <form method="GET" action="" class="d-flex align-items-center gap-2">
+            <div class="search-group flex-grow-1">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ query|default:'' }}" class="search-input" placeholder="Search by name or student ID...">
+            </div>
+            <button type="submit" class="btn btn-primary px-4 rounded-8" style="border-radius: 8px; font-weight: 600;">
+                Search
+            </button>
+            {% if query %}
+                <a href="?" class="btn btn-light border text-muted px-3" style="border-radius: 8px;">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="student-card">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Age</th>
+                        <th>Student ID</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in page_obj %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar">{{ student.first_name|first }}{{ student.surname|first }}</div>
+                                <div>
+                                    <span class="d-block fw-bold text-dark">{{ student.first_name }} {{ student.surname }}</span>
+                                    <small class="text-muted">Enrolled</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ student.age }} yrs</span></td>
+                        <td><code class="text-muted" style="font-size: 0.9rem;">#{{ student.student_id }}</code></td>
+                        <td class="text-end">
+                             <a href="{% url 'students_app:student_profile' student.id %}"
+                               class="btn btn-sm btn-light border rounded-pill px-3">
+                               View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-footer">
+            <div class="pagination-info">
+                Showing <strong>{{ page_obj.start_index }}</strong> to <strong>{{ page_obj.end_index }}</strong> of <strong>{{ count }}</strong>
+            </div>
+
+            <nav class="pagination-nav">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+                {% else %}
+                    <span class="page-btn disabled"><i class="fas fa-chevron-left"></i></span>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="page-btn active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}" class="page-btn">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                {% else %}
+                    <span class="page-btn disabled"><i class="fas fa-chevron-right"></i></span>
+                {% endif %}
+            </nav>
+        </div>
+
+        {% else %}
+        <div class="empty-state text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h4 class="fw-bold">No results found</h4>
+            <p class="text-muted">We couldn't find any students matching "{{ query }}".</p>
+            {% if query %}
+                <a href="?" class="btn btn-outline-primary btn-sm mt-2">Clear Search</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

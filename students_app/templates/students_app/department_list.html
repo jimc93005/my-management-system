@@ -1,0 +1,224 @@
+{% extends "students_app/base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --secondary: #64748b;
+        --bg-soft: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-dark: #0f172a;
+        --danger: #e11d48;
+    }
+
+    body { background-color: var(--bg-soft); font-family: 'Inter', sans-serif; }
+
+    .page-header { margin-bottom: 2rem; }
+
+    .department-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Table Styling */
+    .table { margin-bottom: 0; }
+
+    .table thead th {
+        background: #f8fafc;
+        color: var(--secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+    }
+
+    .dept-icon {
+        width: 40px; height: 40px;
+        background-color: #eff6ff;
+        color: var(--primary);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; margin-right: 15px;
+    }
+
+    .dept-name { font-weight: 600; font-size: 1rem; color: var(--text-dark); }
+
+    .description-text {
+        color: var(--secondary);
+        font-size: 0.9rem;
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Buttons */
+    .btn-add {
+        background-color: var(--primary);
+        color: white; padding: 10px 20px;
+        border-radius: 8px; font-weight: 600;
+        border: none; transition: all 0.2s;
+        text-decoration: none; display: inline-flex;
+        align-items: center; gap: 8px;
+    }
+
+    .btn-add:hover { background-color: #4338ca; color: white; transform: translateY(-1px); }
+
+    .btn-edit {
+        background-color: #eef2ff;
+        color: var(--primary);
+        border: 1px solid transparent;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-edit:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    /* Modal Styling */
+    .modal-content {
+        border-radius: 16px;
+        border: none;
+        animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalPop {
+        0% { transform: scale(0.9); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .bg-light-danger { background-color: #fff1f2; }
+
+    .empty-state { text-align: center; padding: 3rem; }
+</style>
+
+<div class="container py-5">
+    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h2 class="fw-bold m-0" style="color: var(--text-dark);">
+                <i class="fas fa-building text-primary me-2"></i> Departments
+            </h2>
+            <p class="text-muted mb-0 mt-1">Manage school faculties and departments.</p>
+        </div>
+
+        <a href="{% url 'students_app:add_department' %}" class="btn-add shadow-sm">
+            <i class="fas fa-plus"></i> Add Department
+        </a>
+    </div>
+
+    <div class="department-card">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Department Name</th>
+                        <th>Description</th>
+                        <th class="text-end" style="width: 250px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for department in departments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="dept-icon">
+                                    <i class="fas fa-shapes"></i>
+                                </div>
+                                <a href="{% url 'students_app:subdepartment_list' department.id %}"><span class="dept-name">{{ department.name }}</span><a/>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="description-text">
+                                {{ department.description|default:"No description provided." }}
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'students_app:edit_department' department.id %}"
+                                   class="btn btn-sm btn-edit px-3 rounded-pill">
+                                   <i class="fas fa-edit me-1"></i> Edit
+                                </a>
+
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal{{ department.id }}">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete
+                                </button>
+                            </div>
+
+                            <div class="modal fade" id="deleteModal{{ department.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content shadow-lg">
+                                        <div class="modal-header border-0 pt-4 justify-content-center">
+                                            <div class="rounded-circle bg-light-danger d-flex align-items-center justify-content-center"
+                                                 style="width: 60px; height: 60px;">
+                                                <i class="fas fa-exclamation-triangle text-danger fs-3"></i>
+                                            </div>
+                                        </div>
+                                        <div class="modal-body text-center pb-4">
+                                            <h4 class="fw-bold text-dark">Confirm Deletion</h4>
+                                            <p class="text-muted px-3">
+                                                Are you sure you want to delete <strong>{{ department.name }}</strong>?
+                                                This action cannot be undone.
+                                            </p>
+                                        </div>
+                                        <div class="modal-footer border-0 pb-4 justify-content-center">
+                                            <button type="button" class="btn btn-light px-4 fw-semibold rounded-pill border" data-bs-dismiss="modal">
+                                                Cancel
+                                            </button>
+                                            <form method="post" action="{% url 'students_app:department_delete' department.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger px-4 fw-semibold rounded-pill shadow-sm">
+                                                    Delete Department
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                                <h5 class="fw-bold text-dark">No Departments Found</h5>
+                                <p class="text-muted">Get started by creating your first department.</p>
+                                <a href="{% url 'students_app:add_department' %}" class="btn btn-outline-primary btn-sm mt-2">
+                                    Create Now
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if departments %}
+        <div class="p-3 bg-light border-top text-muted small">
+            <i class="fas fa-info-circle me-1"></i> Total Departments: <strong>{{ departments|length }}</strong>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}

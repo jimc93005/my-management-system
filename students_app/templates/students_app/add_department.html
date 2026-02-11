@@ -1,0 +1,204 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --bg-soft: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+    }
+
+    body {
+        background-color: var(--bg-soft);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .form-container {
+        max-width: 550px;
+        margin: 60px auto;
+        padding: 40px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        background: #e0e7ff;
+        color: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 15px;
+    }
+
+    .form-header h2 {
+        font-weight: 700;
+        color: var(--text-dark);
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .input-wrapper i {
+        position: absolute;
+        left: 14px;
+        top: 14px; /* Adjusts vertically */
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    /* Style Django Inputs */
+    .input-wrapper input,
+    .input-wrapper textarea,
+    .input-wrapper select {
+        width: 100%;
+        padding: 12px 12px 12px 40px; /* Left padding for icon */
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background: #fff;
+        color: var(--text-dark);
+    }
+
+    .input-wrapper input:focus,
+    .input-wrapper textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    /* Specific fix for Textareas to align icon top */
+    .input-wrapper textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .error-msg {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .btn-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 12px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-submit:hover {
+        background-color: var(--primary-hover);
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 12px;
+        background-color: white;
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        background-color: var(--bg-soft);
+        color: var(--text-dark);
+    }
+</style>
+
+<div class="form-container">
+    <div class="form-header">
+        <div class="icon-circle">
+            <i class="fas fa-building"></i>
+        </div>
+        <h2>Create Department</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Add a new academic department or faculty.</p>
+    </div>
+
+    <form action="{% url 'students_app:add_department' %}" method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label class="form-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+
+                <div class="input-wrapper">
+                    {% if 'name' in field.name %}
+                        <i class="fas fa-tag"></i>
+                    {% elif 'description' in field.name %}
+                        <i class="fas fa-align-left"></i>
+                    {% else %}
+                        <i class="fas fa-pen"></i>
+                    {% endif %}
+
+                    {{ field }}
+                </div>
+
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="btn-actions">
+            <a href="javascript:history.back()" class="btn-cancel">Cancel</a>
+
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save me-2"></i> Save Department
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock content %}

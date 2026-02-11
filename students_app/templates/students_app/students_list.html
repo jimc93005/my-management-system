@@ -1,0 +1,150 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="font-weight-bold text-dark">Student Directory</h2>
+            <p class="text-muted">Manage records, grades, and academic standing</p>
+        </div>
+        <a href="{% url 'students_app:add_student' %}" class="btn btn-success shadow-sm px-4">
+            <i class="fas fa-plus"></i> + Add New Student
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" action="{% url 'students_app:students_list' %}" class="d-flex shadow-sm">
+                <input type="text" name="q" class="form-control border-0 py-4"
+                       placeholder="Search by name, ID, or date..." value="{{ query }}">
+                <button class="btn btn-primary px-4" type="submit">Search</button>
+                {% if query %}
+                    <a href="{% url 'students_app:students_list' %}" class="btn btn-light d-flex align-items-center border-left">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class="col-md-4 text-right d-flex align-items-center justify-content-end">
+            <span class="badge badge-info p-2">{{ students.paginator.count }} Total Students</span>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="px-4 py-3">Full Name</th>
+                            <th>Student ID</th>
+                            <th>Registration Date</th>
+                            <th class="text-center">Grades & Profile</th>
+                            <th class="text-right px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td class="px-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle mr-3">
+                                        {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <span class="font-weight-bold d-block text-dark">{{ student.first_name.upper }} {{ student.surname.upper }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <code class="text-primary font-weight-bold">#{{ student.student_id }}</code>
+                            </td>
+                            <td>{{ student.created_at|date:"M d, Y" }}</td>
+                            <td class="text-center">
+                                <div class="btn-group shadow-sm">
+                                    <a href="{% url 'students_app:add_grade' student.id %}" class="btn btn-white btn-sm border">➕ Add Grade</a>
+                                    <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-white btn-sm border">👁️ View Report</a>
+                                </div>
+                            </td>
+                            <td class="text-right px-4">
+                                <a href="{% url 'students_app:edit_student' student.id %}" class="btn btn-link text-primary p-0 mr-3" title="Edit">Edit</a>
+                                <a href="{% url 'students_app:delete_student' student.id %}" class="btn btn-link text-danger p-0" title="Delete">Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <p class="mb-0">No students found matching your criteria.</p>
+                                    <a href="{% url 'students_app:students_list' %}" class="small text-primary">View all students</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if students.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center shadow-sm">
+            {% if students.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ students.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            {% endif %}
+
+            {% for i in students.paginator.page_range %}
+                {% if students.number == i %}
+                    <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                {% elif i > students.number|add:'-3' and i < students.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if students.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ students.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+
+<style>
+    body { background-color: #f8f9fa; }
+    .card { border-radius: 15px; overflow: hidden; }
+    .table thead th {
+        background-color: #f1f3f5;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        background-color: #e7f0ff;
+        color: #007bff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    .btn-group .btn { border-radius: 0; }
+    .btn-group .btn:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+    .btn-group .btn:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+    .pagination .page-item.active .page-link { background-color: #007bff; border-color: #007bff; }
+</style>
+
+{% endblock content %}

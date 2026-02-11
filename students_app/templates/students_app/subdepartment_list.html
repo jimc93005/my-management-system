@@ -1,0 +1,80 @@
+{% extends "students_app/base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'students_app:department_list' %}" class="text-decoration-none">Departments</a></li>
+                    <li class="breadcrumb-item active">{{ department.name }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark">
+                <i class="fas fa-sitemap text-primary me-2"></i>Sub-Departments
+            </h2>
+        </div>
+
+        <a href="{% url 'students_app:subdepartment_create' department.id %}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-1"></i> Add Sub-Department
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase fs-7 fw-bold text-muted">Name</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold text-muted">Description</th>
+                            <th class="py-3 text-center text-uppercase fs-7 fw-bold text-muted">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in sub_departments %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'students_app:subdepartment_roles' sub.id %}"
+                                 class="btn btn-primary">
+                                  {{sub.name}}
+                                 </a>
+                            </td>
+                            <td class="text-muted">{{ sub.description|default:"No description provided" }}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-secondary border-0"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-outline-danger border-0"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-5">
+                                <i class="fas fa-folder-open fa-3x text-light mb-3 d-block"></i>
+                                <span class="text-muted">No sub-departments found for this department.</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'students_app:department_list' %}" class="text-secondary text-decoration-none">
+            <i class="fas fa-arrow-left me-1"></i> Return to List
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Subtle custom styling to separate it from basic Bootstrap */
+    .fs-7 { font-size: 0.85rem; }
+    .table thead th { border-top: none; }
+    .card { border-radius: 12px; overflow: hidden; }
+    .btn-primary { border-radius: 8px; padding: 0.5rem 1.2rem; }
+</style>
+
+{% endblock %}

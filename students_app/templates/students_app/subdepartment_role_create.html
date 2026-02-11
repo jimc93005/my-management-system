@@ -1,0 +1,120 @@
+{% extends "students_app/base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-5">
+
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a href="{% url 'students_app:subdepartment_list' sub_department.department.id %}" class="text-decoration-none">Sub-Departments</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'students_app:subdepartment_roles' sub_department.id %}" class="text-decoration-none">{{ sub_department.name }}</a></li>
+                    <li class="breadcrumb-item active">Assign Role</li>
+                </ol>
+            </nav>
+
+            <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+                <div class="card-header bg-white border-0 pt-4 text-center">
+                    <div class="bg-primary bg-opacity-10 d-inline-block p-3 rounded-circle mb-3">
+                        <i class="fas fa-user-tag text-primary fa-2x"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">Assign New Role</h3>
+                    <p class="text-muted small">Setting up leadership or membership for <br><strong>{{ sub_department.name }}</strong></p>
+                </div>
+
+                <div class="card-body px-4 pb-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% for field in form %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase mb-2">
+                                {{ field.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    {% if "role" in field.name %}
+                                        <i class="fas fa-briefcase"></i>
+                                    {% elif "teacher" in field.name %}
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                    {% else %}
+                                        <i class="fas fa-edit"></i>
+                                    {% endif %}
+                                </span>
+                                {{ field }}
+                            </div>
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small mt-1"><i class="fas fa-times-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm" style="border-radius: 10px;">
+                                <i class="fas fa-save me-2"></i>Confirm Assignment
+                            </button>
+                            <a href="{% url 'students_app:subdepartment_roles' sub_department.id %}"
+                               class="btn btn-link text-secondary text-decoration-none mt-2">
+                                <i class="fas fa-times me-1"></i> Cancel and Go Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <small class="text-muted italic">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Note: A sub-department can only have one Head and one Vice.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styling the Django Form Widgets */
+    select, input, textarea {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #dee2e6;
+        border-left: none; /* Merges with icon */
+        border-radius: 0 10px 10px 0;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    select:focus, input:focus {
+        border-color: #0d6efd;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+    }
+
+    .input-group-text {
+        border-radius: 10px 0 0 10px;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before { content: "›"; }
+</style>
+
+{% endblock %}

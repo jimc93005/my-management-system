@@ -1,0 +1,53 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h1 style="color:blue" class="text-center font-weight-bold">SUBJECTS LIST</h1>
+    <hr class="mb-4"/>
+
+    <div class="table-responsive">
+        <p>Total subjects: {{ page_obj.paginator.count }}</p>
+
+        <table style="background-color:lightblue;" class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Teacher</th>
+                    <th>code</th>
+                    <th>Actions</th>
+                    <th>Date</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                {% for subject in subjects %}
+                <tr>
+                    <td>{{ subject.name.upper }}</td>
+                    <td>{{ subject.subject_teacher.upper }}</td>
+                    <td style="color:blue"><strong>{{ subject.code }}</strong></td>
+                    <td>
+                        <a href="{% url 'students_app:delete_subject' subject.id %}"
+                           class="btn btn-danger btn-sm">🗑 Delete</a>
+                        <a href="{% url 'students_app:edit_subject' subject.id %}"
+                               class="btn btn-primary btn-sm">✏ Edit</a>
+                    </td>
+
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <hr/>
+
+<a href="{% url 'students_app:add_student' %}" class="btn btn-primary">add student</a>
+<a href="{% url 'students_app:add_subject' %}" class="btn btn-primary">add subjects</a>
+
+
+
+</div>
+
+
+{% endblock content %}

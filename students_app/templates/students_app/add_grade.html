@@ -1,0 +1,82 @@
+{% extends "students_app/base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3 class="text-primary">
+        Add Grade for {{ student.first_name }} {{ student.surname }}
+    </h3>
+
+    {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <div class="card shadow-sm p-3 mt-3">
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- YEAR & TERM -->
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="fw-bold">Academic Year</label>
+                    <select name="academic_year" class="form-control" required>
+                        <option value="">-- Select Year --</option>
+                        {% for year in years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="fw-bold">Term</label>
+                    <select name="term" class="form-control" required>
+                        <option value="">-- Select Term --</option>
+                        <option value="1">Term 1</option>
+                        <option value="2">Term 2</option>
+                        <option value="3">Term 3</option>
+
+                    </select>
+                </div>
+            </div>
+
+            <!-- SUBJECTS + SCORES -->
+            <table class="table table-bordered mt-4">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subjects %}
+                        <tr>
+                            <td>{{ subject.name }}</td>
+                            <td>
+                                <input type="number"
+                                       name="score_{{ subject.id }}"
+                                       class="form-control"
+                                       min="0" max="100"
+                                       placeholder="Enter score">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-primary mt-3">
+                Save Grades
+            </button>
+            <a href="{% url 'students_app:students_list' %}"
+               class="btn btn-secondary mt-3">
+                Cancel
+            </a>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

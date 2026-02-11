@@ -1,0 +1,22 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="text-center">
+        <h1 style="color:blue"><strong>ADDING SUBJECTS</strong></h1>
+
+    </div>
+
+    <form action="{% url 'students_app:add_subject' %}" method="post">
+            {% csrf_token%}
+            {{form.as_p}}
+            <button class="btn btn-primary">Add Subject</button>
+            <a href="{% url 'students_app:subjects_list' %}" class="btn btn_secondary">Cancel</a>
+
+
+        </form>
+
+
+
+
+</div>
+{% endblock content %}

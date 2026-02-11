@@ -1,0 +1,207 @@
+{% extends "students_app/base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --bg-soft: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+    }
+
+    body {
+        background-color: var(--bg-soft);
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Container for the form card */
+    .edit-card {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: #f8fafc;
+        padding: 2rem;
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .header-icon {
+        width: 50px;
+        height: 50px;
+        background: #e0e7ff;
+        color: var(--primary);
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 2.5rem;
+    }
+
+    /* Form Styles */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .input-group-custom {
+        position: relative;
+    }
+
+    .input-group-custom i {
+        position: absolute;
+        left: 16px;
+        top: 14px;
+        color: var(--text-muted);
+        z-index: 10;
+    }
+
+    /* Target Django's rendered inputs */
+    .input-group-custom input,
+    .input-group-custom textarea,
+    .input-group-custom select {
+        width: 100%;
+        padding: 12px 16px 12px 45px; /* Space for icon */
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 1rem;
+        color: var(--text-dark);
+        transition: all 0.2s ease;
+        background-color: #fff;
+    }
+
+    .input-group-custom input:focus,
+    .input-group-custom textarea:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .input-group-custom textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    /* Button Area */
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 2rem;
+    }
+
+    .btn-update {
+        flex: 2;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+
+    .btn-update:hover {
+        background: var(--primary-hover);
+    }
+
+    .btn-cancel {
+        flex: 1;
+        background: white;
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        background: #f1f5f9;
+        color: var(--text-dark);
+    }
+</style>
+
+<div class="container py-4">
+
+    <nav aria-label="breadcrumb" style="max-width: 600px; margin: 0 auto 1rem auto;">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'students_app:department_list' %}" class="text-decoration-none text-muted">Departments</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit Department</li>
+        </ol>
+    </nav>
+
+    <div class="edit-card">
+        <div class="card-header">
+            <div class="header-icon">
+                <i class="fas fa-pen-nib"></i>
+            </div>
+            <h3 class="fw-bold m-0 text-dark">Edit Department</h3>
+            <p class="text-muted small mb-0 mt-2">Update the details for this department below.</p>
+        </div>
+
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+                    <div class="input-group-custom">
+                        {% if 'name' in field.name %}
+                            <i class="fas fa-tag"></i>
+                        {% elif 'description' in field.name %}
+                            <i class="fas fa-align-left"></i>
+                        {% else %}
+                            <i class="fas fa-pencil-alt"></i>
+                        {% endif %}
+
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        <small class="text-danger mt-1 d-block">
+                            <i class="fas fa-exclamation-circle me-1"></i> {{ field.errors.0 }}
+                        </small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="action-buttons">
+                    <a href="{% url 'students_app:department_list' %}" class="btn-cancel">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-update">
+                        <i class="fas fa-save me-2"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
