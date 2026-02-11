@@ -24,6 +24,7 @@ from .models import Students
 from .models import Subject
 from .models import Grade
 from .models import SchoolProfile
+from .models import Teacher
 
 from .forms import SchoolProfileForm
 from .forms import StudentForm
@@ -677,3 +678,12 @@ def subdepartment_role_create(request, subdepartment_id):
             'form': form
         }
     )
+
+
+# TEACHERS VIEWES
+def teachers_list(request):
+
+    teachers = Teacher.objects.all().order_by('name')
+    context = {'teachers':teachers}
+
+    return render(request, 'students_app/teacher_list.html', context)
