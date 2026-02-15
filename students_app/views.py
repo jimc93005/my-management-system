@@ -36,6 +36,7 @@ from .forms import SubDepartmentForm
 from .models import SubDepartment
 from .models import SubDepartmentRole
 from .forms import SubDepartmentRoleForm
+from .forms import TeacherForm
 
 
 
@@ -688,6 +689,35 @@ def teachers_list(request):
     context = {'teachers':teachers}
 
     return render(request, 'students_app/teachers_list.html', context)
+
+
+def edit_teachers(request, teachers_id):
+    teachers = get_object_or_404(Teacher, id=teachers_id)
+
+    if request.method != 'POST':
+        form = TeacherForm(instance=teachers)
+
+    else:
+        form = TeacherForm(instance=teachers, data=request.POST)
+        if form.is_valid():
+            teachers_instance = form.save(commit=False)
+            teachers_instance.save()
+            messages.success(request, "teacher details updated successfully.")
+
+            return redirect('students_app:teachers_list')
+
+    context = {'form': form, 'teachers': teachers}
+
+    return render(request, 'students_app/edit_teachers.html', context)
+
+
+def delete_teachers(request, teachers_id):
+    teachers = get_object_or_404(Teacher, id=teachers_id)
+    if request.method == "POST":
+        teachers.delete()
+        return redirect('students_app:teachers_list')
+
+
 
 
 

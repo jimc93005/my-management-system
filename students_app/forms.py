@@ -5,6 +5,7 @@ from .models import SchoolProfile
 from .models import Department
 from .models import SubDepartment
 from .models import SubDepartmentRole
+from .models import Teacher
 
 
 class StudentForm(forms.ModelForm):
@@ -129,3 +130,13 @@ class SubDepartmentRoleForm(forms.ModelForm):
         ]
 
 
+class TeacherForm(forms.ModelForm):
+    class Meta:
+        model = Teacher
+        fields =[
+            'first_name',
+            'last_name',
+            'employment_number',
+            'gender'
+
+        ]
