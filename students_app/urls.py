@@ -49,6 +49,9 @@ urlpatterns = [
     path('sub-departments/<int:subdepartment_id>/roles/', views.subdepartment_roles, name='subdepartment_roles'),
     path('sub-departments/<int:subdepartment_id>/roles/add/',views.subdepartment_role_create, name='subdepartment_role_create'),
 
+    # TEACHERS LIST URLS
+    path('teachers/', views.teachers_list, name='teachers_list')
+
 
 
 

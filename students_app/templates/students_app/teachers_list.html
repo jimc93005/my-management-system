@@ -1,0 +1,58 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold text-primary">Our School Teachers</h1>
+        <a href="#" class="btn btn-success shadow-sm">+ Add New Teacher</a>
+    </div>
+
+    <div class="card shadow border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">First Name</th>
+                            <th>Last Name</th>
+                            <th>Employment ID</th>
+                            <th>Gender</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in teachers %}
+                            <tr>
+                                <td class="ps-4 fw-semibold">{{ teacher.first_name }}</td>
+                                <td>{{ teacher.last_name }}</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">#{{ teacher.employment_number }}</span>
+                                </td>
+                                <td>
+                                    {% if teacher.Gender == 'Male' %}
+                                        <span class="text-primary">♂ Male</span>
+                                    {% elif teacher.Gender == 'Female' %}
+                                        <span class="text-danger">♀ Female</span>
+                                    {% else %}
+                                        <span class="text-muted">Other</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <a href="#" class="btn btn-sm btn-outline-secondary me-1">View</a>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <p class="mb-0">No teachers have been added yet.</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

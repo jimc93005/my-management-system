@@ -570,11 +570,12 @@ def edit_department(request, department_id):
         if form.is_valid():
             student_instance = form.save(commit=False)
             student_instance.save()
+            messages.success(request, "Department details updated successfully.")
 
             return redirect('students_app:department_list')
 
     context = {'form': form, 'departments': departments}
-    messages.success(request, "Department details updated successfully.")
+
     return render(request, 'students_app/edit_department.html', context)
 
 
@@ -683,7 +684,21 @@ def subdepartment_role_create(request, subdepartment_id):
 # TEACHERS VIEWES
 def teachers_list(request):
 
-    teachers = Teacher.objects.all().order_by('name')
+    teachers = Teacher.objects.all().order_by('first_name')
     context = {'teachers':teachers}
 
-    return render(request, 'students_app/teacher_list.html', context)
+    return render(request, 'students_app/teachers_list.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
