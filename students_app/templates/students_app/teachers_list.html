@@ -4,7 +4,7 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-5 fw-bold text-primary">Our School Teachers</h1>
-        <a href="#" class="btn btn-success shadow-sm">+ Add New Teacher</a>
+        <a href="{% url 'students_app:add_teachers' %}" class="btn btn-success shadow-sm">+ Add New Teacher</a>
     </div>
 
     <div class="card shadow border-0">
@@ -29,9 +29,9 @@
                                     <span class="badge bg-info text-dark">#{{ teacher.employment_number }}</span>
                                 </td>
                                 <td>
-                                    {% if teacher.Gender == 'Male' %}
+                                    {% if teacher.gender == 'Male' %}
                                         <span class="text-primary">♂ Male</span>
-                                    {% elif teacher.Gender == 'Female' %}
+                                    {% elif teacher.gender == 'Female' %}
                                         <span class="text-danger">♀ Female</span>
                                     {% else %}
                                         <span class="text-muted">Other</span>

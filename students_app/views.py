@@ -718,9 +718,23 @@ def delete_teachers(request, teachers_id):
         return redirect('students_app:teachers_list')
 
 
+def add_teachers(request):
+    teachers = Teacher.objects.all().order_by('first_name')
+    if request.method == 'POST':
+        form = TeacherForm(request.POST)
 
+        if form.is_valid():
+            form.save()
+            return redirect('students_app:teachers_list')
+    else:
+        form = TeacherForm()
 
+    context = {
+        'teachers': teachers,
+        'form': form,
+    }
 
+    return render(request, 'students_app/add_teachers.html', context)
 
 
 

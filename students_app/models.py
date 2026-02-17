@@ -207,7 +207,7 @@ class Teacher(models.Model):
         ]
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    employment_number = models.IntegerField()
+    employment_number = models.IntegerField(unique=True)
     gender = models.CharField(max_length=50, choices=GENDER_CHOICES)
 
     def __str__(self):

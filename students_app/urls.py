@@ -51,8 +51,10 @@ urlpatterns = [
 
     # TEACHERS LIST URLS
     path('teachers/', views.teachers_list, name='teachers_list'),
+    path('teachers/add/', views.add_teachers, name='add_teachers'),
     path('teachers/<int:teachers_id>/edit/', views.edit_teachers, name='edit_teachers'),
     path('teachers/<int:teachers_id>/delete/', views.edit_teachers, name='delete_teachers')
+
 
 
 
