@@ -1,53 +1,147 @@
 {% extends 'students_app/base.html' %}
+
 {% block content %}
+<div class="container py-5">
 
-<div class="container mt-4">
-
-    <h1 style="color:blue" class="text-center font-weight-bold">SUBJECTS LIST</h1>
-    <hr class="mb-4"/>
-
-    <div class="table-responsive">
-        <p>Total subjects: {{ page_obj.paginator.count }}</p>
-
-        <table style="background-color:lightblue;" class="table table-bordered table-hover">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Name</th>
-                    <th>Teacher</th>
-                    <th>code</th>
-                    <th>Actions</th>
-                    <th>Date</th>
-
-                </tr>
-            </thead>
-            <tbody>
-                {% for subject in subjects %}
-                <tr>
-                    <td>{{ subject.name.upper }}</td>
-                    <td>{{ subject.subject_teacher.upper }}</td>
-                    <td style="color:blue"><strong>{{ subject.code }}</strong></td>
-                    <td>
-                        <a href="{% url 'students_app:delete_subject' subject.id %}"
-                           class="btn btn-danger btn-sm">🗑 Delete</a>
-                        <a href="{% url 'students_app:edit_subject' subject.id %}"
-                               class="btn btn-primary btn-sm">✏ Edit</a>
-                    </td>
-
-
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="font-weight-bold text-dark mb-0">
+                <i class="fas fa-book-open text-primary mr-2"></i> Master Subject List
+            </h2>
+            <p class="text-muted mb-0">Manage curriculum, departments, and teaching staff.</p>
+        </div>
+        <div class="col-md-6 text-md-right mt-3 mt-md-0">
+            <a href="{% url 'students_app:add_subject' %}" class="btn btn-primary rounded-pill shadow-sm font-weight-bold px-4">
+                <i class="fas fa-plus mr-2"></i> Add New Subject
+            </a>
+        </div>
     </div>
 
-    <hr/>
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
 
-<a href="{% url 'students_app:add_student' %}" class="btn btn-primary">add student</a>
-<a href="{% url 'students_app:add_subject' %}" class="btn btn-primary">add subjects</a>
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <span class="text-muted font-weight-bold mb-3 mb-md-0">
+                Total Subjects: <span class="badge badge-primary badge-pill ml-1">{{ page_obj.paginator.count }}</span>
+            </span>
 
+            <form method="GET" action="{% url 'students_app:subjects_list' %}" class="form-inline">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="q" value="{{ query }}" class="form-control border-right-0" placeholder="Search subject or teacher...">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary border-left-0 bg-white" type="submit">
+                            <i class="fas fa-search text-primary"></i>
+                        </button>
+                    </div>
+                </div>
+                {% if query %}
+                    <a href="{% url 'students_app:subjects_list' %}" class="btn btn-link text-muted ml-2 small">Clear</a>
+                {% endif %}
+            </form>
+        </div>
 
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light text-secondary">
+                    <tr style="font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                        <th class="border-0 px-4 py-3">Subject Name</th>
+                        <th class="border-0 py-3">Code</th>
+                        <th class="border-0 py-3">Target Class</th>
+                        <th class="border-0 py-3">Instructor</th>
+                        <th class="border-0 py-3">Department</th>
+                        <th class="border-0 text-right px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subjects %}
+                    <tr>
+                        <td class="px-4 py-3 font-weight-bold text-dark">
+                            {{ subject.name }}
+                        </td>
+                        <td class="py-3">
+                            <span class="text-primary font-weight-bold">{{ subject.code }}</span>
+                        </td>
+                        <td class="py-3">
+                            {% if subject.target_class %}
+                                <span class="badge badge-soft-info border px-2 py-1">{{ subject.target_class }}</span>
+                            {% else %}
+                                <span class="badge badge-light border text-muted">All</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            {% if subject.teacher_subject %}
+                                {{ subject.teacher_subject.first_name }} {{ subject.teacher_subject.last_name }}
+                            {% else %}
+                                {{ subject.subject_teacher|default:"Unassigned" }}
+                            {% endif %}
+                        </td>
+                        <td class="py-3 text-muted">
+                            {{ subject.departments|default:"N/A" }}
+                        </td>
+                        <td class="text-right px-4 py-3">
+                            <a href="{% url 'students_app:delete_subject' subject.id %}" class="btn btn-danger btn-sm">🗑 Delete</a>
+                            <a href="{% url 'students_app:edit_subject' subject.id %}" class="btn btn-primary btn-sm">✏ Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-folder-open fa-3x mb-3 text-light"></i>
+                                <h5>No subjects found</h5>
+                                {% if query %}
+                                    <p class="mb-0">No results match your search for "{{ query }}".</p>
+                                {% else %}
+                                    <p class="mb-0">Get started by adding your first subject!</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+            <nav aria-label="Subject pagination">
+                <ul class="pagination pagination-sm mb-0 shadow-sm">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link text-primary font-weight-bold" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">&laquo; Prev</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+                    {% endif %}
+
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                            <li class="page-item active"><span class="page-link bg-primary border-primary">{{ i }}</span></li>
+                        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link text-dark" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link text-primary font-weight-bold" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next &raquo;</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+    </div>
 </div>
 
-
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .badge-soft-info { background-color: #e0f2fe; color: #0284c7; font-weight: 600; }
+    .btn-white { background: white; color: #555; border: none; font-weight: 500; }
+    .btn-white:hover { background: #f8f9fa; }
+    .table td { vertical-align: middle; }
+    .input-group .form-control:focus { border-color: #ced4da; box-shadow: none; }
+</style>
 {% endblock content %}

@@ -1,22 +1,79 @@
 {% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="text-center">
-        <h1 style="color:blue"><strong>ADDING SUBJECTS</strong></h1>
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold text-uppercase">Add New Subject</h3>
+                </div>
 
+                <div class="card-body p-5">
+                    <form action="{% url 'students_app:add_subject' %}" method="post">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger shadow-sm border-0 small">
+                                Please correct the errors below.
+                            </div>
+                        {% endif %}
+
+                        <h5 class="text-primary border-bottom pb-2 mb-4">Subject Details</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {% bootstrap_field form.name addon_before='<i class="fas fa-bookmark"></i>' %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {% bootstrap_field form.code addon_before='<i class="fas fa-barcode"></i>' %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {% bootstrap_field form.target_class addon_before='<i class="fas fa-chalkboard"></i>' %}
+                                <small class="text-muted">Select the specific class level this subject belongs to.</small>
+                            </div>
+                        </div>
+
+                        <h5 class="text-primary border-bottom pb-2 mt-4 mb-4">Staff & Department</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {% bootstrap_field form.departments addon_before='<i class="fas fa-building"></i>' %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {% bootstrap_field form.teacher_subject addon_before='<i class="fas fa-chalkboard-teacher"></i>' %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {% bootstrap_field form.subject_teacher %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow px-5 font-weight-bold">
+                                <i class="fas fa-plus-circle mr-2"></i> Save Subject
+                            </button>
+                            <a href="{% url 'students_app:subjects_list' %}" class="btn btn-outline-secondary btn-lg rounded-pill px-5 ml-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <form action="{% url 'students_app:add_subject' %}" method="post">
-            {% csrf_token%}
-            {{form.as_p}}
-            <button class="btn btn-primary">Add Subject</button>
-            <a href="{% url 'students_app:subjects_list' %}" class="btn btn_secondary">Cancel</a>
-
-
-        </form>
-
-
-
-
 </div>
+
+<style>
+    body { background-color: #f0f2f5; }
+</style>
 {% endblock content %}

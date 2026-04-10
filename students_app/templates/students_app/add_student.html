@@ -92,4 +92,53 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("🟢 Checkbox Filter Script Loaded!");
+
+        // 1. Find the Class dropdown
+        const classSelect = document.querySelector('[name="class_level"]');
+
+        // 2. Find ALL the Subject Checkboxes instead of a dropdown
+        const subjectCheckboxes = document.querySelectorAll('input[name="subject"]');
+
+        console.log("👉 Class Dropdown found:", classSelect);
+        console.log("👉 Total Subject Checkboxes found:", subjectCheckboxes.length);
+
+        // 3. Load the JSON map from Python
+        const subjectMap = {{ subject_map_json|safe|default:"{}" }};
+
+        function filterSubjects() {
+            if (!classSelect || subjectCheckboxes.length === 0) return;
+
+            const selectedClass = classSelect.value;
+            const allowedSubjects = subjectMap[selectedClass] || [];
+
+            // Loop through every single checkbox
+            subjectCheckboxes.forEach(checkbox => {
+                // Find the parent container (Bootstrap uses .form-check) so we hide the text too
+                const container = checkbox.closest('.form-check') || checkbox.parentElement;
+
+                if (allowedSubjects.includes(checkbox.value)) {
+                    // It belongs to this class -> SHOW IT
+                    container.style.display = '';
+                    checkbox.disabled = false;
+                } else {
+                    // It belongs to a different class -> HIDE IT & UNCHECK IT
+                    container.style.display = 'none';
+                    checkbox.disabled = true;
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        // Run the filter immediately, and listen for changes
+        if (classSelect && subjectCheckboxes.length > 0) {
+            filterSubjects();
+            classSelect.addEventListener('change', filterSubjects);
+        }
+    });
+</script>
+
 {% endblock content %}

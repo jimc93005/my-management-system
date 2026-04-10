@@ -1,0 +1,93 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+
+            <div class="mb-4">
+                <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-success text-white text-center py-4 border-0">
+                    <div class="bg-white text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold">Register New Staff Member</h3>
+                    <p class="mb-0 text-white-50 small">This account will automatically be granted Teacher privileges.</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 small">
+                            Please correct the errors below. Ensure the username is unique.
+                        </div>
+                    {% endif %}
+
+                    <form action="{% url 'students_app:add_staff' %}" method="post">
+                        {% csrf_token %}
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-success border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-id-card mr-2"></i> Personal Information
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {% bootstrap_field form.first_name %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {% bootstrap_field form.last_name %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {% bootstrap_field form.email %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-success border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-user-lock mr-2"></i> Account Credentials
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {% bootstrap_field form.username %}
+                                    <small class="text-muted">Used for logging in.</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {% bootstrap_field form.password %}
+                                    <small class="text-muted">Provide a temporary password.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg rounded-pill shadow px-5 font-weight-bold">
+                                <i class="fas fa-check-circle mr-2"></i> Create Teacher Account
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+</style>
+{% endblock %}

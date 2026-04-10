@@ -9,6 +9,9 @@ from .models import SubDepartment
 from .models import SubDepartmentRole
 from .models import Teacher
 from .models import DepartmentEvent
+from .models import ClassLevel
+from .models import TeachingAssignment
+from .models import SubjectDepartment
 
 
 admin.site.register(Students)
@@ -20,3 +23,8 @@ admin.site.register(SubDepartment)
 admin.site.register(SubDepartmentRole)
 admin.site.register(Teacher)
 admin.site.register(DepartmentEvent)
+admin.site.register(ClassLevel)
+admin.site.register(TeachingAssignment)
+admin.site.register(SubjectDepartment)
+
+# users/admin.py

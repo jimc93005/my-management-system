@@ -1,0 +1,191 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-primary text-white rounded-lg">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="font-weight-bold mb-1">Welcome, {{ user.first_name|default:user.username }}!</h2>
+                        <p class="mb-0 text-white-50"><i class="fas fa-shield-alt mr-2"></i>{{ dashboard_title }}</p>
+                    </div>
+                    <div class="d-none d-md-block">
+                        {% if is_admin %}
+                            <i class="fas fa-building fa-3x text-white-50"></i>
+                        {% else %}
+                            <i class="fas fa-chalkboard-teacher fa-3x text-white-50"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_admin %}
+
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm h-100 border-bottom border-primary" style="border-bottom-width: 4px !important;">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-muted text-uppercase font-weight-bold mb-2">Total Students</h6>
+                            <h2 class="font-weight-bold text-dark mb-0">{{ total_students }}</h2>
+                        </div>
+                        <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background-color: #e8f0fe;">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm h-100 border-bottom border-success" style="border-bottom-width: 4px !important;">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-muted text-uppercase font-weight-bold mb-2">Teaching Staff</h6>
+                            <h2 class="font-weight-bold text-dark mb-0">{{ total_teachers }}</h2>
+                        </div>
+                        <div class="bg-success-light text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background-color: #e6f4ea;">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100 border-bottom border-info" style="border-bottom-width: 4px !important;">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-muted text-uppercase font-weight-bold mb-2">Active Subjects</h6>
+                            <h2 class="font-weight-bold text-dark mb-0">{{ total_subjects }}</h2>
+                        </div>
+                        <div class="bg-info-light text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background-color: #e0f2fe;">
+                            <i class="fas fa-book"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-5 mb-4">
+                <div class="card border-0 shadow-sm rounded-lg h-100">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 font-weight-bold text-dark"><i class="fas fa-bolt text-warning mr-2"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <a href="{% url 'students_app:add_student' %}" class="btn btn-outline-primary btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
+                            <i class="fas fa-user-plus fa-lg mr-3 w-20 text-center"></i> Register New Student
+                        </a>
+                         <a href="{% url 'students_app:add_staff' %}" class="btn btn-outline-primary btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
+                            <i class="fas fa-user-plus fa-lg mr-3 w-20 text-center"></i> Add New Staff
+                        </a>
+                        <a href="{% url 'students_app:scholastic_selector' %}" class="btn btn-outline-primary btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
+                             <i class="fas fa-file-pdf fa-lg mr-3 w-20 text-center"></i> Generate Scholastic Reports
+                        </a>
+                        <a href="{% url 'students_app:add_subject' %}" class="btn btn-outline-info btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
+                            <i class="fas fa-book-medical fa-lg mr-3 w-20 text-center"></i> Create New Subject
+                        </a>
+                        <a href="{% url 'students_app:subjects_list' %}" class="btn btn-outline-secondary btn-block text-left p-3 font-weight-bold rounded shadow-sm">
+                            <i class="fas fa-list fa-lg mr-3 w-20 text-center"></i> Master Subject List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7 mb-4">
+                <div class="card border-0 shadow-sm rounded-lg h-100">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 font-weight-bold text-dark"><i class="fas fa-history text-secondary mr-2"></i> Recently Registered</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="bg-light text-secondary">
+                                <tr style="font-size: 0.85rem; text-transform: uppercase;">
+                                    <th class="border-0 px-4 py-3">Student</th>
+                                    <th class="border-0 py-3">ID</th>
+                                    <th class="border-0 py-3">Class</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in recent_students %}
+                                <tr>
+                                    <td class="px-4 py-3 font-weight-bold text-dark">
+                                        <a href="{% url 'students_app:student_profile' student.id %}" class="text-decoration-none">{{ student.first_name }} {{ student.surname }}</a>
+                                    </td>
+                                    <td class="py-3 text-muted">#{{ student.student_id }}</td>
+                                    <td class="py-3">
+                                        <span class="badge badge-soft-info border px-2 py-1">Form {{ student.class_level }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">No students registered yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+
+        <h4 class="font-weight-bold mb-3 text-dark border-bottom pb-2">Assigned Curriculum</h4>
+
+        <div class="row">
+            {% if subjects %}
+                {% for subject in subjects %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100 subject-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+
+                                <h5 class="font-weight-bold text-primary mb-0">
+                                    {{ subject.name }}
+                                    {% if subject.target_class %}
+                                        <span class="text-secondary d-block mt-1" style="font-size: 0.8rem;">
+                                            Form {{ subject.target_class }}
+                                        </span>
+                                    {% endif %}
+                                </h5>
+
+                                <span class="badge badge-light border text-muted shadow-sm px-2 py-1">
+                                    <i class="fas fa-book-open"></i>
+                                </span>
+                            </div>
+
+                            <p class="text-muted small mb-4">
+                                <i class="fas fa-layer-group mr-1"></i> Department: {{ subject.departments|default:"N/A" }}
+                            </p>
+
+                            <a href="{% url 'students_app:subject_detail' subject.id %}" class="btn btn-outline-primary btn-sm btn-block rounded-pill font-weight-bold mt-auto">
+                                View Students & Grades
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-warning shadow-sm border-0" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i> You do not currently have any subjects assigned to you.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .subject-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .subject-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .badge-soft-info { background-color: #e0f2fe; color: #0284c7; font-weight: 600; }
+    .w-20 { width: 20px; }
+</style>
+{% endblock %}

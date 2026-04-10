@@ -13,6 +13,9 @@
                     <p class="text-muted mb-0"><i class="fas fa-id-card mr-2"></i>ID: <span class="text-primary font-weight-bold">#{{ student.student_id|default:"N/A" }}</span> | Class: {{ student.class_level }}</p>
                 </div>
                 <div class="ml-md-auto mt-3 mt-md-0">
+                     <a href="{% url 'students_app:change_class_level' student.id %}" class="btn btn-outline-secondary px-4 shadow-sm rounded-pill mr-2">
+                        <i class="fas fa-graduation-cap mr-1"></i> Change Class
+                    </a>
                     <a href="{% url 'students_app:add_grade' student.id %}" class="btn btn-primary px-4 shadow-sm rounded-pill">
                         <i class="fas fa-plus mr-1"></i> Add Grades
                     </a>
@@ -40,9 +43,9 @@
                 <div class="row text-center text-md-left">
                     <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Age</small><span class="h6">{{ student.age }}</span></div>
                     <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Gender</small><span class="h6">{{ student.gender }}</span></div>
-                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Orphanhood</small><span class="h6">{{ student.orphanhood_status }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Orphanhood</small><span class="h6">{{ student.orphanhood }}</span></div>
                     <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Year Enrolled</small><span class="h6">{{ student.year_enrolled }}</span></div>
-                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Parent Contact</small><span class="h6 text-primary">{{ student.parent_contact }}</span></div>
+                    <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Parent Contact</small><span class="h6 text-primary">{{ student.parental_contact }}</span></div>
                     <div class="col-md-4 mb-4"><small class="text-muted d-block text-uppercase font-weight-bold">Address</small><span class="h6">{{ student.address }}</span></div>
                 </div>
             </div>
@@ -62,6 +65,21 @@
         </div>
 
         <div class="tab-pane fade" id="grades" role="tabpanel">
+            <div class="grade-filters mb-4">
+                <a href="{% url 'students_app:student_profile' student.id %}"
+                   class="btn {% if not current_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                   All Grades
+                </a>
+
+                {% for level in historical_levels %}
+                    {% if level %}
+                    <a href="{% url 'students_app:student_profile' student.id %}?level={{ level }}"
+                       class="btn {% if current_filter == level %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                       Form {{ level }} Grades
+                    </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
             {% if term_reports %}
                 <div class="d-flex align-items-center mb-4 overflow-auto pb-2 border-bottom">
                     <span class="text-muted mr-3 font-weight-bold text-uppercase small">Select Year:</span>
@@ -209,26 +227,6 @@
                                         </tr>
                                     </tfoot>
                                 </table>
-                            </div>
-                        </div>
-
-                        <div class="modal fade" id="delT-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" tabindex="-1" role="dialog">
-                            <div class="modal-dialog modal-dialog-centered" role="document">
-                                <div class="modal-content border-0 shadow">
-                                    <div class="modal-header bg-warning text-dark border-0">
-                                        <h5 class="modal-title font-weight-bold">Delete Term {{ term }}</h5>
-                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                    </div>
-                                    <div class="modal-body p-4 text-center">
-                                        <p>Warning: This will delete all grades for <strong>Term {{ term }}</strong> in <strong>{{ year }}</strong>.</p>
-                                    </div>
-                                    <div class="modal-footer bg-light border-0">
-                                        <form method="POST" action="{% url 'students_app:delete_term_grades' student.id year term %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-warning px-4">Confirm Delete</button>
-                                        </form>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 

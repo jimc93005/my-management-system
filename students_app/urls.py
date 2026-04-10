@@ -53,7 +53,23 @@ urlpatterns = [
     path('teachers/', views.teachers_list, name='teachers_list'),
     path('teachers/add/', views.add_teachers, name='add_teachers'),
     path('teachers/<int:teachers_id>/edit/', views.edit_teachers, name='edit_teachers'),
-    path('teachers/<int:teachers_id>/delete/', views.edit_teachers, name='delete_teachers')
+    path('teachers/<int:teachers_id>/delete/', views.delete_teachers, name='delete_teachers'),
+    path('teachers/<int:teachers_id>/teacher_subject_list/', views.teacher_subject_list, name='teacher_subject_list'),
+
+    # CHANGE CLASS LEVELS URLS
+
+    path('student/<int:student_id>/change-class/', views.change_class_level, name='change_class_level'),
+
+
+    # DASHBOARD URLS
+    path('dashboard/', views.dashboard, name='dashboard'),
+    # URL for viewing a specific subject's details
+    path('subject/<int:subject_id>/', views.subject_detail, name='subject_detail'),
+    path('add-staff/', views.add_staff, name='add_staff'),
+    # SCHOLASTIC PDF
+    path('scholastic-pdf/<str:class_level>/<str:academic_year>/<str:term>/',
+         views.scholastic_report_pdf, name='scholastic_report_pdf'),
+    path('scholastic-selector/', views.scholastic_selector, name='scholastic_selector'),
 
 
 

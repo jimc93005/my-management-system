@@ -1,182 +1,203 @@
 {% extends 'students_app/base.html' %}
 
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,700;0,900;1,400&display=swap" rel="stylesheet">
 
-<div class="school-report" style="max-width: 900px; margin: auto;">
-
-   <!-- ===== SCHOOL HEADER ===== -->
-<div style="
-    text-align: center;
-    margin-bottom: 25px;
-    border-bottom: 2px solid #000;
-    padding-bottom: 15px;
-">
-
-    <!-- LOGO -->
-    {% if school_profile.logo %}
-        <img src="{{ school_profile.logo.url }}"
-             alt="School Logo"
-             style="height: 100px; margin-bottom: 10px;">
-    {% endif %}
-
-    <!-- SCHOOL NAME -->
-    <h1 style="
-        margin: 0;
-        font-size: 38px;
-        font-weight: 800;
-        font-family: 'Georgia', 'Times New Roman', serif;
+<style>
+    /* Custom Report Styling */
+    .report-card-container {
+        max-width: 950px;
+        background: #ffffff;
+        font-family: 'Inter', sans-serif;
+    }
+    .school-name {
+        font-family: 'Merriweather', serif;
+        color: #1a202c;
+        letter-spacing: 1px;
+        font-weight: 900;
+    }
+    .school-motto {
+        font-family: 'Merriweather', serif;
+        color: #4a5568;
+        font-size: 1.1rem;
+    }
+    .section-title {
+        font-family: 'Merriweather', serif;
+        color: #2b6cb0;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+        margin-top: 2.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.35rem;
+    }
+    .info-label {
+        color: #718096;
+        font-size: 0.85rem;
         text-transform: uppercase;
-        letter-spacing: 2px;
-    ">
-        {{ school_profile.name }}
-    </h1>
+        letter-spacing: 0.05em;
+        margin-bottom: 0.2rem;
+    }
+    .info-value {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1.05rem;
+    }
+    .table thead th {
+        background-color: #f7fafc;
+        color: #4a5568;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #cbd5e0;
+    }
+    .stat-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.25rem;
+        text-align: center;
+    }
+</style>
 
-    <!-- SCHOOL MOTTO -->
-    {% if school_profile.motto %}
-        <p style="
-            margin: 6px 0 10px 0;
-            font-size: 15px;
-            font-style: italic;
-            font-family: 'Times New Roman', serif;
-        ">
-            "{{ school_profile.motto }}"
-        </p>
-    {% endif %}
+<div class="container my-5">
 
-    <!-- CONTACTS SECTION -->
-    <div style="margin-top: 8px; font-size: 14px; font-family: Arial, sans-serif;">
-
-        {% if school_profile.contact %}
-            <p style="margin: 3px 0;">
-                <strong>Phone:</strong> {{ school_profile.contact }}
-            </p>
-        {% endif %}
-
-        {% if school_profile.email %}
-            <p style="margin: 3px 0;">
-                <strong>Email:</strong> {{ school_profile.email }}
-            </p>
-        {% endif %}
-
-        <p style="margin: 4px 0;">
-            <strong>Headteacher:</strong> {{ school_profile.headteacher_name }}
-        </p>
-
+    <div class="d-flex justify-content-end mb-3" style="max-width: 950px; margin: auto;">
+        <a href="{% url 'students_app:school_report_pdf' student.id academic_year term %}"
+           class="btn btn-danger shadow-sm" target="_blank">
+            <i class="fas fa-file-pdf me-2"></i> Download PDF
+        </a>
     </div>
 
-</div>
-<!-- ===== END SCHOOL HEADER ===== -->
+    <div class="report-card-container shadow-lg rounded-3 p-4 p-md-5 mx-auto border">
 
-<!-- ===== END SCHOOL HEADER ===== -->
+        <div class="text-center mb-5 pb-4 border-bottom border-2">
+            {% if school_profile.logo %}
+                <img src="{{ school_profile.logo.url }}" alt="School Logo" class="mb-3" style="height: 110px; object-fit: contain;">
+            {% endif %}
 
+            <h1 class="school-name text-uppercase mb-2">{{ school_profile.name }}</h1>
 
+            {% if school_profile.motto %}
+                <p class="school-motto fst-italic mb-3">"{{ school_profile.motto }}"</p>
+            {% endif %}
 
+            <div class="d-flex justify-content-center flex-wrap gap-4 mt-3 text-muted" style="font-size: 0.95rem;">
+                {% if school_profile.contact %}
+                    <span><i class="fas fa-phone-alt me-2 text-primary"></i>{{ school_profile.contact }}</span>
+                {% endif %}
+                {% if school_profile.email %}
+                    <span><i class="fas fa-envelope me-2 text-primary"></i>{{ school_profile.email }}</span>
+                {% endif %}
+                <span><i class="fas fa-user-tie me-2 text-primary"></i>Headteacher: {{ school_profile.headteacher_name }}</span>
+            </div>
+        </div>
 
+        <h3 class="section-title"><i class="fas fa-user-graduate me-2"></i>Student Information</h3>
+        <div class="row g-4 mb-4">
+            <div class="col-sm-6 col-md-3">
+                <div class="info-label">Student Name</div>
+                <div class="info-value">{{ student.first_name }} {{ student.surname }}</div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="info-label">Class</div>
+                <div class="info-value">{{ student.class_level }}</div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="info-label">Academic Year</div>
+                <div class="info-value">{{ academic_year }}</div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="info-label">Term</div>
+                <div class="info-value">Term {{ term }}</div>
+            </div>
+        </div>
 
-    <!-- ================= STUDENT INFO ================= -->
-    <h3 style="margin-bottom: 10px; text-decoration: underline;">Student Information</h3>
+        <h3 class="section-title"><i class="fas fa-book-open me-2"></i>Academic Results</h3>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th width="35%">Subject</th>
+                        <th width="15%" class="text-center">Score</th>
+                        <th width="20%" class="text-center">Remark</th>
+                        <th width="30%">Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grades %}
+                        <tr>
+                            <td class="fw-semibold text-dark">{{ grade.subject.name }}</td>
+                            <td class="text-center fw-bold">{{ grade.score }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border">{{ grade.get_remark }}</span>
+                            </td>
+                            <td class="text-muted text-sm">{{ grade.get_comment }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="fas fa-folder-open mb-2 fs-4 d-block"></i>
+                                No grades available for this term.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <table style="width: 100%; margin-bottom: 20px;">
-        <tr>
-            <td><strong>Student Name:</strong></td>
-            <td>{{ student.first_name }} {{ student.surname }}</td>
-        </tr>
-        <tr>
-            <td><strong>Class:</strong></td>
-            <td>{{ student.class_level }}</td>
-        </tr>
-        <tr>
-            <td><strong>Academic Year:</strong></td>
-            <td>{{ academic_year }}</td>
-        </tr>
-        <tr>
-            <td><strong>Term:</strong></td>
-            <td>Term {{ term }}</td>
-        </tr>
-    </table>
+        <h3 class="section-title"><i class="fas fa-chart-line me-2"></i>Performance Summary</h3>
+        <div class="row g-3 mb-5">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="info-label">Average Score</div>
+                    <div class="fs-4 fw-bold text-primary">{{ average }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="info-label">Class Position</div>
+                    <div class="fs-4 fw-bold text-dark">{{ position }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="info-label">Total Enrolment</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_students }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="info-label">Status</div>
+                    <div class="fs-5 fw-bold text-success mt-1">{{ promotion_status }}</div>
+                </div>
+            </div>
+        </div>
 
-    <!-- ================= RESULTS TABLE ================= -->
-    <h3 style="margin-bottom: 10px; text-decoration: underline;">Academic Results</h3>
+        <div class="row mt-5 pt-3 border-top">
+            <div class="col-md-8">
+                <h6 class="text-uppercase text-muted fw-bold mb-2">Headteacher’s Remark</h6>
+                <p class="fst-italic text-dark border-start border-3 border-primary ps-3 py-1 bg-light">
+                    "{{ head_remark }}"
+                </p>
+            </div>
 
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        <thead>
-            <tr>
-                <th style="border: 1px solid #000; padding: 6px;">Subject</th>
-                <th style="border: 1px solid #000; padding: 6px;">Score</th>
-                <th style="border: 1px solid #000; padding: 6px;">remark</th>
-                <th style="border: 1px solid #000; padding: 6px;">comment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for grade in grades %}
-                <tr>
-                    <td style="border: 1px solid #000; padding: 6px;">
-                        {{ grade.subject.name }}
-                    </td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
-                        {{ grade.score }}
-                    </td>
+            <div class="col-md-4 text-center text-md-end mt-4 mt-md-0">
+                {% if school_profile.headteacher_signature %}
+                    <img src="{{ school_profile.headteacher_signature.url }}" alt="Signature" class="mb-2" style="height: 70px; object-fit: contain;">
+                {% else %}
+                    <div style="height: 70px;"></div> {% endif %}
+                <hr class="w-75 ms-auto me-auto me-md-0 mb-1" style="border-color: #000;">
+                <p class="mb-0 fw-bold">{{ school_profile.headteacher_name }}</p>
+                <small class="text-muted text-uppercase">Headteacher</small>
+            </div>
+        </div>
 
-                     <td style="border: 1px solid #000; padding: 6px; text-align: center;">
-                        {{ grade.get_remark }}
-                    </td>
-
-                     <td style="border: 1px solid #000; padding: 6px; ">
-                        {{ grade.get_comment}}
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center;">
-                        No grades available
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- ================= SUMMARY ================= -->
-    <h3 style="margin-bottom: 10px; text-decoration: underline;">Summary</h3>
-
-    <table style="width: 100%; margin-bottom: 20px;">
-        <tr>
-            <td><strong>Average Score:</strong></td>
-            <td>{{ average }}</td>
-        </tr>
-        <tr>
-            <td><strong>Position:</strong></td>
-            <td>{{ position }}</td>
-        </tr>
-        <tr>
-            <td><strong>Enrolment:</strong></td>
-            <td>{{ total_students }}</td>
-        </tr>
-        <tr>
-            <td><strong>Status:</strong></td>
-            <td>{{ promotion_status }}</td>
-        </tr>
-    </table>
-
-    <!-- ================= REMARKS ================= -->
-    <h3 style="margin-bottom: 10px; text-decoration: underline;">Remarks</h3>
-
-    <p><strong>Headteacher’s Remark:</strong> {{ head_remark }}</p>
-
-    <!-- ================= SIGNATURE ================= -->
-    <div style="margin-top: 40px;">
-        <p><strong>Headteacher:</strong> {{ school_profile.headteacher_name }}</p>
-
-        {% if school_profile.headteacher_signature %}
-            <img src="{{ school_profile.headteacher_signature.url }}" alt="Signature" style="height: 60px;">
-        {% endif %}
     </div>
-
 </div>
-<a href="{% url 'students_app:school_report_pdf' student.id academic_year term %}"
-   class="btn btn-danger"
-   target="_blank">
-    Download PDF
-</a>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}

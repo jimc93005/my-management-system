@@ -1,0 +1,64 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- Teacher Header -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body text-center">
+            <h3 class="card-title font-weight-bold">
+                {{ teacher.first_name }} {{ teacher.last_name }}
+            </h3>
+            <p class="text-muted mb-0">
+                Employment No: {{ teacher.employment_number }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Teaching Assignments Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Teaching Assignments</h5>
+        </div>
+
+        <div class="card-body">
+
+            {% if teachers_assignments %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Subject</th>
+                                <th>Class Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in teachers_assignments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ assignment.subject.name }}</td>
+                                    <td>{{ assignment.class_level.class_level }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning text-center">
+                    No teaching assignments found for this teacher.
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mt-4 text-center">
+        <a href="{% url 'students_app:teachers_list' %}" class="btn btn-secondary">
+            ← Back to Teachers List
+        </a>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<style>
+    .form-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .form-card {
+        background-color: #ffffff;
+        width: 100%;
+        max-width: 500px;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        border: 1px solid #eaeaea;
+    }
+
+    .form-card h2 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    /* Highlight box for the student's current status */
+    .student-info {
+        background-color: #f8fafc;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+    }
+
+    .student-info p {
+        margin: 5px 0;
+        color: #4a5568;
+        font-size: 15px;
+    }
+
+    .student-info span {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #4a5568;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        background-color: #fff;
+        cursor: pointer;
+    }
+
+    .form-control:focus {
+        border-color: #3182ce;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+    }
+
+    /* Side-by-side buttons for Submit and Cancel */
+    .button-group {
+        display: flex;
+        gap: 15px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .btn-submit {
+        background-color: #3182ce;
+        color: white;
+    }
+
+    .btn-submit:hover {
+        background-color: #2b6cb0;
+    }
+
+    .btn-cancel {
+        background-color: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-cancel:hover {
+        background-color: #cbd5e0;
+    }
+</style>
+
+<div class="form-wrapper">
+    <div class="form-card">
+        <h2>Change Class Level</h2>
+
+        <div class="student-info">
+            <p>Student: <span>{{ student.first_name }} {{ student.surname }}</span></p>
+            <p>Current Class: <span>{{ student.class_level }}</span></p>
+        </div>
+
+        <form action="{% url 'students_app:change_class_level' student.id %}" method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="new_class">Select New Class</label>
+                <select name="new_class" id="new_class" class="form-control" required>
+                    <option value="" disabled selected>-- Choose a new class --</option>
+
+                    {% if all_classes %}
+                        {% for class_obj in all_classes %}
+                            <option value="{{ class_obj.id }}">{{ class_obj }}</option>
+                        {% endfor %}
+
+                    {% else %}
+                        <option value="1">Form 1</option>
+                        <option value="2">Form 2</option>
+                        <option value="3">Form 3</option>
+                        <option value="4">Form 4</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="button-group">
+                <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-cancel">Cancel</a>
+                <button type="submit" class="btn btn-submit">Save Promotion</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

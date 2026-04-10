@@ -1,32 +1,107 @@
 {% load bootstrap4 %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<p xmlns="http://www.w3.org/1999/html">
-    <a href="{% url 'students_app:index'%}"> index</a>....
-    <a href="{% url 'students_app:students_list'%}"> list of students</a>....
-    <a class="color:dark" href="{% url 'students_app:subjects_list' %}"><strong> list of subjects</strong>></a>
-    <a class="color:dark" href="{% url 'students_app:class_list' %}"><strong>Classes</strong>></a>
-    <a href="{% url 'students_app:edit_school_profile' %}">
-    <strong>Add school data</strong>
-    </a>>>>
-    <a class="color:dark" href="{% url 'students_app:department_list' %}"><strong>management</strong></a>>>>
-    <a class="color:dark" href="{% url 'students_app:teachers_list' %}"><strong>Teachers</strong></a>>>>>
-    {% if user.is_authenticated %}
-      <p>
-        Welcome {{ user.username }} |
-            <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;">
-                    Logout
-                </button>
-            </form>
-     </p>
-    {% else %}
-      <a href="{% url 'users:login' %}">Login</a>
-    {% endif %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
 
+    <title>{% block title %}School Management System{% endblock %}</title>
 
+    {% bootstrap_css %}
 
-</p>
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
-{%block content%}{%endblock content%}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        /* Modern, clean base styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Keeps the footer at the bottom */
+        }
+        main { flex: 1; }
+        .navbar-brand { font-weight: 600; letter-spacing: 0.5px; }
+        .nav-link { font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: #f8f9fa !important; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'students_app:index' %}">
+                <i class="fas fa-graduation-cap mr-2"></i>School Portal
+            </a>
+
+            <button class="navbar-toggler border-0" type="button" data-toggle="collapse" data-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:students_list' %}">Students</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:subjects_list' %}">Subjects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:class_list' %}">Classes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:department_list' %}">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:teachers_list' %}">Teachers</a></li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-user-circle fa-lg mr-1"></i> {{ user.username|title }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow-sm border-0 mt-2" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="{% url 'students_app:edit_school_profile' %}">
+                                    <i class="fas fa-cog text-secondary mr-2"></i> School Settings
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <form method="post" action="{% url 'users:logout' %}" class="m-0 p-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger font-weight-bold">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="btn btn-light text-primary font-weight-bold px-4 rounded-pill shadow-sm" href="{% url 'users:login' %}">
+                                <i class="fas fa-sign-in-alt mr-1"></i> Login
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-5 mb-5">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm border-0" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock content %}
+
+    </main>
+
+    <footer class="bg-white border-top text-muted text-center py-4 mt-auto shadow-sm">
+        <div class="container">
+            <small class="font-weight-bold">&copy; {% now "Y" %} School Management System. All rights reserved.</small>
+        </div>
+    </footer>
+
+    {% bootstrap_javascript jquery='full' %}
+</body>
+</html>

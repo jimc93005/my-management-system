@@ -1,82 +1,103 @@
-{% extends "students_app/base.html" %}
+{% extends 'students_app/base.html' %}
+
 {% block content %}
+<div class="container py-5">
 
-<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
 
-    <h3 class="text-primary">
-        Add Grade for {{ student.first_name }} {{ student.surname }}
-    </h3>
+            <div class="mb-4">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Go Back
+                </a>
+            </div>
 
-    {% if message %}
-        <div class="alert alert-success">{{ message }}</div>
-    {% endif %}
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
 
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
-
-    <div class="card shadow-sm p-3 mt-3">
-        <form method="POST">
-            {% csrf_token %}
-
-            <!-- YEAR & TERM -->
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="fw-bold">Academic Year</label>
-                    <select name="academic_year" class="form-control" required>
-                        <option value="">-- Select Year --</option>
-                        {% for year in years %}
-                            <option value="{{ year }}">{{ year }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="card-header bg-primary text-white p-4 text-center border-0">
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 70px; height: 70px; font-size: 2rem;">
+                        {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+                    </div>
+                    <h3 class="font-weight-bold mb-1">Enter Grades</h3>
+                    <p class="mb-0 text-white-50">Recording scores for <strong>{{ student.first_name }} {{ student.surname }}</strong></p>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="fw-bold">Term</label>
-                    <select name="term" class="form-control" required>
-                        <option value="">-- Select Term --</option>
-                        <option value="1">Term 1</option>
-                        <option value="2">Term 2</option>
-                        <option value="3">Term 3</option>
+                <div class="card-body p-5 bg-light">
 
-                    </select>
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" action="{% url 'students_app:add_grade' student.id %}">
+                        {% csrf_token %}
+
+                        <div class="row mb-5 bg-white p-4 rounded shadow-sm border">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="font-weight-bold text-secondary small text-uppercase">Academic Year</label>
+                                <select name="academic_year" class="form-control form-control-lg bg-light" required>
+                                    <option value="" disabled selected>Select Year...</option>
+                                    {% for year in years %}
+                                        <option value="{{ year }}">{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="font-weight-bold text-secondary small text-uppercase">Academic Term</label>
+                                <select name="term" class="form-control form-control-lg bg-light" required>
+                                    <option value="" disabled selected>Select Term...</option>
+                                    <option value="1">Term 1</option>
+                                    <option value="2">Term 2</option>
+                                    <option value="3">Term 3</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-4">
+                            <i class="fas fa-tasks text-primary mr-2"></i> Your Assigned Subjects
+                        </h6>
+
+                        {% for subject in subjects %}
+                        <div class="form-group mb-4 bg-white p-3 rounded shadow-sm border d-flex align-items-center justify-content-between">
+                            <label class="font-weight-bold text-dark mb-0" style="font-size: 1.1rem;">
+                                {{ subject.name }}
+                            </label>
+                            <div style="width: 150px;">
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" max="100" name="score_{{ subject.id }}" class="form-control form-control-lg text-center font-weight-bold" placeholder="0 - 100">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text bg-light text-muted border-left-0">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm font-weight-bold px-5">
+                                <i class="fas fa-save mr-2"></i> Save Grades
+                            </button>
+                        </div>
+                    </form>
+
                 </div>
             </div>
 
-            <!-- SUBJECTS + SCORES -->
-            <table class="table table-bordered mt-4">
-                <thead>
-                    <tr>
-                        <th>Subject</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for subject in subjects %}
-                        <tr>
-                            <td>{{ subject.name }}</td>
-                            <td>
-                                <input type="number"
-                                       name="score_{{ subject.id }}"
-                                       class="form-control"
-                                       min="0" max="100"
-                                       placeholder="Enter score">
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <button type="submit" class="btn btn-primary mt-3">
-                Save Grades
-            </button>
-            <a href="{% url 'students_app:students_list' %}"
-               class="btn btn-secondary mt-3">
-                Cancel
-            </a>
-        </form>
+        </div>
     </div>
-
 </div>
 
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        background-color: #fff !important;
+    }
+</style>
 {% endblock %}

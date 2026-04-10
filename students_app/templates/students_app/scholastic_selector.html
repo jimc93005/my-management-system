@@ -1,0 +1,61 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="mb-4">
+                <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4 border-0">
+                    <i class="fas fa-file-pdf fa-3x mb-3 text-white-50"></i>
+                    <h3 class="mb-0 font-weight-bold">Master Grade Sheets</h3>
+                    <p class="mb-0 text-white-50 small">Select parameters to generate the Scholastic PDF.</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+                    <form method="POST" action="{% url 'students_app:scholastic_selector' %}">
+                        {% csrf_token %}
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark">Class Level</label>
+                            <select name="class_level" class="form-control" required>
+                                <option value="" disabled selected>Select a Class...</option>
+                                <option value="1">Form 1</option>
+                                <option value="2">Form 2</option>
+                                <option value="3">Form 3</option>
+                                <option value="4">Form 4</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark">Academic Year</label>
+                            <input type="text" name="academic_year" class="form-control" placeholder="e.g., 2024" required>
+                        </div>
+
+                        <div class="form-group mb-5">
+                            <label class="font-weight-bold text-dark">Term</label>
+                            <select name="term" class="form-control" required>
+                                <option value="" disabled selected>Select Term...</option>
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                                <option value="3">Term 3</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg btn-block rounded-pill shadow font-weight-bold">
+                            <i class="fas fa-download mr-2"></i> Generate PDF Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

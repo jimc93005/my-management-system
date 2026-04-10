@@ -23,10 +23,16 @@
                     <tbody>
                         {% for teacher in teachers %}
                             <tr>
-                                <td class="ps-4 fw-semibold">{{ teacher.first_name }}</td>
-                                <td>{{ teacher.last_name }}</td>
                                 <td>
-                                    <span class="badge bg-info text-dark">#{{ teacher.employment_number }}</span>
+                                        <a href="{% url 'students_app:teacher_subject_list' teacher.id %}">
+                                            {{ teacher.first_name }}
+                                        </a>
+                                </td>
+                                <td>
+                                   {{teacher.last_name}}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info text-dark">{{ teacher.employment_number }}</span>
                                 </td>
                                 <td>
                                     {% if teacher.gender == 'Male' %}
@@ -52,7 +58,7 @@
                                         </button>
                                     </div>
 
-                                    <div class="modal fade" id="deleteModal{{ teacher.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal fade text-start" id="deleteModal{{ teacher.id }}" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-dialog-centered">
                                             <div class="modal-content shadow-lg">
                                                 <div class="modal-header border-0 pt-4 justify-content-center">
@@ -64,7 +70,7 @@
                                                 <div class="modal-body text-center pb-4">
                                                     <h4 class="fw-bold text-dark">Confirm Deletion</h4>
                                                     <p class="text-muted px-3">
-                                                        Are you sure you want to delete <strong>{{ department.name }}</strong>?
+                                                        Are you sure you want to delete <strong>{{ teacher.first_name }} {{ teacher.last_name }}</strong>?
                                                         This action cannot be undone.
                                                     </p>
                                                 </div>
@@ -75,14 +81,14 @@
                                                     <form method="post" action="{% url 'students_app:delete_teachers' teacher.id %}">
                                                         {% csrf_token %}
                                                         <button type="submit" class="btn btn-danger px-4 fw-semibold rounded-pill shadow-sm">
-                                                            Delete Department
+                                                            Delete Teacher
                                                         </button>
                                                     </form>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    </td>
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>

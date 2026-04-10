@@ -1,0 +1,179 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-white overflow-hidden rounded-lg">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8 text-center text-md-left mb-3 mb-md-0">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
+                        <div class="bg-primary-light text-primary rounded shadow-sm d-flex align-items-center justify-content-center mr-3" style="width: 50px; height: 50px; font-size: 1.5rem; background-color: #e8f0fe;">
+                            <i class="fas fa-book"></i>
+                        </div>
+
+                        <h2 class="font-weight-bold mb-0 text-dark">
+                            {{ subject.name }}
+                            {% if subject.target_class %}
+                                <span class="text-secondary ml-1" style="font-size: 0.7em; font-weight: 500;">
+                                    (Form {{ subject.target_class }})
+                                </span>
+                            {% endif %}
+                        </h2>
+
+                    </div>
+                    <p class="text-muted mb-0 ml-md-5 pl-md-2">
+                        <i class="fas fa-layer-group mr-1"></i> Department: <strong>{{ subject.department|default:"N/A" }}</strong> |
+                        <i class="fas fa-chalkboard-teacher ml-2 mr-1"></i> Instructor: <strong>{{ subject.teacher_subject.first_name|default:subject.teacher_subject.username }}</strong>
+                    </p>
+                </div>
+                <div class="col-md-4 text-center text-md-right">
+                    <div class="p-3 bg-light rounded-lg d-inline-block border">
+                        <h6 class="text-muted text-uppercase mb-1 small font-weight-bold">Enrolled Students</h6>
+                        <h3 class="mb-0 text-primary font-weight-bold">{{ total_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <h5 class="mb-3 mb-md-0 font-weight-bold text-dark"><i class="fas fa-users mr-2 text-secondary"></i> Class Roster</h5>
+
+            <form method="GET" action="{% url 'students_app:subject_detail' subject.id %}" class="form-inline">
+                <div class="input-group">
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-right-0" placeholder="Search name or ID...">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary border-left-0 bg-white" type="submit">
+                            <i class="fas fa-search text-primary"></i>
+                        </button>
+                    </div>
+                </div>
+                {% if search_query %}
+                    <a href="{% url 'students_app:subject_detail' subject.id %}" class="btn btn-link text-muted ml-2 small">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light text-secondary">
+                    <tr style="font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                        <th class="border-0 px-4 py-3">Student Name</th>
+                        <th class="border-0 py-3">ID Number</th>
+                        <th class="border-0 py-3">Class Level</th>
+                        <th class="border-0 text-right px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td class="px-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm small font-weight-bold" style="width: 35px; height: 35px;">
+                                    {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 font-weight-bold text-dark">{{ student.surname }}, {{ student.first_name }}</h6>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-muted">#{{ student.student_id|default:"N/A" }}</td>
+                        <td class="py-3">
+                            <span class="badge badge-soft-info border px-2 py-1">Form {{ student.class_level }}</span>
+                        </td>
+                        <td class="text-right px-4 py-3">
+                            <div class="btn-group shadow-sm border rounded">
+                                <a href="{% url 'students_app:add_grade' student.id %}" class="btn btn-sm btn-white text-success px-3" title="Add Grade">
+                                    <i class="fas fa-plus-circle mr-1"></i> Grade
+                                </a>
+                                <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-sm btn-white text-primary px-3 border-left" title="View Profile">
+                                    <i class="fas fa-user-circle mr-1"></i> Profile
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-muted">
+                                {% if search_query %}
+                                    <i class="fas fa-search-minus fa-3x mb-3 text-light"></i>
+                                    <h5>No results found for "{{ search_query }}"</h5>
+                                    <p class="mb-0">Try checking for spelling errors or search by ID instead.</p>
+                                {% else %}
+                                    <i class="fas fa-user-slash fa-3x mb-3 text-light"></i>
+                                    <h5>No students enrolled</h5>
+                                    <p class="mb-0">There are currently no students assigned to this subject.</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if students.has_other_pages %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+            <nav aria-label="Class roster pagination">
+                <ul class="pagination pagination-sm mb-0 shadow-sm">
+
+                    {% if students.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link text-primary font-weight-bold" href="?page={{ students.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">&laquo; Prev</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo; Prev</span>
+                        </li>
+                    {% endif %}
+
+                    {% for i in students.paginator.page_range %}
+                        {% if students.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link bg-primary border-primary">{{ i }}</span>
+                            </li>
+                        {% elif i > students.number|add:'-3' and i < students.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link text-dark" href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if students.has_next %}
+                        <li class="page-item">
+                            <a class="page-link text-primary font-weight-bold" href="?page={{ students.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">Next &raquo;</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next &raquo;</span>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .badge-soft-info { background-color: #e0f2fe; color: #0284c7; font-weight: 600; }
+    .btn-white { background: white; color: #555; border: none; font-weight: 500; }
+    .btn-white:hover { background: #f8f9fa; }
+    .table td { vertical-align: middle; }
+    .input-group .form-control:focus { border-color: #ced4da; box-shadow: none; }
+    .input-group-append .btn:focus { box-shadow: none; }
+</style>
+{% endblock %}

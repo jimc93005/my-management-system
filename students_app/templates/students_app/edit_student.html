@@ -1,20 +1,143 @@
 {% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
 {% block content %}
-<div class="container mt-4 center">
-    <div class="text-center">
-        <h1 style="color:blue"><strong>EDIT STUDENT</strong></h1>
-    <h3 >Edit details for {{student.first_name.upper}} {{student.surname.upper}}</h3>
+<div class="container mt-4 mb-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-warning text-dark text-center py-3">
+            <h2 class="mb-0 font-weight-bold"><i class="fas fa-user-edit mr-2"></i>EDIT STUDENT</h2>
+            <p class="mb-0">Updating records for <strong>{{ student.first_name }} {{ student.surname }}</strong></p>
+        </div>
 
+        <div class="card-body p-4">
+            <form action="{% url 'students_app:edit_student' student.id %}" method="post">
+                {% csrf_token %}
+
+                <h5 class="text-warning border-bottom border-warning pb-2 mb-3 font-weight-bold">Personal Information</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        {% bootstrap_field form.first_name addon_before='<i class="fas fa-user"></i>' %}
+                    </div>
+                    <div class="col-md-4">
+                        {% bootstrap_field form.surname addon_before='<i class="fas fa-user"></i>' %}
+                    </div>
+                    <div class="col-md-4">
+                        {% bootstrap_field form.age addon_before='<i class="fas fa-calendar-alt"></i>' %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        {% bootstrap_field form.gender addon_before='<i class="fas fa-venus-mars"></i>' %}
+                    </div>
+                    <div class="col-md-4">
+                        {% bootstrap_field form.disability addon_before='<i class="fas fa-wheelchair"></i>' %}
+                    </div>
+                    <div class="col-md-4">
+                        {% bootstrap_field form.orphanhood addon_before='<i class="fas fa-child"></i>' %}
+                    </div>
+                </div>
+
+                <h5 class="text-warning border-bottom border-warning pb-2 mt-4 mb-3 font-weight-bold">School & Contact Details</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        {% bootstrap_field form.student_id addon_before='<i class="fas fa-id-badge"></i>' %}
+                    </div>
+                    <div class="col-md-6">
+                        {% bootstrap_field form.class_level addon_before='<i class="fas fa-chalkboard"></i>' %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        {% bootstrap_field form.address addon_before='<i class="fas fa-map-marker-alt"></i>' %}
+                    </div>
+                    <div class="col-md-6">
+                        {% bootstrap_field form.parental_contact addon_before='<i class="fas fa-phone"></i>' %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        {% bootstrap_field form.year_enrolled addon_before='<i class="fas fa-clock"></i>' %}
+                    </div>
+                </div>
+
+                <h5 class="text-warning border-bottom border-warning pb-2 mt-4 mb-3 font-weight-bold">Academic Subjects</h5>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="p-3 border rounded bg-light">
+                            {% bootstrap_field form.subject %}
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-warning border-bottom border-warning pb-2 mt-4 mb-3 font-weight-bold">Official Comments</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        {% bootstrap_field form.class_teachers_comment addon_before='<i class="fas fa-comment-dots"></i>' %}
+                    </div>
+                    <div class="col-md-6">
+                        {% bootstrap_field form.Headteachers_comment addon_before='<i class="fas fa-user-tie"></i>' %}
+                    </div>
+                </div>
+
+                <div class="text-center mt-5">
+                    <button type="submit" class="btn btn-warning btn-lg px-5 shadow font-weight-bold">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                    <a href="{% url 'students_app:students_list' %}" class="btn btn-outline-secondary btn-lg px-5 ml-2 font-weight-bold">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
-
-
-    <form action="{% url 'students_app:edit_student' student.id %}" method="POST">
-        {% csrf_token %}
-        {{form.as_p}}
-        <button class="btn btn-primary">Save Changes</button>
-        <a href="{% url 'students_app:students_list' %}" class="btn btn-secondary center">Cancel</a>
-
-    </form>
-
 </div>
-{% endblock content%}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const classSelect = document.querySelector('[name="class_level"]');
+        const subjectCheckboxes = document.querySelectorAll('input[name="subject"]');
+        const subjectMap = {{ subject_map_json|safe|default:"{}" }};
+
+        function filterSubjects() {
+            if (!classSelect || subjectCheckboxes.length === 0) return;
+
+            const selectedClass = classSelect.value;
+            const allowedSubjects = subjectMap[selectedClass] || [];
+
+            subjectCheckboxes.forEach(checkbox => {
+                const container = checkbox.closest('.form-check') || checkbox.parentElement;
+
+                if (allowedSubjects.includes(checkbox.value)) {
+                    // Show valid subjects
+                    container.style.display = '';
+                    checkbox.disabled = false;
+                } else {
+                    // Hide invalid subjects
+                    container.style.display = 'none';
+                    checkbox.disabled = true;
+                }
+            });
+        }
+
+        // Run once on page load to hide incorrect subjects
+        if (classSelect && subjectCheckboxes.length > 0) {
+            filterSubjects();
+
+            // If the user physically changes the class dropdown, uncheck any hidden boxes
+            classSelect.addEventListener('change', function() {
+                filterSubjects();
+
+                const allowedSubjects = subjectMap[classSelect.value] || [];
+                subjectCheckboxes.forEach(checkbox => {
+                     if (!allowedSubjects.includes(checkbox.value)) {
+                         checkbox.checked = false;
+                     }
+                });
+            });
+        }
+    });
+</script>
+{% endblock content %}

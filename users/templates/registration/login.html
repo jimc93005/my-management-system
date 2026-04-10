@@ -1,20 +1,64 @@
 {% extends 'students_app/base.html' %}
 
 {% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
 
-<div style="max-width: 400px; margin: 80px auto;">
-    <h2>Login</h2>
+            <div class="card border-0 shadow-lg rounded-lg mt-5">
+                <div class="card-body p-5">
 
-    {% if form.errors %}
-        <p style="color:red;">Invalid username or password</p>
-    {% endif %}
+                    <div class="text-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <h3 class="font-weight-bold text-dark">Welcome Back</h3>
+                        <p class="text-muted small">Please log in to your account</p>
+                    </div>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 small" role="alert">
+                            <i class="fas fa-exclamation-circle mr-1"></i> Incorrect username or password.
+                        </div>
+                    {% endif %}
 
-    </form>
+                    <form method="POST" action="{% url 'users:login' %}">
+                        {% csrf_token %}
+
+                        <div class="form-group mb-3">
+                            <label for="id_username" class="font-weight-bold text-secondary small">Username</label>
+                            <input type="text" name="username" class="form-control form-control-lg bg-light" id="id_username" required autofocus placeholder="Enter username">
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="id_password" class="font-weight-bold text-secondary small">Password</label>
+                            <input type="password" name="password" class="form-control form-control-lg bg-light" id="id_password" required placeholder="Enter password">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg btn-block rounded-pill shadow-sm font-weight-bold">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Log In
+                        </button>
+
+                        <input type="hidden" name="next" value="{{ next }}">
+                    </form>
+
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <p class="text-muted small">School Management System &copy; 2026</p>
+            </div>
+
+        </div>
+    </div>
 </div>
 
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        background-color: #fff !important;
+    }
+</style>
 {% endblock %}

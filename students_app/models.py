@@ -1,8 +1,36 @@
 from django.db import models
 import datetime
+from django.conf import settings
+
+
+class SubjectDepartment(models.Model):
+    DEPARTMENT_SUBJECT_CHOICES = [
+        ('science', 'science'),
+        ('language', 'language'),
+        ('humanities', 'humanities')
+
+    ]
+    departments = models.CharField(null=True, blank=True, choices=DEPARTMENT_SUBJECT_CHOICES)
+
+    def __str__(self):
+        return f'{self.departments}'
 
 
 # SUBJECTS MODELS
+
+class ClassLevel(models.Model):
+    CLASS_LEVELS = [
+        ('1', 'Form 1'),
+        ('2', 'Form 2'),
+        ('3', 'Form 3'),
+        ('4', 'Form 4'),
+        ]
+
+    class_level = models.CharField(max_length=20, choices=CLASS_LEVELS)
+
+    def __str__(self):
+        return self.get_class_level_display()
+
 
 class Subject(models.Model):
     AVAILABLE_SUBJECTS = [
@@ -17,25 +45,46 @@ class Subject(models.Model):
         ('Social', 'Social'),
         ('History', 'History'),
         ('Biology', 'Biology'),
-
     ]
+
     name = models.CharField(max_length=20, choices=AVAILABLE_SUBJECTS)
-    subject_teacher = models.CharField(max_length=20)
+    subject_teacher = models.CharField(
+        max_length=20)  # Note: You might want to remove this eventually since you have teacher_subject!
     code = models.CharField(max_length=10, unique=True)
 
-    def __str__(self):
-        return f'{self.name}'
+    teacher_subject = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to={'is_teacher': True},
+        related_name='subjects_taught'
+    )
 
+    departments = models.ForeignKey('SubjectDepartment', on_delete=models.CASCADE)
+
+    target_class = models.ForeignKey(
+        'ClassLevel',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='assigned_subjects'
+    )
+
+    class Meta:
+        # NEW: This stops you from creating two "Physics" subjects for the same class!
+        unique_together = ('name', 'target_class')
+
+    def __str__(self):
+        # NEW: This ensures it shows up in dropdown menus as "Physics - Form 1"
+        if self.target_class:
+            return f'{self.name} - {self.target_class}'
+        return self.name
 
 class Students(models.Model):
     current_year = datetime.date.today().year
-    CLASS_LEVELS = [
-        ('1', 'Form 1'),
-        ('2', 'Form 2'),
-        ('3', 'Form 3'),
-        ('4', 'Form 4'),
 
-    ]
+
     GENDER_CHOICES = [
         ('Male', 'Male'),
         ('Female', 'Female'),
@@ -56,7 +105,7 @@ class Students(models.Model):
     surname = models.CharField(max_length=20)
     student_id = models.CharField(max_length=10, unique=True)
     age = models.PositiveIntegerField(null=True, blank=True)
-    class_level = models.CharField(max_length=10, choices=CLASS_LEVELS)
+    class_level = models.ForeignKey(ClassLevel, on_delete=models.CASCADE)
     year_enrolled = models.IntegerField(null=True, blank=True, choices=YEAR_CHOICES)
     gender = models.CharField(max_length=20,choices=GENDER_CHOICES)
     disability = models.CharField(max_length=20)
@@ -75,18 +124,21 @@ class Students(models.Model):
 # GRADING MODELS
 
 
+from django.db import models
+
+
 class Grade(models.Model):
     TERM_CHOICES = [
         ('1', 'Term 1'),
         ('2', 'Term 2'),
         ('3', 'Term 3'),
-
-        ]
+    ]
     student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='grades')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     score = models.FloatField()
     academic_year = models.CharField(max_length=10)
     term = models.CharField(max_length=10, choices=TERM_CHOICES)
+    class_level_snapshot = models.CharField(max_length=10, null=True, blank=True)
 
     class Meta:
         unique_together = ("student", "subject", "academic_year", "term",)
@@ -99,17 +151,23 @@ class Grade(models.Model):
                 f'{self.term} -'
                 f' {self.academic_year}')
 
+    def save(self, *args, **kwargs):
+        # Capture the class level at the time this grade is recorded
+        if not self.class_level_snapshot and self.student and self.student.class_level:
+            self.class_level_snapshot = str(self.student.class_level.class_level)
+        super().save(*args, **kwargs)
+
     def get_remark(self):
         """
         Returns the grade (A–F for Form 1–2, 1–9 for Form 3–4)
-        based on the score.
+        based on the score and the class level recorded at the time.
         """
+        # 1. Convert the level to a lowercase string so we can safely search it
+        level_to_check = str(self.class_level_snapshot or self.student.class_level).lower()
 
-        class_level = self.student.class_level
-
-        # ---------- FORM 1 & 2 (A, B, C, D, F) ----------
-        if class_level in ['1', '2']:
-
+        # 2. Check if the string CONTAINS the number '1' or '2'
+        if '1' in level_to_check or '2' in level_to_check:
+            # ---------- FORM 1 & 2 (A, B, C, D, F) ----------
             if self.score >= 80:
                 return 'A'
             elif self.score >= 70:
@@ -121,8 +179,8 @@ class Grade(models.Model):
             else:
                 return 'F'
 
-        # ---------- FORM 3 & 4 (1–9) ----------
         else:
+            # ---------- FORM 3 & 4 (1–9) ----------
             if self.score >= 80:
                 return '1'
             elif self.score >= 75:
@@ -141,10 +199,9 @@ class Grade(models.Model):
                 return '8'
             else:
                 return '9'
-
-        # ---------------------------
-        #   COMMENT SYSTEM
-        # ---------------------------
+    # ---------------------------
+    #   COMMENT SYSTEM
+    # ---------------------------
 
     def get_comment(self):
         """
@@ -182,8 +239,6 @@ class Grade(models.Model):
             return comment_map_numbers[remark]
         else:
             return "No comment"
-
-
 # SCHOOL REPORT MODELS
 class SchoolProfile(models.Model):
     name = models.CharField(max_length=255)  # School name
@@ -207,11 +262,25 @@ class Teacher(models.Model):
         ]
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    employment_number = models.IntegerField(unique=True)
+    employment_number = models.IntegerField(unique=True, blank=True, null=True)
     gender = models.CharField(max_length=50, choices=GENDER_CHOICES)
+    subject = models.ManyToManyField(Subject)
+    class_level = models.ForeignKey(ClassLevel, on_delete=models.CASCADE)
+
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class TeachingAssignment(models.Model):
+        teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="assignments")
+        subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+        class_level = models.ForeignKey(ClassLevel, on_delete=models.CASCADE,null=True, blank=True)
+        class Meta:
+            unique_together = ('teacher', 'subject', 'class_level')
+
+        def __str__(self):
+            return f"{self.teacher} - {self.subject} ({self.class_level})"
 
 
 # MANAGEMENT SYSTEMS

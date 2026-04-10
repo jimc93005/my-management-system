@@ -6,6 +6,7 @@ from .models import Department
 from .models import SubDepartment
 from .models import SubDepartmentRole
 from .models import Teacher
+from django.contrib.auth import get_user_model
 
 
 class StudentForm(forms.ModelForm):
@@ -52,23 +53,29 @@ class StudentForm(forms.ModelForm):
         }
 
 
+from django import forms
+from .models import Subject # Make sure this matches your actual import
+
 class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
         fields = [
             'name',
-            'subject_teacher',
-            'code'
+            'code',
+            'target_class',     # NEW: Added target class
+            'departments',
+            'teacher_subject',  # NEW: Added the secure teacher dropdown
+            'subject_teacher'   # Kept your old field just in case!
         ]
 
         widgets = {
             'name': forms.Select(attrs={'class': 'form-control'}),
+            'code': forms.TextInput(attrs={'class': 'form-control'}),
+            'target_class': forms.Select(attrs={'class': 'form-control'}),     # NEW
+            'departments': forms.Select(attrs={'class': 'form-control'}),
+            'teacher_subject': forms.Select(attrs={'class': 'form-control'}),  # NEW
             'subject_teacher': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'})
-
-
         }
-
 
 # SCHOOL REPORT FORMS
 
@@ -137,6 +144,22 @@ class TeacherForm(forms.ModelForm):
             'first_name',
             'last_name',
             'employment_number',
-            'gender'
+            'gender',
+            'subject',
+            'class_level'
 
         ]
+
+
+
+
+# Fetch your custom User model
+User = get_user_model()
+
+class TeacherRegistrationForm(forms.ModelForm):
+    # We add a custom password field so it shows up as hidden dots (***) when typing
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Create a secure password'}))
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email']
