@@ -1,0 +1,75 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+
+            <div class="mb-4">
+                <a href="{% url 'students_app:teacher_subject_list' staff.id %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-info text-white text-center py-4 border-0">
+                    <div class="bg-white text-info rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-user-tag"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold">Manage Roles & Access</h3>
+                    <p class="mb-0 text-white-50 small">Configuring permissions for {{ staff.first_name }} {{ staff.last_name }}</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+                    <form action="{% url 'students_app:manage_staff_roles' staff.id %}" method="post">
+                        {% csrf_token %}
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-id-badge mr-2 text-primary"></i> Primary Titles
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.is_teacher %}</div>
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.is_hod %}</div>
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.is_deputy %}</div>
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.is_headteacher %}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-users mr-2 text-success"></i> Form Class Assignment
+                            </h6>
+                            {% bootstrap_field form.form_class %}
+                            <small class="text-muted">Selecting a class makes this user the official Form Teacher.</small>
+                        </div>
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-3 font-weight-bold">
+                                <i class="fas fa-users-cog mr-2 text-danger"></i> System Access Groups
+                            </h6>
+                            <div class="permission-checkboxes">
+                                {% bootstrap_field form.groups %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-info btn-lg rounded-pill text-white shadow px-5 font-weight-bold">
+                                <i class="fas fa-lock mr-2"></i> Update Security Roles
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .permission-checkboxes .form-check { margin-bottom: 10px; padding-left: 1.75rem; }
+    .permission-checkboxes .form-check-input { margin-top: 0.25rem; margin-left: -1.75rem; transform: scale(1.2); }
+    .permission-checkboxes .form-check-label { font-weight: 600; color: #495057; cursor: pointer; }
+</style>
+{% endblock %}

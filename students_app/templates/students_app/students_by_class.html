@@ -134,9 +134,15 @@
                 <i class="fas fa-users-rectangle text-primary me-2"></i> {{ class_level }} Students
             </h2>
         </div>
-        <a href="{% url 'students_app:class_list' %}" class="btn btn-outline-secondary px-4 rounded-pill shadow-sm">
-            <i class="fas fa-arrow-left me-2"></i> Back to Classes
-        </a>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'students_app:promote_students' %}?class_filter={{ class_level.id }}" class="btn btn-info text-white px-4 rounded-pill shadow-sm fw-bold">
+                <i class="fas fa-level-up-alt me-2"></i> Promote Class
+            </a>
+            <a href="{% url 'students_app:class_list' %}" class="btn btn-outline-secondary px-4 rounded-pill shadow-sm fw-bold">
+                <i class="fas fa-arrow-left me-2"></i> Back to Classes
+            </a>
+        </div>
     </div>
 
     <div class="search-area shadow-sm">

@@ -9,8 +9,8 @@
 
     {% bootstrap_css %}
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         /* Modern, clean base styling */
@@ -22,17 +22,24 @@
             min-height: 100vh; /* Keeps the footer at the bottom */
         }
         main { flex: 1; }
-        .navbar-brand { font-weight: 600; letter-spacing: 0.5px; }
-        .nav-link { font-weight: 500; transition: color 0.2s; }
-        .nav-link:hover { color: #f8f9fa !important; }
+
+        /* Navbar Styling */
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+        .nav-link { font-weight: 600; transition: color 0.2s; }
+        .nav-link:hover { color: #3b82f6 !important; }
+
+        /* Dropdown Styling */
+        .dropdown-menu { border-radius: 12px; }
+        .dropdown-item { font-weight: 500; transition: background-color 0.2s; }
+        .dropdown-item:hover { background-color: #f8fafc; }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'students_app:index' %}">
-                <i class="fas fa-graduation-cap mr-2"></i>School Portal
+            <a class="navbar-brand font-weight-bold" href="{% url 'students_app:index' %}" style="color: #2563eb; font-size: 1.4rem;">
+                <i class="fas fa-graduation-cap mr-2" style="color: #3b82f6;"></i>School Portal
             </a>
 
             <button class="navbar-toggler border-0" type="button" data-toggle="collapse" data-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,36 +47,105 @@
             </button>
 
             <div class="collapse navbar-collapse" id="mainNavbar">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:students_list' %}">Students</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:subjects_list' %}">Subjects</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:class_list' %}">Classes</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:department_list' %}">Departments</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'students_app:teachers_list' %}">Teachers</a></li>
+                <ul class="navbar-nav mr-auto align-items-center">
+
+                    <li class="nav-item mr-2">
+                        <a class="nav-link text-dark" href="{% url 'students_app:dashboard' %}">
+                            <i class="fas fa-tachometer-alt mr-1" style="color: #4f46e5;"></i> Dashboard
+                        </a>
+                    </li>
+
+                    <li class="nav-item mr-2">
+                        <a class="nav-link text-dark" href="{% url 'students_app:attendance_selector' %}">
+                            <i class="fas fa-clipboard-check mr-1" style="color: #10b981;"></i> Attendance
+                        </a>
+                    </li>
+                    <li class="nav-item mr-2"> ... </li>
+
+                    <li class="nav-item mr-2"> ... </li>
+
+                    <li class="nav-item mr-2">
+                        <a class="nav-link text-dark" href="{% url 'students_app:academic_statistics' %}">
+                            <i class="fas fa-chart-pie mr-1" style="color: #ec4899;"></i> Analytics
+                        </a>
+                    </li>
+
+                    <li class="nav-item mr-2"> ... </li>
+
+                    <li class="nav-item mr-2">
+                        <a class="nav-link text-dark" href="{% url 'students_app:students_list' %}">
+                            <i class="fas fa-user-graduate mr-1" style="color: #3b82f6;"></i> Students
+                        </a>
+                    </li>
+
+                    <li class="nav-item mr-2">
+                        <a class="nav-link text-dark" href="{% url 'students_app:alumni_list' %}">
+                            <i class="fas fa-history mr-1" style="color: #64748b;"></i> Alumni
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown mr-2">
+                        <a class="nav-link dropdown-toggle text-dark" href="#" id="schoolDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-school mr-1" style="color: #f59e0b;"></i> School
+                        </a>
+                        <div class="dropdown-menu shadow-lg border-0 mt-2" aria-labelledby="schoolDropdown">
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:class_list' %}">
+                                <i class="fas fa-chalkboard mr-3 text-center" style="color: #8b5cf6; width: 20px;"></i> Classes
+                            </a>
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:subjects_list' %}">
+                                <i class="fas fa-book-open mr-3 text-center" style="color: #ec4899; width: 20px;"></i> Subjects
+                            </a>
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:department_list' %}">
+                                <i class="fas fa-building mr-3 text-center" style="color: #ef4444; width: 20px;"></i> Departments
+                            </a>
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:calendar' %}">
+                                <i class="fas fa-calendar-alt mr-3 text-center" style="color: #f97316; width: 20px;"></i> Term Calendar
+                            </a>
+                            <div class="dropdown-divider my-2"></div>
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:teachers_list' %}">
+                                <i class="fas fa-chalkboard-teacher mr-3 text-center" style="color: #06b6d4; width: 20px;"></i> Teachers
+                            </a>
+                        </div>
+                    </li>
                 </ul>
 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-user-circle fa-lg mr-1"></i> {{ user.username|title }}
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-user-circle fa-lg mr-1" style="color: #94a3b8;"></i> {{ user.username|title }}
                             </a>
-                            <div class="dropdown-menu dropdown-menu-right shadow-sm border-0 mt-2" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="{% url 'students_app:edit_school_profile' %}">
-                                    <i class="fas fa-cog text-secondary mr-2"></i> School Settings
+                            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0 mt-2" aria-labelledby="userDropdown">
+
+                                <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:edit_school_profile' %}">
+                                    <i class="fas fa-cog mr-2" style="color: #64748b;"></i> School Settings
                                 </a>
+
                                 <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:add_class' %}">
+                                    <i class="fas fa-chalkboard mr-2" style="color: #64748b;"></i> Add New Class
+                                </a>
+
+                                <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:add_master_subject' %}">
+                                    <i class="fas fa-book-open mr-2" style="color: #64748b;"></i> Add Master Subject
+                                </a>
+
+
+                                <div class="dropdown-divider my-2"></div>
+
                                 <form method="post" action="{% url 'users:logout' %}" class="m-0 p-0">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item text-danger font-weight-bold">
+                                    <button type="submit" class="dropdown-item py-2 text-danger font-weight-bold">
                                         <i class="fas fa-sign-out-alt mr-2"></i> Logout
                                     </button>
                                 </form>
+
                             </div>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="btn btn-light text-primary font-weight-bold px-4 rounded-pill shadow-sm" href="{% url 'users:login' %}">
+                            <a class="btn btn-primary font-weight-bold px-4 rounded-pill shadow-sm" href="{% url 'users:login' %}">
                                 <i class="fas fa-sign-in-alt mr-1"></i> Login
                             </a>
                         </li>

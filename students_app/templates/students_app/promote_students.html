@@ -1,0 +1,206 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="mb-4">
+        <h2 class="font-weight-bold text-dark"><i class="fas fa-level-up-alt text-primary mr-2"></i>Class Promotion Hub</h2>
+        <p class="text-muted">Upgrade entire classes, promote specific students, or process graduations from one screen.</p>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-header bg-light border-0 py-3">
+            <h5 class="font-weight-bold text-dark mb-0">Step 1: Select Current Class</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'students_app:promote_students' %}" class="d-flex align-items-center">
+                <select name="class_filter" class="form-control w-25 mr-3" required>
+                    <option value="" disabled selected>-- Choose the class to manage --</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}" {% if current_class_filter == c.id|stringformat:"s" %}selected{% endif %}>
+                            {{ c.class_level }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary px-4 font-weight-bold shadow-sm">
+                    <i class="fas fa-search mr-2"></i> Load Students
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if students != None %}
+    <form method="POST" action="{% url 'students_app:promote_students' %}">
+        {% csrf_token %}
+        <input type="hidden" name="hidden_source_class" value="{{ source_class_obj.id }}">
+
+        <div class="card shadow border-0">
+
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="font-weight-bold text-dark mb-3">Step 2: Choose Action</h5>
+
+                <div class="d-flex align-items-center flex-wrap gap-3">
+                    <div class="input-group" style="max-width: 300px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-right-0"><i class="fas fa-arrow-right text-primary"></i></span>
+                        </div>
+                        <select name="target_class" class="form-control border-left-0 font-weight-bold text-primary">
+                            <option value="" disabled selected>-- Select Target Class --</option>
+                            {% for c in classes %}
+                                {% if c.id != source_class_obj.id %}
+                                    <option value="{{ c.id }}">Move to {{ c.class_level }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="ml-3 border-left pl-3">
+                        <button type="submit" name="action_type" value="promote_selected" class="btn btn-outline-primary font-weight-bold shadow-sm mr-2">
+                            Promote Selected (<span id="selection-counter">0</span>)
+                        </button>
+
+                        <button type="button" class="btn btn-primary font-weight-bold shadow-sm mr-2" data-toggle="modal" data-target="#promoteAllModal">
+                            <i class="fas fa-users mr-1"></i> Promote Entire Class
+                        </button>
+                    </div>
+
+                    <div class="ml-auto">
+                        <button type="button" class="btn btn-success font-weight-bold shadow-sm" data-toggle="modal" data-target="#graduateSelectedModal">
+                            <i class="fas fa-graduation-cap mr-1"></i> Graduate Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="px-4 py-3" style="width: 5%;">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="selectAll">
+                                        <label class="custom-control-label" for="selectAll"></label>
+                                    </div>
+                                </th>
+                                <th>Student Name</th>
+                                <th>ID Number</th>
+                                <th>Current Class</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td class="px-4">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input student-checkbox" id="student_{{ student.id }}" name="selected_students" value="{{ student.id }}">
+                                        <label class="custom-control-label" for="student_{{ student.id }}"></label>
+                                    </div>
+                                </td>
+                                <td><strong>{{ student.surname|upper }}, {{ student.first_name }}</strong></td>
+                                <td><code class="text-secondary">#{{ student.student_id }}</code></td>
+                                <td><span class="badge badge-info px-2 py-1">{{ student.class_level }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="fas fa-users-slash fa-3x mb-3 text-light"></i>
+                                    <p class="mb-0">No active students found in this class.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="promoteAllModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-danger text-white border-0 py-3">
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Warning: Mass Promotion</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body py-4 text-center">
+                        <i class="fas fa-users fa-3x text-danger mb-3"></i>
+                        <p class="text-dark mb-0" style="font-size: 1.1rem;">
+                            This will instantly move <strong>EVERY active student</strong> in <strong>{{ source_class_obj.class_level }}</strong> to the target class you selected.
+                            <br><br>Are you absolutely sure you want to proceed?
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light border-0 py-3 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary font-weight-bold px-4" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="action_type" value="promote_all" class="btn btn-danger font-weight-bold px-4 shadow-sm">
+                            Yes, Promote Entire Class
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="graduateSelectedModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-success text-white border-0 py-3">
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-user-graduate mr-2"></i> Confirm Graduation</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body py-4 text-center">
+                        <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
+                        <p class="text-dark mb-0" style="font-size: 1.1rem;">
+                            You are about to graduate the selected students. They will be removed from the active roster and permanently moved to the Alumni Archive.
+                            <br><br>Are you sure you want to continue?
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light border-0 py-3 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary font-weight-bold px-4" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="action_type" value="graduate_selected" class="btn btn-success font-weight-bold px-4 shadow-sm">
+                            Yes, Graduate Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+    {% endif %}
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+        const counterSpan = document.getElementById('selection-counter');
+
+        function updateCounter() {
+            if(counterSpan) {
+                const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
+                counterSpan.textContent = checkedCount;
+            }
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                studentCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateCounter();
+            });
+        }
+
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (!this.checked) selectAllCheckbox.checked = false;
+                updateCounter();
+            });
+        });
+    });
+</script>
+
+{% endblock %}

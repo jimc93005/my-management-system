@@ -1,0 +1,67 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+
+            <div class="mb-4">
+                <a href="{% url 'students_app:teacher_subject_list' staff.id %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4 border-0">
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold">Edit HR Profile</h3>
+                    <p class="mb-0 text-white-50 small">Updating records for {{ staff.first_name }} {{ staff.last_name }}</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+                    <form action="{% url 'students_app:edit_staff_profile' staff.id %}" method="post">
+                        {% csrf_token %}
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-id-card mr-2 text-primary"></i> Personal Information
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.first_name %}</div>
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.last_name %}</div>
+                                <div class="col-md-12 mb-3">{% bootstrap_field form.email %}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-address-card mr-2 text-info"></i> HR & Demographics
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.employment_number %}</div>
+                                <div class="col-md-6 mb-3">{% bootstrap_field form.gender %}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">{% bootstrap_field form.phone_number %}</div>
+                                <div class="col-md-4 mb-3">{% bootstrap_field form.district_of_origin %}</div>
+                                <div class="col-md-4 mb-3">{% bootstrap_field form.religion %}</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow px-5 font-weight-bold">
+                                <i class="fas fa-save mr-2"></i> Save Profile Updates
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style> body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; } </style>
+{% endblock %}

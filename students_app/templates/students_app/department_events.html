@@ -1,0 +1,61 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="font-weight-bold text-primary mb-0"><i class="fas fa-calendar-alt mr-2"></i> {{ sub_dept.name }} Events</h2>
+            <p class="text-muted mb-0">Manage and track activities for this department.</p>
+        </div>
+        <div>
+            <a href="{% url 'students_app:print_department_events' sub_dept.id %}" target="_blank" class="btn btn-outline-danger shadow-sm mr-2 font-weight-bold">
+                <i class="fas fa-file-pdf mr-1"></i> Generate PDF
+            </a>
+            <a href="{% url 'students_app:add_department_event' sub_dept.id %}" class="btn btn-primary shadow-sm font-weight-bold">
+                <i class="fas fa-plus mr-1"></i> Add Event
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for event in events %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-lg" style="border-top: 4px solid #3b82f6 !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title font-weight-bold text-dark mb-0">{{ event.title }}</h5>
+                        <span class="badge badge-light text-primary border shadow-sm">{{ event.term }}</span>
+                    </div>
+                    <p class="small text-muted mb-3"><i class="fas fa-calendar-day mr-1"></i> {{ event.academic_year }}</p>
+
+                    <p class="card-text text-secondary">{{ event.description|truncatewords:15 }}</p>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center small font-weight-bold">
+                        <div class="text-success">
+                            <i class="fas fa-play-circle mr-1"></i> {{ event.start_date|date:"M d, Y" }}
+                        </div>
+                        {% if event.end_date %}
+                        <div class="text-danger">
+                            <i class="fas fa-stop-circle mr-1"></i> {{ event.end_date|date:"M d, Y" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5 bg-white shadow-sm rounded-lg border">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h4 class="text-secondary font-weight-bold">No Events Scheduled</h4>
+                <p class="text-muted">There are currently no events planned for {{ sub_dept.name }}.</p>
+                <a href="{% url 'students_app:add_department_event' sub_dept.id %}" class="btn btn-outline-primary mt-2">Create the first event</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

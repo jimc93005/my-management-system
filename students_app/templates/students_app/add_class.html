@@ -1,0 +1,75 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="mb-4">
+                <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill btn-sm shadow-sm font-weight-bold px-3">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-dark text-white text-center py-4 border-0">
+                    <div class="bg-white text-dark rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-chalkboard"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold">Create New Class</h3>
+                    <p class="mb-0 text-white-50 small">Configure a new form level for the school.</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" action="{% url 'students_app:add_class' %}">
+                        {% csrf_token %}
+
+                        <div class="bg-white p-4 rounded shadow-sm border mb-4">
+                            <h6 class="text-dark border-bottom pb-2 mb-4 font-weight-bold">
+                                <i class="fas fa-cogs mr-2 text-primary"></i> Class Configuration
+                            </h6>
+
+                            <div class="mb-3">
+                                {% bootstrap_field form.class_level %}
+                            </div>
+
+                            <div class="mb-2 border-top pt-3">
+                                {% bootstrap_field form.form_teacher %}
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle text-info"></i> You can assign a form teacher now, or leave it blank and assign it later via the Staff "Manage Roles" portal.
+                                </small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow px-5 font-weight-bold">
+                                <i class="fas fa-plus-circle mr-2"></i> Create Class
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+    .form-control:focus {
+        border-color: #343a40;
+        box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.25);
+    }
+</style>
+{% endblock %}

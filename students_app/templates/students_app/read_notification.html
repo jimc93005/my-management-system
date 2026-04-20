@@ -1,0 +1,33 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="mb-3">
+                <a href="{% url 'students_app:dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill font-weight-bold shadow-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+                </a>
+            </div>
+            <div class="card border-0 shadow-lg rounded-lg">
+                <div class="card-body p-5">
+                    <div class="text-center border-bottom pb-4 mb-4">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px;">
+                            <i class="fas fa-envelope-open-text fa-2x"></i>
+                        </div>
+                        <h2 class="font-weight-bold text-dark">{{ notification.title }}</h2>
+                        <span class="text-muted"><i class="fas fa-calendar-day mr-1"></i> Received: {{ notification.created_at|date:"F j, Y, g:i a" }}</span>
+                    </div>
+
+                    <div class="message-content" style="font-size: 1.1rem; line-height: 1.7; color: #333;">
+                        {{ notification.message|linebreaks }}
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <span class="text-success font-weight-bold"><i class="fas fa-check-double mr-1"></i> Marked as Read</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

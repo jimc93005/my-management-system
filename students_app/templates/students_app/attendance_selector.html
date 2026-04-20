@@ -1,0 +1,47 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="mb-4 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <h2 class="font-weight-bold text-dark">Daily Attendance</h2>
+                <p class="text-muted">Select a class and date to take or review the daily roster.</p>
+            </div>
+
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-body p-5">
+                    <form action="{% url 'students_app:attendance_selector' %}" method="POST">
+                        {% csrf_token %}
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark"><i class="fas fa-chalkboard text-primary mr-2"></i>Select Class</label>
+                            <select name="class_level" class="form-control form-control-lg custom-select bg-light" required>
+                                <option value="" disabled selected>-- Choose a Class --</option>
+                                {% for c in classes %}
+                                    <option value="{{ c.id }}">{{ c.class_level }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-5">
+                            <label class="font-weight-bold text-dark"><i class="fas fa-calendar-day text-primary mr-2"></i>Select Date</label>
+                            <input type="date" name="attendance_date" class="form-control form-control-lg bg-light" value="{{ today }}" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg btn-block shadow font-weight-bold rounded-pill">
+                            <i class="fas fa-users mr-2"></i> Load Roster
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

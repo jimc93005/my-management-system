@@ -1,4 +1,5 @@
-from django.contrib.auth.decorators import login_required
+
+from django.contrib.auth.decorators import login_required, permission_required
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
@@ -13,10 +14,15 @@ from weasyprint import HTML
 from pathlib import Path
 from django.conf import settings
 
-from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .forms import TeacherRegistrationForm
+from django.utils.dateparse import parse_date
+from datetime import date
+from .models import Attendance
+from .models import StaffNotification
+
+
 
 
 
@@ -42,6 +48,15 @@ from .models import TeachingAssignment
 from .models import SubDepartmentRole
 from .forms import SubDepartmentRoleForm
 from .forms import TeacherForm
+from .forms import ClassLevelForm
+from .models import ClassLevel
+from .forms import MasterSubjectForm
+from .models import MasterSubject
+
+from django.contrib.auth.decorators import login_required
+from .models import SubDepartment, DepartmentEvent
+from .forms import DepartmentEventForm
+
 
 
 
@@ -50,11 +65,18 @@ def index(request):
 
 # VIEWS FOR STUDENTS FUNCTIONS
 
-
-@login_required
+@login_required(login_url='login')
 def student_list(request):
+    if not request.user.has_perm('students_app.view_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access the students list. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     query = request.GET.get('q', '')
-    students = Students.objects.all()
+
+    # 1. CRITICAL UPDATE: Only fetch 'Active' students
+    # 2. ADDED order_by: Paginator requires ordered lists to prevent duplicates
+    students = Students.objects.filter(status='Active').order_by('class_level', 'surname')
 
     if query:
         students = students.filter(
@@ -64,11 +86,16 @@ def student_list(request):
             Q(created_at__icontains=query)
         )
 
+    # Keep your excellent pagination logic
     paginator = Paginator(students, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    context = {'students': page_obj, 'query':query,'page_obj':page_obj}
+    context = {
+        'students': page_obj,
+        'query': query,
+        'page_obj': page_obj,
+    }
 
     return render(request, 'students_app/students_list.html', context)
 
@@ -76,8 +103,14 @@ def student_list(request):
 
 
 # Make sure Subject is imported at the top!
-
+@login_required(login_url='login')
 def add_student(request):
+    if not request.user.has_perm('students_app.add_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to access the adding of students."
+                                  " Please contact the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+        # Bounce them back to the safe dashboard (change this URL if your dashboard has a different name)
+        return redirect('students_app:dashboard')
     if request.method == 'POST':
         form = StudentForm(request.POST)
 
@@ -118,8 +151,13 @@ def add_student(request):
 
 # deleting student from the list of students
 
-
+@login_required(login_url='login')
 def delete_student(request, student_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access deletion of students. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, pk=student_id)
     if request.method == 'POST':
         student.delete()
@@ -139,6 +177,11 @@ from django.contrib import messages
 # Make sure Subject is imported at the top of your views.py
 
 def edit_student(request, student_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access the edit of students. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, pk=student_id)
 
     if request.method == 'POST':
@@ -175,8 +218,13 @@ def edit_student(request, student_id):
     return render(request, 'students_app/edit_student.html', context)
 
 # VIEWS FOR SUBJECT FUNCTIONS
-
+@login_required(login_url='login')
 def subjects_list(request):
+    if not request.user.has_perm('students_app.view_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access the subject list. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     query = request.GET.get('q', '')
 
     # Use select_related to fetch the ForeignKey data efficiently in one query!
@@ -207,7 +255,13 @@ def subjects_list(request):
     return render(request, 'students_app/subjects_list.html', context)
 
 # adding_subjects
+@login_required(login_url='login')
 def add_subject(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access the adding of students . Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     if request.method == 'POST':
         form = SubjectForm(request.POST)
         if form.is_valid():
@@ -221,8 +275,13 @@ def add_subject(request):
 
 # editing subjects
 
-
+@login_required(login_url='login')
 def edit_subject(request, subject_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access the edit of subjects. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     subject = get_object_or_404(Subject, pk=subject_id)
 
     if request.method != 'POST':
@@ -240,8 +299,13 @@ def edit_subject(request, subject_id):
     messages.success(request, "Student details updated successfully.")
     return render(request, 'students_app/edit_subjects.html', context)
 
-
+@login_required(login_url='login')
 def delete_subject(request, subject_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     subject = get_object_or_404(Subject, pk=subject_id)
     if request.method == 'POST':
         subject.delete()
@@ -253,15 +317,28 @@ def delete_subject(request, subject_id):
 
 
 # GROUPING STUDENTS BY CLASS
-
+@login_required(login_url='login')
 def class_list(request):
+    if not request.user.has_perm('students_app.view_classlevel'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     classes = ClassLevel.CLASS_LEVELS
     return render(request, 'students_app/class_list.html', {'classes': classes})
 
-
+# PLACING THE STUDENTS IN THEIR RESPECTIVE CLASSES
+@login_required(login_url='login')
 def students_by_class(request, class_level):
+    if not request.user.has_perm('students_app.view_classlevel'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     query = request.GET.get('q', '')  # Get search term from URL
-    student_list = Students.objects.filter(class_level=class_level)
+
+    # THE FIX: Add status='Active' to ensure alumni don't show up in current classes!
+    student_list = Students.objects.filter(class_level=class_level, status='Active')
 
     if query:
         # Filter by name or ID
@@ -290,8 +367,13 @@ def students_by_class(request, class_level):
 # students_app/views.py
 # students_app/views.py
 
-@login_required
+@login_required(login_url='login')
 def add_grade(request, student_id):
+    if not request.user.has_perm('students_app.add_grade'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
     user = request.user
 
@@ -376,8 +458,13 @@ def add_grade(request, student_id):
     return render(request, "students_app/add_grade.html", context)
 # STUDENT PROFILE
 
-
+@login_required(login_url='login')
 def student_profile(request, student_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
     level_filter = request.GET.get('level')
 
@@ -410,8 +497,13 @@ def student_profile(request, student_id):
 
 # EDITING GRADES
 
-
+@login_required(login_url='login')
 def edit_grade(request, grade_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     grade = get_object_or_404(Grade, id=grade_id)
     student = grade.student
 
@@ -453,7 +545,13 @@ def edit_grade(request, grade_id):
 # Delete a single grade
 # -----------------------------
 @require_POST
+@login_required(login_url='login')
 def delete_grade(request, grade_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     grade = get_object_or_404(Grade, id=grade_id)
 
     grade.delete()   # permanent delete
@@ -465,7 +563,13 @@ def delete_grade(request, grade_id):
 # Delete all grades in a specific term
 # -----------------------------
 @require_POST
+@login_required(login_url='login')
 def delete_term_grades(request, student_id, year, term):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
 
     Grade.objects.filter(
@@ -482,7 +586,13 @@ def delete_term_grades(request, student_id, year, term):
 # Delete all grades in a specific year
 # -----------------------------
 @require_POST
+@login_required(login_url='login')
 def delete_year_grades(request, student_id, year):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
 
     Grade.objects.filter(
@@ -495,8 +605,13 @@ def delete_year_grades(request, student_id, year):
 
 
 # SCHOOL REPORT FORMATION AND VIEWS
-
+@login_required(login_url='login')
 def edit_school_profile(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Get the existing profile, or None
     school_profile, created = SchoolProfile.objects.get_or_create(id=1)  # assuming single school
 
@@ -513,7 +628,13 @@ def edit_school_profile(request):
 
 
 # SCHOOL REPORT VIEW:
+@login_required(login_url='login')
 def school_report(request, student_id, academic_year, term):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
 
     term_reports, total_students = build_term_reports(student)
@@ -546,8 +667,13 @@ def school_report(request, student_id, academic_year, term):
 
 # PDF GENERATION VIEWSz
 
-
+@login_required(login_url='login')
 def school_report_pdf(request, student_id, academic_year, term):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
     school_profile = SchoolProfile.objects.first()
 
@@ -612,14 +738,20 @@ def school_report_pdf(request, student_id, academic_year, term):
 
 
 # DEPARTMENTS VIEWS
+@login_required(login_url='login')
 def department_list(request):
+    if not request.user.has_perm('students_app.view_department'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
 
     departments = Department.objects.all().order_by('name')
     context = {'departments': departments}
 
     return render(request, 'students_app/department_list.html', context)
 
-
+@login_required(login_url='login')
 def add_department(request):
     departments = Department.objects.all().order_by('name')
     if request.method == 'POST':
@@ -637,8 +769,13 @@ def add_department(request):
     }
 
     return render(request, 'students_app/add_department.html', context)
-
+@login_required(login_url='login')
 def edit_department(request, department_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     departments = get_object_or_404(Department, id=department_id)
 
     if request.method != 'POST':
@@ -658,8 +795,13 @@ def edit_department(request, department_id):
     return render(request, 'students_app/edit_department.html', context)
 
 
-
+@login_required(login_url='login')
 def department_delete(request, department_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     department = get_object_or_404(Department, id=department_id)
 
     if request.method == 'POST':
@@ -667,16 +809,26 @@ def department_delete(request, department_id):
 
     return redirect('students_app:department_list')
 
-
+@login_required(login_url='login')
 def subdepartment_list(request, department_id):
+    if not request.user.has_perm('students_app.view_department'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     department = get_object_or_404(Department, id=department_id)
     sub_departments = department.sub_departments.all()
     context = {'department': department, 'sub_departments': sub_departments}
 
     return render(request, 'students_app/subdepartment_list.html', context)
 
-
+@login_required(login_url='login')
 def subdepartment_create(request, department_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     department = get_object_or_404(Department, id=department_id)
 
     if request.method == 'POST':
@@ -692,8 +844,13 @@ def subdepartment_create(request, department_id):
     context = {'department': department, 'form': form}
     return render(request,'students_app/subdepartment_create.html', context)
 
-
+@login_required(login_url='login')
 def subdepartment_roles(request, subdepartment_id):
+    if not request.user.has_perm('students_app.view_department'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     sub_department = get_object_or_404(SubDepartment, id=subdepartment_id)
 
     roles = SubDepartmentRole.objects.filter(
@@ -709,8 +866,13 @@ def subdepartment_roles(request, subdepartment_id):
         }
     )
 
-
+@login_required(login_url='login')
 def subdepartment_role_create(request, subdepartment_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     sub_department = get_object_or_404(SubDepartment, id=subdepartment_id)
 
     if request.method == 'POST':
@@ -761,16 +923,71 @@ def subdepartment_role_create(request, subdepartment_id):
 
 
 # TEACHERS VIEWES
-def teachers_list(request):
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth import get_user_model
 
-    teachers = Teacher.objects.all().order_by('first_name')
-    context = {'teachers':teachers}
+# Fetch your CustomUser model
+User = get_user_model()
+
+
+@login_required(login_url='login')
+def teachers_list(request):
+    # Security Check: Ensure only Admins/Headteachers can view the full staff directory
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+
+    # 1. Capture the search query from the URL
+    query = request.GET.get('q', '')
+
+    # 2. Fetch the base list of teachers FROM THE USER MODEL
+    # We pull anyone who has the 'is_teacher' box checked OR is in the 'teachers' group.
+    # .distinct() ensures no one is listed twice!
+    teachers_queryset = User.objects.filter(
+        Q(is_teacher=True) | Q(groups__name__iexact='teachers')
+    ).distinct().order_by('first_name')
+
+    # 3. Apply the search filter if a query exists
+    if query:
+        teachers_queryset = teachers_queryset.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(employment_number__icontains=query) |
+            Q(username__icontains=query)
+        ).distinct()
+
+    # 4. Pagination: Show 10 teachers per page
+    paginator = Paginator(teachers_queryset, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'teachers': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+    }
 
     return render(request, 'students_app/teachers_list.html', context)
 
 
+User = get_user_model()
+@login_required(login_url='login')
 def edit_teachers(request, teachers_id):
-    teachers = get_object_or_404(Teacher, id=teachers_id)
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+
+    # --- THE FIX: We now look for the ID inside the User table! ---
+    teachers = get_object_or_404(User, id=teachers_id)
 
     if request.method != 'POST':
         form = TeacherForm(instance=teachers)
@@ -780,7 +997,7 @@ def edit_teachers(request, teachers_id):
         if form.is_valid():
             teachers_instance = form.save(commit=False)
             teachers_instance.save()
-            messages.success(request, "teacher details updated successfully.")
+            messages.success(request, f"{teachers.first_name}'s details updated successfully.")
 
             return redirect('students_app:teachers_list')
 
@@ -789,14 +1006,33 @@ def edit_teachers(request, teachers_id):
     return render(request, 'students_app/edit_teachers.html', context)
 
 
+@login_required(login_url='login')
 def delete_teachers(request, teachers_id):
-    teachers = get_object_or_404(Teacher, id=teachers_id)
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+
+    # --- THE FIX: We now look for the ID inside the User table! ---
+    teachers = get_object_or_404(User, id=teachers_id)
+
     if request.method == "POST":
+        teacher_name = f"{teachers.first_name} {teachers.last_name}"
         teachers.delete()
+        messages.success(request, f"Teacher {teacher_name} has been successfully deleted.")
         return redirect('students_app:teachers_list')
 
+    # Fallback just in case someone tries to load the delete URL directly
+    return redirect('students_app:teachers_list')
 
+@login_required(login_url='login')
 def add_teachers(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     teachers = Teacher.objects.all().order_by('first_name')
     if request.method == 'POST':
         form = TeacherForm(request.POST)
@@ -814,97 +1050,226 @@ def add_teachers(request):
 
     return render(request, 'students_app/add_teachers.html', context)
 
-def teacher_subject_list(request, teachers_id):
-    teacher = get_object_or_404(Teacher, id=teachers_id)
-    teachers_assignments = teacher.assignments.select_related(
-        'subject', 'class_level'
-    ).all()
-    context = {'teachers_assignments': teachers_assignments, 'teacher':teacher}
 
-    return render(request, 'students_app/teacher_subject_list.html', context)
-
-
-# VIEWS FOR PROMOTING STUDENTS FROM ONE CLASS TO ANOTHER
-from django.shortcuts import get_object_or_404, redirect, render
-
-
-# Import your Class model if class_level is a ForeignKey
-# from .models import Students, ClassModel
-
-def change_class_level(request, student_id):
-    student = get_object_or_404(Students, id=student_id)
-
-    if request.method == "POST":
-        new_class_id = request.POST.get('new_class')
-
-        if new_class_id:
-            student.class_level_id = new_class_id
-            student.save()
-
-            return redirect('students_app:student_profile', student_id=student.id)
-
-    context = {
-        'student': student,
-        # 'all_classes': all_classes
-    }
-    return render(request, "students_app/change_class.html", context)
-
-
-# LOG IN AND LOG OUR VIEWS AND AUTHENTICATION SYSTEMS
-# Make sure to import your User model at the top if you haven't!
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
-@login_required
+@login_required(login_url='login')
+def teacher_subject_list(request, teachers_id):
+    # 1. STRICT SECURITY: Only Headteachers/Admins should manage staff profiles!
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.warning(request, "🔒 Access Denied: Only Administrators can view and manage staff profiles.")
+        return redirect('students_app:dashboard')
+
+    # 2. Fetch the Staff Member from the USER model (where roles live!)
+    # Note: If your URLs pass the old 'Teacher' model ID, you might need to fetch the User linked to that Teacher.
+    teacher = get_object_or_404(User, id=teachers_id)
+
+    # 3. Fetch their curriculum
+    # (Adjust 'teacher_subject' to match whatever ForeignKey links Subject to User)
+    teachers_assignments = Subject.objects.filter(teacher_subject=teacher).select_related('target_class')
+
+    # 4. Figure out what roles this teacher currently holds for the UI Badges
+    is_hod = getattr(teacher, 'is_hod', False) or teacher.groups.filter(name__iexact='HOD').exists()
+    is_form_teacher = hasattr(teacher, 'my_form_class') and teacher.my_form_class is not None
+
+    context = {
+        'teacher': teacher,
+        'teachers_assignments': teachers_assignments,
+        'is_hod': is_hod,
+        'is_form_teacher': is_form_teacher,
+        'my_dept': getattr(teacher, 'department', None) if is_hod else None,
+        'my_class': teacher.my_form_class if is_form_teacher else None,
+    }
+
+    return render(request, 'students_app/teacher_subject_list.html', context)
+
+# VIEWS FOR PROMOTING STUDENTS FROM ONE CLASS TO ANOTHER
+@login_required(login_url='login')
+def change_class_level(request, student_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    # Fetch the specific student using the URL ID
+    student = get_object_or_404(Students, id=student_id)
+
+    if request.method == "POST":
+        # Check which button was pressed in the HTML form (promote or graduate)
+        action_type = request.POST.get('action_type')
+
+        if action_type == 'graduate':
+            # Soft-delete: Move them to the Alumni Archive
+            student.status = 'Graduated'
+            student.save()
+            messages.success(request, f"🎓 {student.first_name} {student.surname} has been moved to the Alumni Archive.")
+            return redirect('students_app:alumni_list')
+
+        elif action_type == 'promote':
+            # Standard promotion: Move to a new class
+            new_class_id = request.POST.get('new_class')
+            if new_class_id:
+                student.class_level_id = new_class_id
+                student.save()
+                messages.success(request, f"✅ {student.first_name} was successfully moved to their new class.")
+                return redirect('students_app:student_profile', student_id=student.id)
+            else:
+                messages.error(request, "⚠️ Please select a valid target class from the dropdown.")
+                return redirect('students_app:change_class_level', student_id=student.id)
+
+    # --- GET REQUEST: Load the Page ---
+    # Fetch all classes to populate the dropdown menu
+    all_classes = ClassLevel.objects.all().order_by('class_level')
+
+    context = {
+        'student': student,
+        'all_classes': all_classes
+    }
+    return render(request, "students_app/change_class.html", context)
+# LOG IN AND LOG OUR VIEWS AND AUTHENTICATION SYSTEMS
+# Make sure to import your User model at the top if you haven't!
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+@login_required(login_url='login')
 def dashboard(request):
     user = request.user
-    context = {}
+
+    # --- Role Checks ---
+    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
+        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
+    is_hod = getattr(user, 'is_hod', False) or user.groups.filter(name__iexact='HOD').exists()
+    is_form_teacher = hasattr(user, 'my_form_class') and user.my_form_class is not None
+    is_teacher = getattr(user, 'is_teacher', False) or user.groups.filter(name__iexact='teachers').exists()
+
+    # --- THE FIX: Define the notifications HERE before the context dictionary ---
+    unread_notifications = StaffNotification.objects.filter(recipient=user, is_read=False)
+
+    # Base Context
+    context = {
+        'dashboard_title': "Staff Portal",
+        'is_admin': is_admin,
+        'is_hod': is_hod,
+        'is_form_teacher': is_form_teacher,
+        'is_teacher': is_teacher,
+
+        # Now Python knows what this is!
+        'unread_notifications': unread_notifications,
+        'unread_count': unread_notifications.count(),
+    }
 
     # -----------------------------------------------------
-    # 1. HEADTEACHER & DEPUTY VIEW (The Command Center)
+    # 1. ADMIN DATA
     # -----------------------------------------------------
-    if user.is_headteacher or user.is_deputy:
-        # Calculate school-wide analytics
-        total_students = Students.objects.count()
-        total_teachers = User.objects.filter(is_teacher=True).count()
-        total_subjects = Subject.objects.count()
+    if is_admin:
+        context['total_students'] = Students.objects.filter(status='Active').count()
 
-        # We can also get a quick list of recently added students
-        recent_students = Students.objects.order_by('-id')[:5]
+        User = get_user_model()
+        context['total_teachers'] = User.objects.filter(
+            Q(is_teacher=True) | Q(groups__name__iexact='teachers')
+        ).distinct().count()
 
-        context = {
-            'dashboard_title': "School Administration Dashboard",
-            'is_admin': True,  # This tells the HTML to show the Admin UI
-            'total_students': total_students,
-            'total_teachers': total_teachers,
-            'total_subjects': total_subjects,
-            'recent_students': recent_students,
+        context['total_subjects'] = Subject.objects.count()
+        context['recent_students'] = Students.objects.order_by('-id')[:5]
+
+    # -----------------------------------------------------
+    # 2. HOD DATA
+    # -----------------------------------------------------
+    if is_hod:
+        my_dept = getattr(user, 'my_headed_department', None)
+        context['my_dept'] = my_dept
+
+        context['total_dept_subjects'] = 0
+        context['total_dept_teachers'] = 0
+        context['overall_pass_rate'] = 0
+        context['class_stats'] = []
+
+        if my_dept:
+            dept_subjects = Subject.objects.filter(departments=my_dept)
+            dept_grades = Grade.objects.filter(subject__in=dept_subjects)
+            total_grades = dept_grades.count()
+            passed_grades = dept_grades.filter(score__gte=50).count()
+
+            context['overall_pass_rate'] = round((passed_grades / total_grades * 100), 1) if total_grades > 0 else 0
+            context['total_dept_subjects'] = dept_subjects.count()
+
+            context['total_dept_teachers'] = dept_subjects.exclude(teacher_subject__isnull=True).values(
+                'teacher_subject').distinct().count()
+
+            class_stats = []
+            classes_taught = ClassLevel.objects.filter(assigned_subjects__in=dept_subjects).distinct().order_by(
+                'class_level')
+
+            for cl in classes_taught:
+                subjects_in_class = dept_subjects.filter(target_class=cl).select_related('teacher_subject')
+                c_total = Grade.objects.filter(subject__in=subjects_in_class).count()
+                c_pass = Grade.objects.filter(subject__in=subjects_in_class, score__gte=50).count()
+
+                subj_details = []
+                for sub in subjects_in_class:
+                    s_total = Grade.objects.filter(subject=sub).count()
+                    s_pass = Grade.objects.filter(subject=sub, score__gte=50).count()
+                    subj_details.append({
+                        'name': sub.name,
+                        'teacher': sub.teacher_subject,
+                        'pass_rate': round((s_pass / s_total * 100), 1) if s_total > 0 else 0
+                    })
+
+                class_stats.append({
+                    'class_name': cl.class_level,
+                    'pass_rate': round((c_pass / c_total * 100), 1) if c_total > 0 else 0,
+                    'subjects': subj_details
+                })
+            context['class_stats'] = class_stats
+
+    # -----------------------------------------------------
+    # 3. FORM TEACHER DATA
+    # -----------------------------------------------------
+    if is_form_teacher:
+        my_class = user.my_form_class
+        class_students = Students.objects.filter(class_level=my_class, status='Active')
+        class_grades = Grade.objects.filter(student__in=class_students)
+
+        context['my_class'] = my_class
+        context['class_students'] = class_students[:5]
+        context['class_subjects'] = Subject.objects.filter(target_class=my_class).select_related('teacher_subject')
+
+        t_grades = class_grades.count()
+        p_grades = class_grades.filter(score__gte=50).count()
+        b_grades = class_grades.filter(student__gender='Male')
+        g_grades = class_grades.filter(student__gender='Female')
+
+        context['stats'] = {
+            'total': class_students.count(),
+            'boys': class_students.filter(gender='Male').count(),
+            'girls': class_students.filter(gender='Female').count(),
+            'pass_rate': round((p_grades / t_grades * 100), 1) if t_grades > 0 else 0,
+            'boys_pass': round((b_grades.filter(score__gte=50).count() / b_grades.count() * 100),
+                               1) if b_grades.count() > 0 else 0,
+            'girls_pass': round((g_grades.filter(score__gte=50).count() / g_grades.count() * 100),
+                                1) if g_grades.count() > 0 else 0,
         }
 
     # -----------------------------------------------------
-    # 2. HOD VIEW
+    # 4. REGULAR TEACHER DATA
     # -----------------------------------------------------
-    elif user.is_hod:
-        # ... your existing HOD logic ...
-        pass
-
-    # -----------------------------------------------------
-    # 3. TEACHER VIEW
-    # -----------------------------------------------------
-    elif user.is_teacher:
-        subjects_to_display = Subject.objects.filter(teacher_subject=user)
-        context = {
-            'dashboard_title': "Teacher Dashboard",
-            'is_admin': False,  # This tells the HTML to show the Teacher UI
-            'subjects': subjects_to_display,
-        }
+    if is_teacher:
+        context['subjects'] = Subject.objects.filter(teacher_subject=user)
+        # Note: I removed the unread_notifications line from down here since it's now at the top!
 
     return render(request, 'students_app/dashboard.html', context)
-
-@login_required
+@login_required(login_url='login')
 def subject_detail(request, subject_id):
+    if not request.user.has_perm('students_app.view_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     subject = get_object_or_404(Subject, id=subject_id)
     user = request.user
 
@@ -957,32 +1322,46 @@ def subject_detail(request, subject_id):
 
     return render(request, 'students_app/subject_detail.html', context)
 
-@login_required
+
+
+@login_required(login_url='login')
 def add_staff(request):
-    # 1. SECURITY LOCK: Only Headteachers and Deputies allowed
-    if not (request.user.is_headteacher or request.user.is_deputy):
-        messages.error(request, "Security Alert: You do not have permission to access the Staff Registration portal.")
+    # 1. SECURITY LOCK: The Friendly Bouncer
+    # We check if they have the built-in Django permission to add users
+    # (Or you can keep your custom 'is_headteacher' check here if you prefer!)
+    if not (request.user.has_perm('auth.add_user') or getattr(request.user, 'is_headteacher', False)):
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access the Staff Registration portal. Please contact the Headteacher.")
         return redirect('students_app:dashboard')
 
     # 2. Process the Form
     if request.method == 'POST':
         form = TeacherRegistrationForm(request.POST)
         if form.is_valid():
-            # Pause saving so we can configure the backend roles
-            new_teacher = form.save(commit=False)
+            # Pause saving so we can configure the password securely
+            new_staff = form.save(commit=False)
+            new_staff.set_password(form.cleaned_data['password'])
 
-            # Securely hash the password
-            new_teacher.set_password(form.cleaned_data['password'])
+            # (Optional) If your custom user model still requires this boolean, keep it.
+            # Otherwise, the Groups system makes this line obsolete!
+            if hasattr(new_staff, 'is_teacher'):
+                new_staff.is_teacher = True
 
-            # AUTOMATIC ROLE ASSIGNMENT: Make sure they are marked as a teacher!
-            new_teacher.is_teacher = True
+            # STEP A: Save the user to the database FIRST
+            new_staff.save()
 
-            # Now save to the database
-            new_teacher.save()
+            # STEP B: Grab the ticked checkboxes and assign the Roles/Groups
+            # You must do this AFTER new_staff.save()
+            selected_groups = form.cleaned_data.get('groups')
+            if selected_groups:
+                for group in selected_groups:
+                    new_staff.groups.add(group)
 
             messages.success(request,
-                             f"Success! {new_teacher.first_name} {new_teacher.last_name} has been added to the teaching staff.")
+                             f"✅ Success! {new_staff.first_name} {new_staff.last_name} has been registered and assigned their system roles.")
             return redirect('students_app:dashboard')
+        else:
+            messages.error(request, "⚠️ Please correct the errors below.")
     else:
         form = TeacherRegistrationForm()
 
@@ -991,9 +1370,14 @@ def add_staff(request):
     }
     return render(request, 'students_app/add_staff.html', context)
 
-
 # SCHOLASTIC PDF VIEWS
+@login_required(login_url='login')
 def scholastic_report_pdf(request, class_level, academic_year, term):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # 1. We use __icontains so that "2" will match "Form 2" or "2" perfectly!
     student_ids = Grade.objects.filter(
         class_level_snapshot__icontains=class_level,
@@ -1091,8 +1475,13 @@ def scholastic_report_pdf(request, class_level, academic_year, term):
     return response
 
 
-
+@login_required(login_url='login')
 def scholastic_selector(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     if request.method == 'POST':
         # Grab the choices the Headteacher made in the form
         class_level = request.POST.get('class_level')
@@ -1105,3 +1494,636 @@ def scholastic_selector(request):
 
     # If they just clicked the button on the dashboard, show them the form
     return render(request, 'students_app/scholastic_selector.html')
+
+
+# aluminai views
+@login_required(login_url='login')
+
+def alumni_list(request):
+    if not request.user.has_perm('students_app.view_students'):
+        messages.warning(request,   "🔒 Oops! You don't have permission to"
+                                    " access the list of alumni. Please contact"
+                                    " the Headteacher if you need this feature.")
+        # Bounce them back to the safe dashboard (change this URL if your dashboard has a different name)
+        return redirect('students_app:dashboard')
+    alumni = Students.objects.exclude(status='Active').order_by('-year_enrolled', 'surname')
+    return render(request, 'students_app/alumni_list.html', {'alumni': alumni})
+
+# ATTENDANCE VIEW FUNCTIONS
+@login_required(login_url='login')
+def attendance_selector(request):
+    if not request.user.has_perm('students_app.view_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    if request.method == 'POST':
+        # Grab the chosen class and date, and send the teacher to the roster page
+        class_id = request.POST.get('class_level')
+        date_selected = request.POST.get('attendance_date')
+        return redirect('students_app:take_attendance', class_id=class_id, date_str=date_selected)
+
+    all_classes = ClassLevel.objects.all()
+    # Automatically fill the date picker with today's date
+    today = date.today().strftime('%Y-%m-%d')
+
+    return render(request, 'students_app/attendance_selector.html', {'classes': all_classes, 'today': today})
+
+@login_required(login_url='login')
+def take_attendance(request, class_id, date_str):
+    if not request.user.has_perm('students_app.add_attendance'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    attendance_date = parse_date(date_str)
+    if not attendance_date:
+        messages.error(request, "Invalid date format.")
+        return redirect('students_app:attendance_selector')
+
+    # Get ONLY active students for this specific class
+    students = Students.objects.filter(class_level_id=class_id, status='Active').order_by('surname')
+    class_obj = get_object_or_404(ClassLevel, id=class_id)
+
+    if not students.exists():
+        messages.warning(request, f"No active students found in {class_obj.class_level}.")
+        return redirect('students_app:attendance_selector')
+
+    # --- SAVE THE ATTENDANCE (POST REQUEST) ---
+    if request.method == 'POST':
+        for student in students:
+            # The HTML form will send radio buttons named 'status_5', 'status_6', etc.
+            status = request.POST.get(f'status_{student.id}')
+            if status:
+                # Magic Django function: Updates the record if it exists, creates it if it doesn't!
+                Attendance.objects.update_or_create(
+                    student=student,
+                    date=attendance_date,
+                    defaults={'status': status}
+                )
+
+        messages.success(request, f"Attendance for {class_obj.class_level} on {attendance_date} saved successfully!")
+        return redirect('students_app:take_attendance', class_id=class_id, date_str=date_str)
+
+    # --- LOAD THE ROSTER (GET REQUEST) ---
+    # Fetch records if attendance was already taken today, so we can pre-select the radio buttons
+    existing_records = Attendance.objects.filter(student__in=students, date=attendance_date)
+    status_map = {record.student_id: record.status for record in existing_records}
+
+    context = {
+        'students': students,
+        'class_obj': class_obj,
+        'attendance_date': attendance_date,
+        'status_map': status_map,  # We pass this "cheat sheet" to the template
+    }
+    return render(request, 'students_app/take_attendance.html', context)
+
+# STATISTICS VIEW
+from django.db.models import Avg, Count, Q
+from django.shortcuts import render, get_object_or_404
+import json
+
+
+# Ensure Grade, Students, ClassLevel are imported
+@login_required(login_url='login')
+def academic_statistics(request):
+    if not request.user.has_perm('students_app.view_subject'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    classes = ClassLevel.objects.all()
+
+    selected_class = request.GET.get('class_level')
+    selected_term = request.GET.get('term')
+    selected_year = request.GET.get('academic_year', '2024')
+
+    context = {
+        'classes': classes,
+        'selected_class': selected_class,
+        'selected_term': selected_term,
+        'selected_year': selected_year,
+    }
+
+    if selected_class and selected_term:
+        # 1. DEMOGRAPHICS
+        students = Students.objects.filter(class_level_id=selected_class, status='Active')
+        total_students = students.count()
+        total_boys = students.filter(gender='Male').count()
+        total_girls = students.filter(gender='Female').count()
+
+        # 2. GRADES DATA
+        grades = Grade.objects.filter(student__in=students, term=selected_term, academic_year=selected_year)
+
+        def calc_pass_rate(total, passed):
+            return round((passed / total * 100), 1) if total > 0 else 0
+
+        total_exams = grades.count()
+        passed_exams = grades.filter(score__gte=50).count()
+        overall_pass_rate = calc_pass_rate(total_exams, passed_exams)
+
+        boys_total = grades.filter(student__gender='Male').count()
+        boys_passed = grades.filter(student__gender='Male', score__gte=50).count()
+        boys_pass_rate = calc_pass_rate(boys_total, boys_passed)
+
+        girls_total = grades.filter(student__gender='Female').count()
+        girls_passed = grades.filter(student__gender='Female', score__gte=50).count()
+        girls_pass_rate = calc_pass_rate(girls_total, girls_passed)
+
+        # 3. SUBJECT PERFORMANCE (Best and Worst)
+        subject_stats = grades.values('subject__name').annotate(avg_score=Avg('score')).order_by('-avg_score')
+        best_subject = subject_stats.first() if subject_stats else None
+        worst_subject = subject_stats.last() if subject_stats else None
+
+        chart_labels = [sub['subject__name'] for sub in subject_stats]
+        chart_data = [round(sub['avg_score'], 1) for sub in subject_stats]
+
+        # 4. OVERALL PROGRESS (Line Graph)
+        progress_data = []
+        for term in [1, 2, 3]:
+            term_avg = Grade.objects.filter(
+                student__in=students, academic_year=selected_year, term=term
+            ).aggregate(Avg('score'))['score__avg']
+            progress_data.append(round(term_avg, 1) if term_avg else 0)
+
+        # ==========================================
+        # 5. NEW: GRADE DISTRIBUTION BREAKDOWN
+        # ==========================================
+
+        # Check if the class is Junior (1, 2) or Senior (3, 4) to set the table headers
+        class_obj = get_object_or_404(ClassLevel, id=selected_class)
+        class_name = class_obj.class_level.lower()
+
+        if '1' in class_name or '2' in class_name:
+            remark_headers = ['A', 'B', 'C', 'D', 'F']
+        else:
+            remark_headers = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        subject_breakdown = {}
+
+        # Loop through every grade and tally the remarks!
+        for grade in grades:
+            sub_name = grade.subject.name
+            remark = str(grade.get_remark())  # We use your existing function!
+
+            if sub_name not in subject_breakdown:
+                # Create a blank scorecard for this subject (e.g. {'A': 0, 'B': 0...})
+                subject_breakdown[sub_name] = {hdr: 0 for hdr in remark_headers}
+
+            if remark in subject_breakdown[sub_name]:
+                subject_breakdown[sub_name][remark] += 1
+
+        # Convert the dictionary into a list so the HTML template can read it easily
+        breakdown_list = []
+        for sub, counts in subject_breakdown.items():
+            breakdown_list.append({
+                'subject': sub,
+                'counts': [counts[hdr] for hdr in remark_headers]  # Keeps the counts in header order
+            })
+
+        # Add all this data to the context!
+        context.update({
+            'has_data': True,
+            'total_students': total_students,
+            'total_boys': total_boys,
+            'total_girls': total_girls,
+            'overall_pass_rate': overall_pass_rate,
+            'boys_pass_rate': boys_pass_rate,
+            'girls_pass_rate': girls_pass_rate,
+            'best_subject': best_subject,
+            'worst_subject': worst_subject,
+            'chart_labels_json': json.dumps(chart_labels),
+            'chart_data_json': json.dumps(chart_data),
+            'progress_data_json': json.dumps(progress_data),
+
+            # Send the breakdown data to HTML
+            'remark_headers': remark_headers,
+            'subject_breakdown': breakdown_list,
+        })
+
+    return render(request, 'students_app/statistics.html', context)
+@login_required(login_url='login')
+def calendar_of_events(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    # This simply loads the blank template for them to type over!
+    return render(request, 'students_app/calendar.html')
+
+# VIEWS FOR BULKY PROMOTIONS
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+
+
+# Ensure Students and ClassLevel are imported at the top!
+@login_required(login_url='login')
+def promote_students(request):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+    classes = ClassLevel.objects.all().order_by('class_level')
+
+    # 1. GET: Which class are we looking at right now?
+    source_class_id = request.GET.get('class_filter')
+    students = None
+    source_class_obj = None
+
+    if source_class_id:
+        students = Students.objects.filter(class_level_id=source_class_id, status='Active').order_by('surname')
+        source_class_obj = get_object_or_404(ClassLevel, id=source_class_id)
+
+    # 2. POST: Handle the form submission
+    if request.method == 'POST':
+        action_type = request.POST.get('action_type')
+        target_class_id = request.POST.get('target_class')
+        student_ids = request.POST.getlist('selected_students')
+
+        # Need the hidden source class ID to know who to promote if "Promote All" is clicked
+        hidden_source_id = request.POST.get('hidden_source_class')
+
+        # ACTION A: PROMOTE THE ENTIRE CLASS (No checkboxes needed)
+        if action_type == 'promote_all':
+            if not target_class_id:
+                messages.error(request, "Please select a Target Class to promote them to.")
+            else:
+                target_class = get_object_or_404(ClassLevel, id=target_class_id)
+                class_to_update = Students.objects.filter(class_level_id=hidden_source_id, status='Active')
+                count = class_to_update.count()
+
+                class_to_update.update(class_level=target_class)
+                messages.success(request,
+                                 f"Successfully promoted the entire class ({count} students) to {target_class.class_level}.")
+
+            return redirect(f"{request.path}?class_filter={hidden_source_id}")
+
+        # Ensure they ticked boxes for the next actions
+        if not student_ids:
+            messages.error(request, "You must tick at least one student for this action.")
+            return redirect(f"{request.path}?class_filter={hidden_source_id}")
+
+        students_to_update = Students.objects.filter(id__in=student_ids)
+        count = students_to_update.count()
+
+        # ACTION B: PROMOTE ONLY SELECTED STUDENTS
+        if action_type == 'promote_selected':
+            if not target_class_id:
+                messages.error(request, "Please select a Target Class.")
+            else:
+                target_class = get_object_or_404(ClassLevel, id=target_class_id)
+                students_to_update.update(class_level=target_class)
+                messages.success(request,
+                                 f"Successfully promoted {count} selected students to {target_class.class_level}.")
+
+        # ACTION C: GRADUATE & ARCHIVE
+        elif action_type == 'graduate_selected':
+            students_to_update.update(status='Graduated')
+            messages.success(request, f"Successfully graduated {count} students. They are now in the Alumni Archive.")
+
+        return redirect(f"{request.path}?class_filter={hidden_source_id}")
+
+    context = {
+        'classes': classes,
+        'students': students,
+        'source_class_obj': source_class_obj,
+        'current_class_filter': source_class_id
+    }
+    return render(request, 'students_app/promote_students.html', context)
+
+
+from django.http import JsonResponse
+
+
+# Make sure your Grades model is imported at the top!
+def get_existing_grades(request, student_id):
+    year = request.GET.get('year')
+    term = request.GET.get('term')
+
+    if year and term:
+        # Assuming your model is called 'Grades' or 'Grade'
+        existing_grades = Grade.objects.filter(student_id=student_id, academic_year=year, term=term)
+
+        if existing_grades.exists():
+            # Build a dictionary of { "score_1": 85, "score_2": 92 } matching subject IDs
+            grade_dict = {f"score_{grade.subject.id}": grade.score for grade in existing_grades}
+            return JsonResponse({'exists': True, 'grades': grade_dict})
+
+    return JsonResponse({'exists': False})
+
+
+from django.contrib.auth import authenticate, login, update_session_auth_hash
+
+
+def change_temp_password(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        # 1. Verify the user and the temporary password
+        user = authenticate(request, username=username, password=old_password)
+
+        if user is not None:
+            # 2. Check if new passwords match
+            if new_password == confirm_password:
+                # Basic backend length check (JavaScript handles the complex checks)
+                if len(new_password) >= 8:
+                    # 3. Securely set the new password
+                    user.set_password(new_password)
+                    user.save()
+
+                    # 4. Log them in automatically with the new password
+                    update_session_auth_hash(request, user)  # Prevents them from getting logged out
+                    login(request, user)
+
+                    messages.success(request,
+                                     f"🎉 Password updated successfully! Welcome to the portal, {user.first_name}.")
+                    return redirect('students_app:dashboard')
+                else:
+                    messages.error(request, "Your new password must be at least 8 characters long.")
+            else:
+                messages.error(request, "The new passwords do not match. Please try again.")
+        else:
+            messages.error(request, "Invalid Username or Temporary Password.")
+
+    # If anything fails, bounce them back to the login page
+    return redirect('login')  # Replace 'login' with your actual login URL name if it's different
+
+
+from .forms import EditStaffProfileForm, ManageStaffRolesForm
+
+
+# -----------------------------------------
+# 1. EDIT PROFILE VIEW
+# -----------------------------------------
+@login_required(login_url='login')
+def edit_staff_profile(request, user_id):
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "Access Denied.")
+        return redirect('students_app:dashboard')
+
+    staff = get_object_or_404(User, id=user_id)
+
+    if request.method == 'POST':
+        form = EditStaffProfileForm(request.POST, instance=staff)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Profile for {staff.first_name} updated successfully.")
+            return redirect('students_app:teacher_subject_list', teachers_id=staff.id)
+    else:
+        form = EditStaffProfileForm(instance=staff)
+
+    return render(request, 'students_app/edit_staff.html', {'form': form, 'staff': staff})
+
+
+# -----------------------------------------
+# 2. MANAGE ROLES VIEW
+# -----------------------------------------
+@login_required(login_url='login')
+def manage_staff_roles(request, user_id):
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "Access Denied.")
+        return redirect('students_app:dashboard')
+
+    staff = get_object_or_404(User, id=user_id)
+
+    # Find their current form class if they have one
+    current_form_class = getattr(staff, 'my_form_class', None)
+
+    # NEW: Find their current department if they are an HOD
+    current_dept = getattr(staff, 'my_headed_department', None)
+
+    if request.method == 'POST':
+        form = ManageStaffRolesForm(request.POST)
+        if form.is_valid():
+            # 1. Update Booleans
+            staff.is_teacher = form.cleaned_data['is_teacher']
+            staff.is_hod = form.cleaned_data['is_hod']
+            staff.is_deputy = form.cleaned_data['is_deputy']
+            staff.is_headteacher = form.cleaned_data['is_headteacher']
+
+            # 2. Update Groups
+            staff.groups.set(form.cleaned_data['groups'])
+            staff.save()
+
+            # 3. Update Form Class Assignment safely
+            new_form_class = form.cleaned_data['form_class']
+
+            # If they had a class, and it changed or was removed, clear the old one first
+            if current_form_class and current_form_class != new_form_class:
+                current_form_class.form_teacher = None
+                current_form_class.save()
+
+            # Assign the new class
+            if new_form_class:
+                new_form_class.form_teacher = staff
+                new_form_class.save()
+
+            # 4. NEW: Update Department HOD safely!
+            new_dept = form.cleaned_data['department']
+
+            # Clear old department if it changed or was removed
+            if current_dept and current_dept != new_dept:
+                current_dept.head_of_department = None
+                current_dept.save()
+
+            # Assign new department
+            if new_dept:
+                new_dept.head_of_department = staff
+                new_dept.save()
+
+            messages.success(request, f"Roles for {staff.first_name} updated successfully.")
+            return redirect('students_app:teacher_subject_list', teachers_id=staff.id)
+    else:
+        # Pre-fill the form with their current data
+        initial_data = {
+            'groups': staff.groups.all(),
+            'is_teacher': staff.is_teacher,
+            'is_hod': staff.is_hod,
+            'is_deputy': staff.is_deputy,
+            'is_headteacher': staff.is_headteacher,
+            'form_class': current_form_class,
+            'department': current_dept  # NEW: Pre-fills the department dropdown
+        }
+        form = ManageStaffRolesForm(initial=initial_data)
+
+    return render(request, 'students_app/manage_roles.html', {'form': form, 'staff': staff})
+
+# -----------------------------------------
+# 3. REMOVE STAFF VIEW
+# -----------------------------------------
+@login_required(login_url='login')
+def delete_staff(request, user_id):
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "Access Denied.")
+        return redirect('students_app:dashboard')
+
+    staff = get_object_or_404(User, id=user_id)
+
+    # Prevent the Headteacher from accidentally deleting themselves!
+    if staff == request.user:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect('students_app:teachers_list')
+
+    if request.method == 'POST':
+        name = staff.first_name
+        staff.delete()
+        messages.success(request, f"Staff member {name} has been permanently removed.")
+        return redirect('students_app:teachers_list')
+
+    return render(request, 'students_app/delete_staff.html', {'staff': staff})
+
+
+@login_required(login_url='login')
+def add_class_level(request):
+    # Security Check: Only Headteacher/Admin can create classes
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "Access Denied. Only administrators can add new classes.")
+        return redirect('students_app:dashboard')
+
+    if request.method == 'POST':
+        form = ClassLevelForm(request.POST)
+        if form.is_valid():
+            # Check if this specific class level already exists to prevent duplicates
+            class_level = form.cleaned_data.get('class_level')
+            if ClassLevel.objects.filter(class_level=class_level).exists():
+                messages.warning(request, f"Form {class_level} already exists in the system!")
+            else:
+                form.save()
+                messages.success(request, f"Form {class_level} has been successfully created!")
+                return redirect('students_app:dashboard') # Change this to wherever you want them to land
+    else:
+        form = ClassLevelForm()
+
+    return render(request, 'students_app/add_class.html', {'form': form})
+
+
+@login_required(login_url='login')
+def add_master_subject(request):
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "Access Denied. Only administrators can add new curriculum subjects.")
+        return redirect('students_app:dashboard')
+
+    if request.method == 'POST':
+        form = MasterSubjectForm(request.POST)
+        if form.is_valid():
+            subject_name = form.cleaned_data.get('name')
+            form.save()
+            messages.success(request, f"The subject '{subject_name}' has been added to the school curriculum!")
+            return redirect('students_app:dashboard')
+    else:
+        form = MasterSubjectForm()
+
+    return render(request, 'students_app/add_master_subject.html', {'form': form})
+
+
+@login_required(login_url='login')
+def department_events(request, subdept_id):
+    sub_dept = get_object_or_404(SubDepartment, id=subdept_id)
+    # Fetch events ordered by start date
+    events = DepartmentEvent.objects.filter(sub_department=sub_dept).order_by('start_date')
+
+    context = {
+        'sub_dept': sub_dept,
+        'events': events,
+    }
+    return render(request, 'students_app/department_events.html', context)
+
+
+@login_required(login_url='login')
+def add_department_event(request, subdept_id):
+    sub_dept = get_object_or_404(SubDepartment, id=subdept_id)
+
+    if request.method == 'POST':
+        form = DepartmentEventForm(request.POST)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.sub_department = sub_dept
+            event.save()
+            messages.success(request, f"Event '{event.title}' added successfully!")
+            return redirect('students_app:department_events', subdept_id=sub_dept.id)
+    else:
+        form = DepartmentEventForm()
+
+    return render(request, 'students_app/add_department_event.html', {'form': form, 'sub_dept': sub_dept})
+
+
+@login_required(login_url='login')
+def print_department_events(request, subdept_id):
+    """A clean, stripped-down view optimized for 'Save as PDF'"""
+    sub_dept = get_object_or_404(SubDepartment, id=subdept_id)
+    events = DepartmentEvent.objects.filter(sub_department=sub_dept).order_by('start_date')
+
+    return render(request, 'students_app/print_department_events.html', {'sub_dept': sub_dept, 'events': events})
+
+
+
+
+User = get_user_model()
+
+
+@login_required(login_url='login')
+def broadcast_message(request):
+    """View for Headteacher to send messages to all staff."""
+    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+
+    if not is_admin:
+        messages.error(request, "Access Denied. Only administration can broadcast messages.")
+        return redirect('students_app:dashboard')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        message = request.POST.get('message')
+
+        # Find ALL staff members (Teachers, HODs, Deputies)
+        staff_members = User.objects.filter(
+            Q(is_teacher=True) | Q(is_hod=True) | Q(is_deputy=True) | Q(groups__name__in=['teachers', 'HOD', 'Deputy'])
+        ).distinct()
+
+        # Bulk create notifications efficiently
+        notifications = [
+            StaffNotification(recipient=staff, title=title, message=message)
+            for staff in staff_members
+        ]
+        StaffNotification.objects.bulk_create(notifications)
+
+        messages.success(request, f"Message successfully broadcasted to {len(notifications)} staff members!")
+        return redirect('students_app:dashboard')
+
+    return render(request, 'students_app/broadcast_message.html')
+
+
+@login_required(login_url='login')
+def read_notification(request, notification_id):
+    """View for staff to read the message and mark it as read."""
+    # Ensure staff can only read THEIR OWN notifications
+    notification = get_object_or_404(StaffNotification, id=notification_id, recipient=request.user)
+
+    # Mark as read
+    if not notification.is_read:
+        notification.is_read = True
+        notification.save()
+
+    return render(request, 'students_app/read_notification.html', {'notification': notification})
+
+
+@login_required(login_url='login')
+def notification_list(request):
+    """View for staff to see all their received messages (Inbox)."""
+    # Fetch all notifications, newest first
+    notifications = StaffNotification.objects.filter(recipient=request.user).order_by('-created_at')
+
+    return render(request, 'students_app/notification_list.html', {'notifications': notifications})

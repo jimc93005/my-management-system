@@ -71,6 +71,43 @@ urlpatterns = [
          views.scholastic_report_pdf, name='scholastic_report_pdf'),
     path('scholastic-selector/', views.scholastic_selector, name='scholastic_selector'),
 
+    # ARCHIVE VIEWS
+    path('alumni/', views.alumni_list, name='alumni_list'),
+
+
+    # ATTENDANCE REGISTER URLS
+    path('attendance/', views.attendance_selector, name='attendance_selector'),
+    path('attendance/<str:class_id>/<str:date_str>/', views.take_attendance, name='take_attendance'),
+
+    # STATISTICS URLS
+    path('statistics/', views.academic_statistics, name='academic_statistics'),
+
+    # CALENDER URLS
+    path('calendar/', views.calendar_of_events, name='calendar'),
+    # BULK PROMOTIONS
+    path('bulk-promote/', views.promote_students, name='promote_students'),
+    # GETTING EXISTING GRADES URLS
+    path('get-existing-grades/<int:student_id>/', views.get_existing_grades, name='get_existing_grades'),
+    # RESSETTING PASSWORD URLS
+    path('setup-password/', views.change_temp_password, name='change_temp_password'),
+
+    # STAFF MANAGEMENT URLS
+    path('staff/<int:user_id>/edit/', views.edit_staff_profile, name='edit_staff_profile'),
+    path('staff/<int:user_id>/roles/', views.manage_staff_roles, name='manage_staff_roles'),
+    path('staff/<int:user_id>/delete/', views.delete_staff, name='delete_staff'),
+
+    # settings urls
+    path('classes/add/', views.add_class_level, name='add_class'),
+    path('setup/add-subject/', views.add_master_subject, name='add_master_subject'),
+
+    # SUBDEPATMENT EVENTS
+    path('sub-department/<int:subdept_id>/events/', views.department_events, name='department_events'),
+    path('sub-department/<int:subdept_id>/events/add/', views.add_department_event, name='add_department_event'),
+    path('sub-department/<int:subdept_id>/events/print/', views.print_department_events, name='print_department_events'),
+    # NOTIFICATIONS URLS
+    path('messages/broadcast/', views.broadcast_message, name='broadcast_message'),
+    path('messages/read/<int:notification_id>/', views.read_notification, name='read_notification'),
+    path('messages/inbox/', views.notification_list, name='notification_list'),
 
 
 

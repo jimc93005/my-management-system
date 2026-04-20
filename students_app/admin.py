@@ -12,6 +12,7 @@ from .models import DepartmentEvent
 from .models import ClassLevel
 from .models import TeachingAssignment
 from .models import SubjectDepartment
+from .models import Attendance
 
 
 admin.site.register(Students)
@@ -26,5 +27,6 @@ admin.site.register(DepartmentEvent)
 admin.site.register(ClassLevel)
 admin.site.register(TeachingAssignment)
 admin.site.register(SubjectDepartment)
+admin.site.register(Attendance)
 
 # users/admin.py

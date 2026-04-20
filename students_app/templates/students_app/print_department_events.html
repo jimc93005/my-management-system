@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ sub_dept.name }} - Event Schedule</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { font-family: 'Times New Roman', serif; color: #000; background: #fff; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .table th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+
+        /* This hides the print button when actually printing! */
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 0; }
+        }
+    </style>
+</head>
+<body class="p-4 p-md-5">
+
+    <div class="text-right mb-4 no-print">
+        <button onclick="window.print()" class="btn btn-primary shadow">
+            <i class="fas fa-print"></i> Print / Save as PDF
+        </button>
+        <button onclick="window.close()" class="btn btn-secondary shadow ml-2">Close</button>
+    </div>
+
+    <div class="header">
+        <h1 class="font-weight-bold text-uppercase">Departmental Event Schedule</h1>
+        <h3>{{ sub_dept.name }}</h3>
+        <p class="mb-0">Generated on: {% now "F j, Y" %}</p>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th width="20%">Date(s)</th>
+                <th width="25%">Event Title</th>
+                <th width="40%">Description</th>
+                <th width="15%">Term / Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>
+                    <strong>Start:</strong> {{ event.start_date|date:"M d, Y" }}<br>
+                    {% if event.end_date %}
+                    <strong>End:</strong> {{ event.end_date|date:"M d, Y" }}
+                    {% endif %}
+                </td>
+                <td class="font-weight-bold">{{ event.title }}</td>
+                <td>{{ event.description|default:"No description provided." }}</td>
+                <td>{{ event.term }}<br><small>{{ event.academic_year }}</small></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center py-4">No events scheduled.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

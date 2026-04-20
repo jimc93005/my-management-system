@@ -2,29 +2,48 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="display-5 fw-bold text-primary">Our School Teachers</h1>
-        <a href="{% url 'students_app:add_teachers' %}" class="btn btn-success shadow-sm">+ Add New Teacher</a>
+
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+        <h1 class="display-6 font-weight-bold text-primary mb-0">Our School Teachers</h1>
+
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <form method="GET" action="{% url 'students_app:teachers_list' %}" class="d-flex">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ query }}" class="form-control border-left-0 pl-0" placeholder="Search staff by name or ID...">
+                    <button type="submit" class="btn btn-primary px-3">Search</button>
+                    {% if query %}
+                        <a href="{% url 'students_app:teachers_list' %}" class="btn btn-outline-secondary" title="Clear Search">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <a href="{% url 'students_app:add_teachers' %}" class="btn btn-success shadow-sm text-nowrap d-flex align-items-center justify-content-center">
+                <i class="fas fa-plus mr-2"></i> Add New Teacher
+            </a>
+        </div>
     </div>
 
-    <div class="card shadow border-0">
+    <div class="card shadow border-0 rounded-lg">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light text-secondary text-uppercase" style="font-size: 0.85rem;">
                         <tr>
-                            <th class="ps-4">First Name</th>
-                            <th>Last Name</th>
-                            <th>Employment ID</th>
-                            <th>Gender</th>
-                            <th class="text-center">Actions</th>
+                            <th class="pl-4 py-3">First Name</th>
+                            <th class="py-3">Last Name</th>
+                            <th class="py-3">Employment ID</th>
+                            <th class="py-3">Gender</th>
+                            <th class="text-right pr-4 py-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for teacher in teachers %}
                             <tr>
-                                <td>
-                                        <a href="{% url 'students_app:teacher_subject_list' teacher.id %}">
+                                <td class="pl-4 font-weight-bold text-dark">
+                                        <a href="{% url 'students_app:teacher_subject_list' teacher.id %}" class="text-decoration-none text-primary">
                                             {{ teacher.first_name }}
                                         </a>
                                 </td>
@@ -32,56 +51,56 @@
                                    {{teacher.last_name}}
                                 </td>
                                 <td>
-                                    <span class="badge bg-info text-dark">{{ teacher.employment_number }}</span>
+                                    <span class="badge badge-light text-dark border shadow-sm">#{{ teacher.employment_number|default:"N/A" }}</span>
                                 </td>
                                 <td>
                                     {% if teacher.gender == 'Male' %}
-                                        <span class="text-primary">♂ Male</span>
+                                        <span class="text-primary font-weight-bold"><i class="fas fa-mars mr-1"></i> Male</span>
                                     {% elif teacher.gender == 'Female' %}
-                                        <span class="text-danger">♀ Female</span>
+                                        <span class="text-danger font-weight-bold"><i class="fas fa-venus mr-1"></i> Female</span>
                                     {% else %}
-                                        <span class="text-muted">Other</span>
+                                        <span class="text-muted font-weight-bold">Other</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end">
+                                <td class="text-right pr-4">
                                     <div class="d-flex justify-content-end gap-2">
                                         <a href="{% url 'students_app:edit_teachers' teacher.id %}"
-                                           class="btn btn-sm btn-edit px-3 rounded-pill">
-                                           <i class="fas fa-edit me-1"></i> Edit
+                                           class="btn btn-sm btn-outline-primary px-3 rounded-pill shadow-sm">
+                                           <i class="fas fa-edit mr-1"></i> Edit
                                         </a>
 
                                         <button type="button"
-                                            class="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#deleteModal{{ teacher.id }}">
-                                            <i class="fas fa-trash-alt me-1"></i> Delete
+                                            class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm"
+                                            data-toggle="modal"
+                                            data-target="#deleteModal{{ teacher.id }}">
+                                            <i class="fas fa-trash-alt mr-1"></i> Delete
                                         </button>
                                     </div>
 
-                                    <div class="modal fade text-start" id="deleteModal{{ teacher.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal fade text-left" id="deleteModal{{ teacher.id }}" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content shadow-lg">
+                                            <div class="modal-content shadow-lg border-0 rounded-lg">
                                                 <div class="modal-header border-0 pt-4 justify-content-center">
-                                                    <div class="rounded-circle bg-light-danger d-flex align-items-center justify-content-center"
-                                                         style="width: 60px; height: 60px;">
-                                                        <i class="fas fa-exclamation-triangle text-danger fs-3"></i>
+                                                    <div class="rounded-circle bg-danger d-flex align-items-center justify-content-center"
+                                                         style="width: 70px; height: 70px; background-color: #f8d7da !important;">
+                                                        <i class="fas fa-exclamation-triangle text-white" style="font-size: 2rem;"></i>
                                                     </div>
                                                 </div>
                                                 <div class="modal-body text-center pb-4">
-                                                    <h4 class="fw-bold text-dark">Confirm Deletion</h4>
+                                                    <h4 class="font-weight-bold text-dark mb-3">Confirm Deletion</h4>
                                                     <p class="text-muted px-3">
                                                         Are you sure you want to delete <strong>{{ teacher.first_name }} {{ teacher.last_name }}</strong>?
-                                                        This action cannot be undone.
+                                                        <br>This action cannot be undone.
                                                     </p>
                                                 </div>
-                                                <div class="modal-footer border-0 pb-4 justify-content-center">
-                                                    <button type="button" class="btn btn-light px-4 fw-semibold rounded-pill border" data-bs-dismiss="modal">
+                                                <div class="modal-footer border-0 pb-4 justify-content-center gap-2">
+                                                    <button type="button" class="btn btn-light px-4 font-weight-bold rounded-pill border shadow-sm" data-dismiss="modal">
                                                         Cancel
                                                     </button>
                                                     <form method="post" action="{% url 'students_app:delete_teachers' teacher.id %}">
                                                         {% csrf_token %}
-                                                        <button type="submit" class="btn btn-danger px-4 fw-semibold rounded-pill shadow-sm">
-                                                            Delete Teacher
+                                                        <button type="submit" class="btn btn-danger px-4 font-weight-bold rounded-pill shadow-sm">
+                                                            Yes, Delete Teacher
                                                         </button>
                                                     </form>
                                                 </div>
@@ -92,8 +111,17 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    <p class="mb-0">No teachers have been added yet.</p>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-users-slash fa-3x mb-3 text-light"></i>
+                                        {% if query %}
+                                            <h5 class="font-weight-bold text-secondary">No Results Found</h5>
+                                            <p>No teachers matched your search for "{{ query }}".</p>
+                                        {% else %}
+                                            <h5 class="font-weight-bold text-secondary">No Teachers Added Yet</h5>
+                                            <p>Click the "Add New Teacher" button to get started.</p>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -101,6 +129,49 @@
                 </table>
             </div>
         </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+            <nav aria-label="Teacher directory pagination">
+                <ul class="pagination mb-0 shadow-sm">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo; Prev</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo; Prev</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Next">
+                                <span aria-hidden="true">Next &raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next &raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock content %}

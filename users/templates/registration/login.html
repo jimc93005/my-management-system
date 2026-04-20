@@ -1,64 +1,181 @@
-{% extends 'students_app/base.html' %}
-
-{% block content %}
+{% extends 'students_app/base.html' %} {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-5 col-lg-4">
+        <div class="col-md-6 col-lg-5">
 
-            <div class="card border-0 shadow-lg rounded-lg mt-5">
-                <div class="card-body p-5">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded text-center">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-                    <div class="text-center mb-4">
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px; font-size: 1.5rem;">
-                            <i class="fas fa-school"></i>
+            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4 border-0">
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <h3 class="mb-0 font-weight-bold" id="form-title">Staff Portal</h3>
+                    <p class="mb-0 text-white-50 small" id="form-subtitle">Enter your credentials to continue</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5 bg-light">
+
+                    <div id="standardLoginForm">
+                        <form method="POST" action="{% url 'users:login' %}"> {% csrf_token %}
+                            <div class="form-group mb-4">
+                                <label class="font-weight-bold text-secondary small text-uppercase">Username</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-white border-right-0"><i class="fas fa-user text-muted"></i></span></div>
+                                    <input type="text" name="username" class="form-control border-left-0" required placeholder="Enter username">
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="font-weight-bold text-secondary small text-uppercase">Password</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-white border-right-0"><i class="fas fa-lock text-muted"></i></span></div>
+                                    <input type="password" name="password" class="form-control border-left-0" required placeholder="Enter password">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block btn-lg rounded-pill shadow font-weight-bold mb-3">
+                                <i class="fas fa-sign-in-alt mr-2"></i> Log In
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <hr>
+                            <p class="text-muted small mb-2">Given a temporary password by the Admin?</p>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="toggleForms()">
+                                First Time Login Setup <i class="fas fa-arrow-right ml-1"></i>
+                            </button>
                         </div>
-                        <h3 class="font-weight-bold text-dark">Welcome Back</h3>
-                        <p class="text-muted small">Please log in to your account</p>
                     </div>
 
-                    {% if form.errors %}
-                        <div class="alert alert-danger shadow-sm border-0 small" role="alert">
-                            <i class="fas fa-exclamation-circle mr-1"></i> Incorrect username or password.
+
+                    <div id="resetPasswordForm" class="d-none">
+                        <form method="POST" action="{% url 'students_app:change_temp_password' %}">
+                            {% csrf_token %}
+
+                            <div class="form-group mb-3">
+                                <input type="text" name="username" class="form-control" required placeholder="Your Username">
+                            </div>
+                            <div class="form-group mb-4">
+                                <input type="password" name="old_password" class="form-control" required placeholder="Temporary Password">
+                            </div>
+
+                            <hr>
+                            <h6 class="text-dark font-weight-bold mb-3">Create New Password</h6>
+
+                            <div class="form-group mb-3">
+                                <input type="password" id="newPass" name="new_password" class="form-control" required placeholder="New Password">
+                            </div>
+                            <div class="form-group mb-3">
+                                <input type="password" id="confirmPass" name="confirm_password" class="form-control" required placeholder="Confirm New Password">
+                            </div>
+
+                            <div class="bg-white p-3 rounded border mb-4">
+                                <small class="font-weight-bold d-block mb-2 text-dark">Password Requirements:</small>
+                                <ul class="list-unstyled small text-muted mb-0" id="passwordReqs">
+                                    <li id="reqLength"><i class="fas fa-times text-danger mr-2"></i> At least 8 characters</li>
+                                    <li id="reqUpper"><i class="fas fa-times text-danger mr-2"></i> One uppercase letter</li>
+                                    <li id="reqNumber"><i class="fas fa-times text-danger mr-2"></i> One number</li>
+                                    <li id="reqSpecial"><i class="fas fa-times text-danger mr-2"></i> One special character (@$!%*?&)</li>
+                                    <li id="reqMatch"><i class="fas fa-times text-danger mr-2"></i> Passwords match</li>
+                                </ul>
+                            </div>
+
+                            <button type="submit" id="submitResetBtn" class="btn btn-success btn-block btn-lg rounded-pill shadow font-weight-bold mb-3" disabled>
+                                <i class="fas fa-check-circle mr-2"></i> Save & Log In
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-link text-muted small" onclick="toggleForms()">
+                                <i class="fas fa-arrow-left mr-1"></i> Back to Standard Login
+                            </button>
                         </div>
-                    {% endif %}
-
-                    <form method="POST" action="{% url 'users:login' %}">
-                        {% csrf_token %}
-
-                        <div class="form-group mb-3">
-                            <label for="id_username" class="font-weight-bold text-secondary small">Username</label>
-                            <input type="text" name="username" class="form-control form-control-lg bg-light" id="id_username" required autofocus placeholder="Enter username">
-                        </div>
-
-                        <div class="form-group mb-4">
-                            <label for="id_password" class="font-weight-bold text-secondary small">Password</label>
-                            <input type="password" name="password" class="form-control form-control-lg bg-light" id="id_password" required placeholder="Enter password">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-lg btn-block rounded-pill shadow-sm font-weight-bold">
-                            <i class="fas fa-sign-in-alt mr-2"></i> Log In
-                        </button>
-
-                        <input type="hidden" name="next" value="{{ next }}">
-                    </form>
+                    </div>
 
                 </div>
-            </div>
-
-            <div class="text-center mt-4">
-                <p class="text-muted small">School Management System &copy; 2026</p>
             </div>
 
         </div>
     </div>
 </div>
 
-<style>
-    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
-    .form-control:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        background-color: #fff !important;
+<script>
+    // 1. Toggle between the two forms
+    function toggleForms() {
+        const loginForm = document.getElementById('standardLoginForm');
+        const resetForm = document.getElementById('resetPasswordForm');
+        const title = document.getElementById('form-title');
+        const subtitle = document.getElementById('form-subtitle');
+
+        if (loginForm.classList.contains('d-none')) {
+            loginForm.classList.remove('d-none');
+            resetForm.classList.add('d-none');
+            title.innerText = "Staff Portal";
+            subtitle.innerText = "Enter your credentials to continue";
+        } else {
+            loginForm.classList.add('d-none');
+            resetForm.classList.remove('d-none');
+            title.innerText = "Account Setup";
+            subtitle.innerText = "Secure your account with a new password";
+        }
     }
-</style>
+
+    // 2. Live Password Strength Checker
+    document.addEventListener("DOMContentLoaded", function() {
+        const newPass = document.getElementById("newPass");
+        const confirmPass = document.getElementById("confirmPass");
+        const submitBtn = document.getElementById("submitResetBtn");
+
+        // UI List Items
+        const reqLength = document.getElementById("reqLength");
+        const reqUpper = document.getElementById("reqUpper");
+        const reqNumber = document.getElementById("reqNumber");
+        const reqSpecial = document.getElementById("reqSpecial");
+        const reqMatch = document.getElementById("reqMatch");
+
+        function updateIcon(element, isValid) {
+            const icon = element.querySelector("i");
+            if (isValid) {
+                icon.className = "fas fa-check text-success mr-2";
+                element.classList.replace("text-muted", "text-success");
+            } else {
+                icon.className = "fas fa-times text-danger mr-2";
+                element.classList.replace("text-success", "text-muted");
+            }
+            return isValid;
+        }
+
+        function validatePassword() {
+            const val = newPass.value;
+            const confirmVal = confirmPass.value;
+
+            // Regex Checks
+            const isLength = updateIcon(reqLength, val.length >= 8);
+            const isUpper = updateIcon(reqUpper, /[A-Z]/.test(val));
+            const isNumber = updateIcon(reqNumber, /[0-9]/.test(val));
+            const isSpecial = updateIcon(reqSpecial, /[@$!%*?&]/.test(val));
+
+            // Match Check
+            const isMatch = updateIcon(reqMatch, val !== "" && val === confirmVal);
+
+            // Enable submit button ONLY if everything is true
+            if (isLength && isUpper && isNumber && isSpecial && isMatch) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        // Listen for typing in either password box
+        newPass.addEventListener("keyup", validatePassword);
+        confirmPass.addEventListener("keyup", validatePassword);
+    });
+</script>
 {% endblock %}

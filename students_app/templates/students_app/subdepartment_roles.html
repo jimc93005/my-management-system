@@ -5,7 +5,7 @@
 
 <div class="container mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1">
@@ -18,10 +18,17 @@
             </h2>
         </div>
 
-        <a href="{% url 'students_app:subdepartment_role_create' sub_department.id %}"
-           class="btn btn-primary shadow-sm px-4">
-            <i class="fas fa-user-plus me-2"></i>Assign Role
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'students_app:department_events' sub_department.id %}" class="btn btn-outline-info shadow-sm fw-semibold">
+                <i class="fas fa-calendar-alt me-2"></i>Events
+            </a>
+            <a href="{% url 'students_app:print_department_events' sub_department.id %}" target="_blank" class="btn btn-outline-danger shadow-sm fw-semibold">
+                <i class="fas fa-file-pdf me-2"></i>PDF
+            </a>
+            <a href="{% url 'students_app:subdepartment_role_create' sub_department.id %}" class="btn btn-primary shadow-sm fw-semibold px-4">
+                <i class="fas fa-user-plus me-2"></i>Assign Role
+            </a>
+        </div>
     </div>
 
     <div class="mb-5">

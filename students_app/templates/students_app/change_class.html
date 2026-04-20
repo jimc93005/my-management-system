@@ -1,158 +1,110 @@
 {% extends 'students_app/base.html' %}
-
 {% block content %}
-<style>
-    .form-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 40px 20px;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
 
-    .form-card {
-        background-color: #ffffff;
-        width: 100%;
-        max-width: 500px;
-        padding: 40px;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-        border: 1px solid #eaeaea;
-    }
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
 
-    .form-card h2 {
-        text-align: center;
-        color: #2c3e50;
-        margin-bottom: 20px;
-        font-size: 24px;
-        font-weight: 600;
-    }
+            <div class="mb-3">
+                <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Profile
+                </a>
+            </div>
 
-    /* Highlight box for the student's current status */
-    .student-info {
-        background-color: #f8fafc;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 25px;
-        text-align: center;
-        border: 1px solid #e2e8f0;
-    }
+            <div class="card shadow-lg border-0 rounded-lg mb-4">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-1 font-weight-bold">Academic Status</h3>
+                    <p class="mb-0">Updating records for <strong>{{ student.first_name.upper }} {{ student.surname.upper }}</strong></p>
+                </div>
 
-    .student-info p {
-        margin: 5px 0;
-        color: #4a5568;
-        font-size: 15px;
-    }
+                <div class="card-body p-5">
 
-    .student-info span {
-        font-weight: 600;
-        color: #2d3748;
-        font-size: 16px;
-    }
+                    <div class="alert alert-info border-0 shadow-sm mb-4 text-center">
+                        <span class="d-block text-muted small text-uppercase font-weight-bold mb-1">Current Class</span>
+                        <span class="h4 text-dark font-weight-bold mb-0">{{ student.class_level }}</span>
+                    </div>
 
-    .form-group {
-        margin-bottom: 25px;
-    }
+                    <form action="{% url 'students_app:change_class_level' student.id %}" method="POST">
+                        {% csrf_token %}
 
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: #4a5568;
-        font-weight: 500;
-        font-size: 14px;
-    }
+                        <h5 class="border-bottom pb-2 mb-3 text-dark font-weight-bold">Option 1: Promote Individual</h5>
+                        <div class="form-group mb-4">
+                            <label class="text-muted">Select Target Class</label>
+                            <div class="input-group">
+                                <select name="new_class" class="form-control custom-select">
+                                    <option value="" disabled selected>-- Choose New Class --</option>
+                                    {% for c in all_classes %}
+                                        {% if c.id != student.class_level.id %}
+                                            <option value="{{ c.id }}">{{ c.class_level }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <div class="input-group-append">
+                                    <button type="submit" name="action_type" value="promote" class="btn btn-primary px-4 font-weight-bold shadow-sm">
+                                        Move Student
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
-    .form-control {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #cbd5e0;
-        border-radius: 6px;
-        font-size: 15px;
-        transition: all 0.3s ease;
-        background-color: #fff;
-        cursor: pointer;
-    }
+                        <div class="text-center my-4">
+                            <span class="text-muted small font-weight-bold bg-white px-2" style="position: relative; top: -10px;">OR</span>
+                            <hr class="mt-[-10px]">
+                        </div>
 
-    .form-control:focus {
-        border-color: #3182ce;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
-    }
+                        <h5 class="border-bottom pb-2 mb-3 text-dark font-weight-bold">Option 2: End of Cycle</h5>
+                        <button type="button" class="btn btn-success btn-lg btn-block shadow font-weight-bold" data-toggle="modal" data-target="#graduateModal">
+                            <i class="fas fa-graduation-cap mr-2"></i> Graduate & Archive Student
+                        </button>
 
-    /* Side-by-side buttons for Submit and Cancel */
-    .button-group {
-        display: flex;
-        gap: 15px;
-    }
+                        <div class="modal fade" id="graduateModal" tabindex="-1" role="dialog" aria-labelledby="graduateModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered" role="document">
+                                <div class="modal-content border-0 shadow-lg">
+                                    <div class="modal-header bg-success text-white border-0 py-3">
+                                        <h5 class="modal-title font-weight-bold" id="graduateModalLabel">
+                                            <i class="fas fa-user-graduate mr-2"></i> Confirm Graduation
+                                        </h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body text-center py-5">
+                                        <div class="mb-4">
+                                            <i class="fas fa-exclamation-circle fa-4x text-warning"></i>
+                                        </div>
+                                        <h4 class="font-weight-bold text-dark mb-3">Are you absolutely sure?</h4>
+                                        <p class="text-muted mb-0" style="font-size: 1.1rem;">
+                                            You are about to graduate <strong>{{ student.first_name }} {{ student.surname }}</strong>.
+                                            <br>They will be removed from the active roster and permanently moved to the Alumni Archive.
+                                        </p>
+                                    </div>
+                                    <div class="modal-footer justify-content-center bg-light border-0 py-3">
+                                        <button type="button" class="btn btn-outline-secondary font-weight-bold px-4" data-dismiss="modal">Cancel</button>
+                                        <button type="submit" name="action_type" value="graduate" class="btn btn-success font-weight-bold px-4 shadow-sm">
+                                            Yes, Graduate Student
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-    .btn {
-        flex: 1;
-        padding: 12px;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-        text-decoration: none;
-    }
+                    </form>
+                </div>
+            </div>
 
-    .btn-submit {
-        background-color: #3182ce;
-        color: white;
-    }
+            <div class="card shadow-sm border-0 rounded-lg bg-light mt-4">
+                <div class="card-body text-center py-4">
+                    <h5 class="font-weight-bold text-dark"><i class="fas fa-users mr-2 text-info"></i>Need to promote the whole class?</h5>
+                    <p class="text-muted small mb-3">Save time by moving or graduating multiple students at once.</p>
 
-    .btn-submit:hover {
-        background-color: #2b6cb0;
-    }
+                    <a href="{% url 'students_app:change_class_level' student.id %}?class_filter={{ student.class_level.id }}" class="btn btn-info font-weight-bold rounded-pill px-4 shadow-sm">
+                        Go to Bulk Promotion Hub <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
 
-    .btn-cancel {
-        background-color: #e2e8f0;
-        color: #4a5568;
-    }
-
-    .btn-cancel:hover {
-        background-color: #cbd5e0;
-    }
-</style>
-
-<div class="form-wrapper">
-    <div class="form-card">
-        <h2>Change Class Level</h2>
-
-        <div class="student-info">
-            <p>Student: <span>{{ student.first_name }} {{ student.surname }}</span></p>
-            <p>Current Class: <span>{{ student.class_level }}</span></p>
         </div>
-
-        <form action="{% url 'students_app:change_class_level' student.id %}" method="POST">
-            {% csrf_token %}
-
-            <div class="form-group">
-                <label for="new_class">Select New Class</label>
-                <select name="new_class" id="new_class" class="form-control" required>
-                    <option value="" disabled selected>-- Choose a new class --</option>
-
-                    {% if all_classes %}
-                        {% for class_obj in all_classes %}
-                            <option value="{{ class_obj.id }}">{{ class_obj }}</option>
-                        {% endfor %}
-
-                    {% else %}
-                        <option value="1">Form 1</option>
-                        <option value="2">Form 2</option>
-                        <option value="3">Form 3</option>
-                        <option value="4">Form 4</option>
-                    {% endif %}
-                </select>
-            </div>
-
-            <div class="button-group">
-                <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-cancel">Cancel</a>
-                <button type="submit" class="btn btn-submit">Save Promotion</button>
-            </div>
-        </form>
     </div>
 </div>
-{% endblock content %}
+
+{% endblock %}

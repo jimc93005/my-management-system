@@ -1,0 +1,274 @@
+{% extends 'students_app/base.html' %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+    /* ========================================== */
+    /* BLACK & WHITE PRINT-FRIENDLY TABLE STYLES  */
+    /* ========================================== */
+    .bw-table {
+        border: 2px solid #000 !important;
+        color: #000 !important;
+        background-color: #fff !important;
+    }
+    .bw-table th, .bw-table td {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        font-weight: 700 !important; /* Bold text everywhere */
+        vertical-align: middle !important;
+    }
+    .bw-table thead th {
+        border-bottom: 3px solid #000 !important; /* Extra thick line under headers */
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .bw-count {
+        font-size: 1.3rem;
+        font-weight: 900 !important; /* Extra heavy font for the grades */
+    }
+    .bw-zero {
+        color: #a3a3a3 !important; /* Light grey dash so it doesn't distract from the real numbers */
+        font-weight: normal !important;
+    }
+    .bw-header-title {
+        color: #000 !important;
+        border-bottom: 3px solid #000;
+        display: inline-block;
+        padding-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div>
+            <h2 class="font-weight-bold text-dark"><i class="fas fa-chart-line text-primary mr-2"></i>Academic Analytics</h2>
+            <p class="text-muted">Track class performance, pass rates, and subject metrics.</p>
+        </div>
+
+        {% if has_data %}
+        <div class="mt-3 mt-md-0">
+            <button onclick="generatePDF()" class="btn btn-danger font-weight-bold shadow-sm rounded-pill px-4">
+                <i class="fas fa-file-pdf mr-2"></i> Export Report
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="dashboard-content" class="p-2 bg-light rounded">
+
+        <div class="card shadow-sm border-0 mb-4 bg-white" id="filter-bar">
+            <div class="card-body">
+                <form method="GET" action="{% url 'students_app:academic_statistics' %}" class="d-flex align-items-center flex-wrap gap-3">
+
+                    <select name="class_level" class="form-control w-auto mr-3" required>
+                        <option value="" disabled selected>-- Select Class --</option>
+                        {% for c in classes %}
+                            <option value="{{ c.id }}" {% if selected_class == c.id|stringformat:"s" %}selected{% endif %}>{{ c.class_level }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="term" class="form-control w-auto mr-3" required>
+                        <option value="" disabled selected>-- Select Term --</option>
+                        <option value="1" {% if selected_term == "1" %}selected{% endif %}>Term 1</option>
+                        <option value="2" {% if selected_term == "2" %}selected{% endif %}>Term 2</option>
+                        <option value="3" {% if selected_term == "3" %}selected{% endif %}>Term 3</option>
+                    </select>
+
+                    <input type="text" name="academic_year" class="form-control w-auto mr-3" placeholder="Year (e.g. 2024)" value="{{ selected_year }}" required>
+
+                    <button type="submit" class="btn btn-primary px-4 font-weight-bold shadow-sm">
+                        <i class="fas fa-search mr-2"></i> Generate Report
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if has_data %}
+
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm bg-primary text-white text-center py-4 h-100 rounded-lg">
+                    <h6 class="text-uppercase font-weight-bold text-white-50">Total Students</h6>
+                    <h1 class="display-4 font-weight-bold mb-0">{{ total_students }}</h1>
+                    <div class="d-flex justify-content-around mt-3 px-3">
+                        <span><i class="fas fa-male text-info"></i> {{ total_boys }} Boys</span>
+                        <span><i class="fas fa-female text-warning"></i> {{ total_girls }} Girls</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm bg-success text-white text-center py-4 h-100 rounded-lg">
+                    <h6 class="text-uppercase font-weight-bold text-white-50">Overall Pass Rate</h6>
+                    <h1 class="display-4 font-weight-bold mb-0">{{ overall_pass_rate }}%</h1>
+                    <div class="d-flex justify-content-around mt-3 px-3">
+                        <span>Boys: {{ boys_pass_rate }}%</span>
+                        <span>Girls: {{ girls_pass_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm bg-white text-center py-4 h-100 rounded-lg">
+                    <h6 class="text-uppercase font-weight-bold text-muted">Subject Extremes</h6>
+                    <div class="mt-2">
+                        <div class="mb-3">
+                            <small class="d-block text-success font-weight-bold"><i class="fas fa-arrow-up mr-1"></i> Best Performing</small>
+                            <span class="h5 font-weight-bold text-dark">{{ best_subject.subject__name|default:"N/A" }}</span>
+                            <span class="badge badge-success ml-2">{{ best_subject.avg_score|floatformat:1|default:"0" }}%</span>
+                        </div>
+                        <div>
+                            <small class="d-block text-danger font-weight-bold"><i class="fas fa-arrow-down mr-1"></i> Needs Improvement</small>
+                            <span class="h5 font-weight-bold text-dark">{{ worst_subject.subject__name|default:"N/A" }}</span>
+                            <span class="badge badge-danger ml-2">{{ worst_subject.avg_score|floatformat:1|default:"0" }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <div class="card shadow-sm border-0 h-100 rounded-lg">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="font-weight-bold text-dark mb-0">Subject Pass Rates</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="subjectChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 h-100 rounded-lg">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="font-weight-bold text-dark mb-0">Class Progress Over Year</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" style="page-break-inside: avoid;">
+            <div class="col-12">
+                <div class="card border-0 bg-transparent">
+                    <div class="card-header bg-transparent border-0 py-3 px-0 text-center">
+                        <h4 class="font-weight-bold bw-header-title">Subject Grade Breakdown</h4>
+                    </div>
+                    <div class="card-body p-0 mt-2">
+                        <div class="table-responsive">
+                            <table class="table bw-table text-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left px-4" style="width: 25%;">SUBJECT</th>
+                                        {% for header in remark_headers %}
+                                            <th>{{ header }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in subject_breakdown %}
+                                    <tr>
+                                        <td class="text-left px-4 text-uppercase">{{ row.subject }}</td>
+                                        {% for count in row.counts %}
+                                            <td>
+                                                {% if count > 0 %}
+                                                    <span class="bw-count">{{ count }}</span>
+                                                {% else %}
+                                                    <span class="bw-zero">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const labels = JSON.parse('{{ chart_labels_json|safe }}');
+            const data = JSON.parse('{{ chart_data_json|safe }}');
+            const progressData = JSON.parse('{{ progress_data_json|safe }}');
+
+            new Chart(document.getElementById('subjectChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Score (%)',
+                        data: data,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    animation: { duration: 0 }
+                }
+            });
+
+            new Chart(document.getElementById('progressChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Term 1', 'Term 2', 'Term 3'],
+                    datasets: [{
+                        label: 'Overall Class Average (%)',
+                        data: progressData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    animation: { duration: 0 }
+                }
+            });
+        </script>
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-chart-pie fa-4x text-light mb-3"></i>
+            <h4 class="text-muted">Select a class, term, and year to view analytics.</h4>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+    function generatePDF() {
+        const filterBar = document.getElementById('filter-bar');
+        if (filterBar) filterBar.style.display = 'none';
+
+        const element = document.getElementById('dashboard-content');
+
+        const opt = {
+            margin:       0.3,
+            filename:     'Academic_Report_{{ selected_year }}_Term{{ selected_term }}.pdf',
+            image:        { type: 'jpeg', quality: 1.0 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            if (filterBar) filterBar.style.display = 'block';
+        });
+    }
+</script>
+
+{% endblock %}

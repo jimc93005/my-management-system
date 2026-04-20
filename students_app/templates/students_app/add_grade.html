@@ -35,10 +35,10 @@
                     <form method="POST" action="{% url 'students_app:add_grade' student.id %}">
                         {% csrf_token %}
 
-                        <div class="row mb-5 bg-white p-4 rounded shadow-sm border">
+                        <div class="row mb-4 bg-white p-4 rounded shadow-sm border">
                             <div class="col-md-6 mb-3 mb-md-0">
                                 <label class="font-weight-bold text-secondary small text-uppercase">Academic Year</label>
-                                <select name="academic_year" class="form-control form-control-lg bg-light" required>
+                                <select name="academic_year" id="yearSelect" class="form-control form-control-lg bg-light" required>
                                     <option value="" disabled selected>Select Year...</option>
                                     {% for year in years %}
                                         <option value="{{ year }}">{{ year }}</option>
@@ -47,13 +47,18 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="font-weight-bold text-secondary small text-uppercase">Academic Term</label>
-                                <select name="term" class="form-control form-control-lg bg-light" required>
+                                <select name="term" id="termSelect" class="form-control form-control-lg bg-light" required>
                                     <option value="" disabled selected>Select Term...</option>
                                     <option value="1">Term 1</option>
                                     <option value="2">Term 2</option>
                                     <option value="3">Term 3</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div id="duplicateWarning" class="alert alert-warning border-warning shadow-sm d-none mb-4" style="border-left: 5px solid #ffc107 !important;">
+                            <h5 class="alert-heading font-weight-bold text-dark"><i class="fas fa-exclamation-triangle text-warning mr-2"></i> Grades Already Exist!</h5>
+                            <p class="mb-0 text-dark">We found existing records for this Term and Year. The scores below have been loaded from the database. <strong>Saving again will overwrite the old grades.</strong></p>
                         </div>
 
                         <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-4">
@@ -67,7 +72,7 @@
                             </label>
                             <div style="width: 150px;">
                                 <div class="input-group">
-                                    <input type="number" step="0.1" min="0" max="100" name="score_{{ subject.id }}" class="form-control form-control-lg text-center font-weight-bold" placeholder="0 - 100">
+                                    <input type="number" step="0.1" min="0" max="100" name="score_{{ subject.id }}" class="form-control form-control-lg text-center font-weight-bold grade-input" placeholder="0 - 100">
                                     <div class="input-group-append">
                                         <span class="input-group-text bg-light text-muted border-left-0">%</span>
                                     </div>
@@ -79,7 +84,11 @@
                         <hr class="my-4">
 
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm font-weight-bold px-5">
+                            <button type="button" id="cancelBtn" class="btn btn-outline-secondary btn-lg rounded-pill shadow-sm font-weight-bold px-4 mr-3 d-none">
+                                <i class="fas fa-times mr-2"></i> Cancel
+                            </button>
+
+                            <button type="submit" id="saveBtn" class="btn btn-primary btn-lg rounded-pill shadow-sm font-weight-bold px-5">
                                 <i class="fas fa-save mr-2"></i> Save Grades
                             </button>
                         </div>
@@ -100,4 +109,72 @@
         background-color: #fff !important;
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const yearSelect = document.getElementById("yearSelect");
+        const termSelect = document.getElementById("termSelect");
+        const warningBanner = document.getElementById("duplicateWarning");
+        const saveBtn = document.getElementById("saveBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const gradeInputs = document.querySelectorAll(".grade-input");
+        const studentId = "{{ student.id }}";
+
+        // Function to check the database
+        function checkExistingGrades() {
+            const year = yearSelect.value;
+            const term = termSelect.value;
+
+            if (year && term) {
+                fetch(`/get-existing-grades/${studentId}/?year=${year}&term=${term}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            // Show warning and cancel button
+                            warningBanner.classList.remove("d-none");
+                            cancelBtn.classList.remove("d-none");
+
+                            saveBtn.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Overwrite Grades';
+                            saveBtn.classList.replace("btn-primary", "btn-warning");
+
+                            // Fill inputs with old grades
+                            gradeInputs.forEach(input => {
+                                const subjectName = input.getAttribute("name");
+                                if (data.grades[subjectName] !== undefined) {
+                                    input.value = data.grades[subjectName];
+                                }
+                            });
+                        } else {
+                            // Normal state if no grades exist
+                            resetUI();
+                        }
+                    })
+                    .catch(error => console.error("Error fetching grades:", error));
+            }
+        }
+
+        // Function to clear everything if they hit Cancel
+        function resetForm() {
+            yearSelect.value = "";
+            termSelect.value = "";
+            resetUI();
+        }
+
+        // Helper to reset the buttons and hide the warning
+        function resetUI() {
+            warningBanner.classList.add("d-none");
+            cancelBtn.classList.add("d-none");
+
+            saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Save Grades';
+            saveBtn.classList.replace("btn-warning", "btn-primary");
+
+            gradeInputs.forEach(input => input.value = "");
+        }
+
+        // Event Listeners
+        yearSelect.addEventListener("change", checkExistingGrades);
+        termSelect.addEventListener("change", checkExistingGrades);
+        cancelBtn.addEventListener("click", resetForm);
+    });
+</script>
 {% endblock %}

@@ -11,6 +11,14 @@ class SubjectDepartment(models.Model):
 
     ]
     departments = models.CharField(null=True, blank=True, choices=DEPARTMENT_SUBJECT_CHOICES)
+    head_of_department = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='my_headed_department',
+        help_text="The HOD responsible for this department."
+    )
 
     def __str__(self):
         return f'{self.departments}'
@@ -27,27 +35,25 @@ class ClassLevel(models.Model):
         ]
 
     class_level = models.CharField(max_length=20, choices=CLASS_LEVELS)
+    form_teacher = models.OneToOneField(
+        settings.AUTH_USER_MODEL,  # Or 'Teacher' if you use a separate model
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='my_form_class',
+        help_text="The teacher responsible for this entire class."
+    )
 
     def __str__(self):
         return self.get_class_level_display()
 
+class MasterSubject(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="e.g., Mathematics, Computer Science, Economics")
 
+    def __str__(self):
+        return self.name
 class Subject(models.Model):
-    AVAILABLE_SUBJECTS = [
-        ('Mathematics', 'Mathematics'),
-        ('Physics', 'Physics'),
-        ('Chemistry', 'Chemistry'),
-        ('English', 'English'),
-        ('Chichewa', 'Chichewa'),
-        ('Agriculture', 'Agriculture'),
-        ('Geography', 'Geography'),
-        ('Life Skills', 'Life Skills'),
-        ('Social', 'Social'),
-        ('History', 'History'),
-        ('Biology', 'Biology'),
-    ]
-
-    name = models.CharField(max_length=20, choices=AVAILABLE_SUBJECTS)
+    name = models.ForeignKey(MasterSubject, on_delete=models.CASCADE, related_name='class_instances')
     subject_teacher = models.CharField(
         max_length=20)  # Note: You might want to remove this eventually since you have teacher_subject!
     code = models.CharField(max_length=10, unique=True)
@@ -101,6 +107,15 @@ class Students(models.Model):
         (year, year) for year in range(current_year, current_year - 6, -1)
 
     ]
+
+
+    STATUS_CHOICES = [
+        ('Active', 'Active'),
+        ('Graduated', 'Graduated'),
+        ('Transferred', 'Transferred'),
+    ]
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     first_name = models.CharField(max_length=20)
     surname = models.CharField(max_length=20)
     student_id = models.CharField(max_length=10, unique=True)
@@ -307,6 +322,9 @@ class SubDepartment(models.Model):
         return f"{self.name} ({self.department.name})"
 
 
+from django.conf import settings
+
+
 class SubDepartmentRole(models.Model):
     ROLE_CHOICES = [
         ('HEAD', 'Head of Department'),
@@ -315,24 +333,27 @@ class SubDepartmentRole(models.Model):
     ]
 
     sub_department = models.ForeignKey(
-        SubDepartment,
+        'SubDepartment',
         on_delete=models.CASCADE,
         related_name='roles'
     )
+
+    # --- THE FIX ---
     teacher = models.ForeignKey(
-        Teacher,
+        settings.AUTH_USER_MODEL,  # Now points to your CustomUser table!
         on_delete=models.CASCADE,
-        related_name='department_roles'
+        related_name='department_roles',
+        limit_choices_to={'is_teacher': True}  # Ensures only teachers are selectable
     )
+    # ---------------
+
     role = models.CharField(
         max_length=10,
         choices=ROLE_CHOICES
     )
 
     def __str__(self):
-        return f"{self.teacher} - {self.get_role_display()} ({self.sub_department.name})"
-
-
+        return f"{self.teacher.first_name} {self.teacher.last_name} - {self.get_role_display()} ({self.sub_department.name})"
 
 class DepartmentEvent(models.Model):
     sub_department = models.ForeignKey(
@@ -355,3 +376,42 @@ class DepartmentEvent(models.Model):
         return f"{self.title} ({self.sub_department.name})"
 
 
+# ATTENDANCE REGISTER MODELS
+class Attendance(models.Model):
+    STATUS_CHOICES = [
+        ('Present', 'Present'),
+        ('Absent', 'Absent'),
+        ('Late', 'Late'),
+    ]
+
+    student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='attendance_records')
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Present')
+
+    class Meta:
+        # This guarantees a student can only have ONE attendance record per day!
+        unique_together = ['student', 'date']
+
+    def __str__(self):
+        return f"{self.student.first_name} {self.student.surname} - {self.date} - {self.status}"
+
+
+from django.db import models
+from django.conf import settings
+
+class StaffNotification(models.Model):
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']  # Newest messages show up first!
+
+    def __str__(self):
+        return f"{self.title} - {self.recipient.username}"
