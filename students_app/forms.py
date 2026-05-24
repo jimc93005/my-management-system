@@ -167,28 +167,25 @@ class TeacherForm(forms.ModelForm):
 User = get_user_model()
 
 
-class TeacherRegistrationForm(forms.ModelForm):
-    groups = forms.ModelMultipleChoiceField(
-        queryset=Group.objects.all(),
-        widget=forms.CheckboxSelectMultiple,  # This forces it to render as tick-boxes!
-        required=True,
-        label="Assign System Roles",
-        help_text="Tick all the groups this staff member belongs to."
-    )
+from django import forms
+from django.contrib.auth import get_user_model
 
-    # Custom password field so it shows up as hidden dots (***) when typing
+# This automatically grabs your CustomUser model
+User = get_user_model()
+
+class TeacherRegistrationForm(forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'placeholder': 'Create a temporary password'})
     )
 
     class Meta:
         model = User
-        # We added the 5 new HR/Demographic fields to the end of this list!
         fields = [
-            'first_name', 'last_name', 'email', 'username', 'password', 'groups',
-            'employment_number', 'gender', 'phone_number', 'district_of_origin', 'religion'
+            'first_name', 'last_name', 'email', 'username', 'password',
+            'employment_number', 'gender', 'phone_number', 'district_of_origin', 'religion',
+            'department',  # Added this so you can assign their subject department!
+            'is_teacher', 'is_hod', 'is_headteacher', 'is_deputy'
         ]
-
 
 
 

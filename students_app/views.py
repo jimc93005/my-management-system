@@ -65,7 +65,7 @@ def index(request):
 
 # VIEWS FOR STUDENTS FUNCTIONS
 
-@login_required(login_url='login')
+@login_required()
 def student_list(request):
     if not request.user.has_perm('students_app.view_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -218,7 +218,7 @@ def edit_student(request, student_id):
     return render(request, 'students_app/edit_student.html', context)
 
 # VIEWS FOR SUBJECT FUNCTIONS
-@login_required(login_url='login')
+@login_required()
 def subjects_list(request):
     if not request.user.has_perm('students_app.view_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -317,7 +317,7 @@ def delete_subject(request, subject_id):
 
 
 # GROUPING STUDENTS BY CLASS
-@login_required(login_url='login')
+@login_required()
 def class_list(request):
     if not request.user.has_perm('students_app.view_classlevel'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -387,7 +387,7 @@ def add_grade(request, student_id):
     elif user.is_hod:
         # HODs can only grade subjects within their department
         if hasattr(user, 'department'):
-            subjects = student.subject.filter(department=user.department)
+            subjects = student.subject.filter(departments=user.department)
         else:
             subjects = student.subject.none()
 
@@ -738,7 +738,7 @@ def school_report_pdf(request, student_id, academic_year, term):
 
 
 # DEPARTMENTS VIEWS
-@login_required(login_url='login')
+@login_required()
 def department_list(request):
     if not request.user.has_perm('students_app.view_department'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -934,7 +934,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-@login_required(login_url='login')
+@login_required()
 def teachers_list(request):
     # Security Check: Ensure only Admins/Headteachers can view the full staff directory
     is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
@@ -1136,7 +1136,7 @@ def change_class_level(request, student_id):
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-@login_required(login_url='login')
+@login_required()
 def dashboard(request):
     user = request.user
 
@@ -1424,7 +1424,7 @@ def scholastic_report_pdf(request, class_level, academic_year, term):
             })
 
     # 3. Prepare the subjects list for the column headers (Alphabetical)
-    subjects = sorted(list(all_subjects_set), key=lambda s: s.name)
+    subjects = sorted(list(all_subjects_set), key=lambda s: str(s))
 
     # 4. Map the grades to the exact columns so they line up perfectly in the PDF table
     for data in student_list:
@@ -1497,7 +1497,7 @@ def scholastic_selector(request):
 
 
 # aluminai views
-@login_required(login_url='login')
+@login_required()
 
 def alumni_list(request):
     if not request.user.has_perm('students_app.view_students'):
@@ -1510,7 +1510,7 @@ def alumni_list(request):
     return render(request, 'students_app/alumni_list.html', {'alumni': alumni})
 
 # ATTENDANCE VIEW FUNCTIONS
-@login_required(login_url='login')
+@login_required()
 def attendance_selector(request):
     if not request.user.has_perm('students_app.view_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -1579,19 +1579,21 @@ def take_attendance(request, class_id, date_str):
     return render(request, 'students_app/take_attendance.html', context)
 
 # STATISTICS VIEW
-from django.db.models import Avg, Count, Q
-from django.shortcuts import render, get_object_or_404
+from django.db.models import Avg
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 import json
 
 
-# Ensure Grade, Students, ClassLevel are imported
-@login_required(login_url='login')
+@login_required()
 def academic_statistics(request):
     if not request.user.has_perm('students_app.view_subject'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " access this operation. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
+
     classes = ClassLevel.objects.all()
 
     selected_class = request.GET.get('class_level')
@@ -1613,7 +1615,12 @@ def academic_statistics(request):
         total_girls = students.filter(gender='Female').count()
 
         # 2. GRADES DATA
-        grades = Grade.objects.filter(student__in=students, term=selected_term, academic_year=selected_year)
+        # 🚀 SPEED UPGRADE: select_related fetches all student and subject text names in ONE trip!
+        grades = Grade.objects.filter(
+            student__in=students,
+            term=selected_term,
+            academic_year=selected_year
+        ).select_related('subject', 'student')
 
         def calc_pass_rate(total, passed):
             return round((passed / total * 100), 1) if total > 0 else 0
@@ -1622,22 +1629,44 @@ def academic_statistics(request):
         passed_exams = grades.filter(score__gte=50).count()
         overall_pass_rate = calc_pass_rate(total_exams, passed_exams)
 
-        boys_total = grades.filter(student__gender='Male').count()
-        boys_passed = grades.filter(student__gender='Male', score__gte=50).count()
+        # In memory filtering is faster since we already fetched `grades`
+        boys_total = sum(1 for g in grades if g.student.gender == 'Male')
+        boys_passed = sum(1 for g in grades if g.student.gender == 'Male' and g.score >= 50)
         boys_pass_rate = calc_pass_rate(boys_total, boys_passed)
 
-        girls_total = grades.filter(student__gender='Female').count()
-        girls_passed = grades.filter(student__gender='Female', score__gte=50).count()
+        girls_total = sum(1 for g in grades if g.student.gender == 'Female')
+        girls_passed = sum(1 for g in grades if g.student.gender == 'Female' and g.score >= 50)
         girls_pass_rate = calc_pass_rate(girls_total, girls_passed)
 
         # 3. SUBJECT PERFORMANCE (Best and Worst)
-        subject_stats = grades.values('subject__name').annotate(avg_score=Avg('score')).order_by('-avg_score')
-        best_subject = subject_stats.first() if subject_stats else None
-        worst_subject = subject_stats.last() if subject_stats else None
+        # THE FIX: We group the scores in Python to force Django to give us the text names!
+        from collections import defaultdict
 
+        subject_totals = defaultdict(list)
+        for grade in grades:
+            # By wrapping it in str(), we FORCE Django to use the text Name Tag instead of the ID number
+            text_name = str(grade.subject.name)
+            subject_totals[text_name].append(grade.score)
+
+        # Calculate the averages
+        subject_stats = []
+        for text_name, scores in subject_totals.items():
+            avg = sum(scores) / len(scores)
+            subject_stats.append({
+                'subject__name': text_name,  # We keep this key name so your HTML doesn't need to change!
+                'avg_score': avg
+            })
+
+        # Sort the list from highest average to lowest
+        subject_stats.sort(key=lambda x: x['avg_score'], reverse=True)
+
+        # Assign best and worst
+        best_subject = subject_stats[0] if subject_stats else None
+        worst_subject = subject_stats[-1] if subject_stats else None
+
+        # Give the text names to the chart!
         chart_labels = [sub['subject__name'] for sub in subject_stats]
         chart_data = [round(sub['avg_score'], 1) for sub in subject_stats]
-
         # 4. OVERALL PROGRESS (Line Graph)
         progress_data = []
         for term in [1, 2, 3]:
@@ -1647,10 +1676,9 @@ def academic_statistics(request):
             progress_data.append(round(term_avg, 1) if term_avg else 0)
 
         # ==========================================
-        # 5. NEW: GRADE DISTRIBUTION BREAKDOWN
+        # 5. GRADE DISTRIBUTION BREAKDOWN
         # ==========================================
 
-        # Check if the class is Junior (1, 2) or Senior (3, 4) to set the table headers
         class_obj = get_object_or_404(ClassLevel, id=selected_class)
         class_name = class_obj.class_level.lower()
 
@@ -1661,27 +1689,24 @@ def academic_statistics(request):
 
         subject_breakdown = {}
 
-        # Loop through every grade and tally the remarks!
+        # Loop through every grade and tally the remarks
         for grade in grades:
             sub_name = grade.subject.name
-            remark = str(grade.get_remark())  # We use your existing function!
+            remark = str(grade.get_remark())
 
             if sub_name not in subject_breakdown:
-                # Create a blank scorecard for this subject (e.g. {'A': 0, 'B': 0...})
                 subject_breakdown[sub_name] = {hdr: 0 for hdr in remark_headers}
 
             if remark in subject_breakdown[sub_name]:
                 subject_breakdown[sub_name][remark] += 1
 
-        # Convert the dictionary into a list so the HTML template can read it easily
         breakdown_list = []
         for sub, counts in subject_breakdown.items():
             breakdown_list.append({
                 'subject': sub,
-                'counts': [counts[hdr] for hdr in remark_headers]  # Keeps the counts in header order
+                'counts': [counts[hdr] for hdr in remark_headers]
             })
 
-        # Add all this data to the context!
         context.update({
             'has_data': True,
             'total_students': total_students,
@@ -1695,14 +1720,14 @@ def academic_statistics(request):
             'chart_labels_json': json.dumps(chart_labels),
             'chart_data_json': json.dumps(chart_data),
             'progress_data_json': json.dumps(progress_data),
-
-            # Send the breakdown data to HTML
             'remark_headers': remark_headers,
             'subject_breakdown': breakdown_list,
         })
 
     return render(request, 'students_app/statistics.html', context)
-@login_required(login_url='login')
+
+
+login_required()
 def calendar_of_events(request):
     if not request.user.has_perm('students_app.change_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -1984,7 +2009,7 @@ def delete_staff(request, user_id):
     return render(request, 'students_app/delete_staff.html', {'staff': staff})
 
 
-@login_required(login_url='login')
+@login_required()
 def add_class_level(request):
     # Security Check: Only Headteacher/Admin can create classes
     is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(name__in=['Headteacher', 'Admin']).exists()

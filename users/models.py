@@ -34,8 +34,11 @@ class CustomUser(AbstractUser):
         return f"{self.username} ({self.get_role_display()})"
 
     def get_role_display(self):
-        if self.is_teacher: return "Teacher"
-        if self.is_hod: return "HOD"
+        # We check the highest ranks at the top!
         if self.is_headteacher: return "Headteacher"
         if self.is_deputy: return "Deputy"
+        if self.is_hod: return "HOD"
+        if self.is_teacher: return "Teacher"
+
+        # If all boxes are empty:
         return "Admin/Other"

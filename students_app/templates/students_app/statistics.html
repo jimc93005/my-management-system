@@ -16,21 +16,21 @@
     .bw-table th, .bw-table td {
         border: 1px solid #000 !important;
         color: #000 !important;
-        font-weight: 700 !important; /* Bold text everywhere */
+        font-weight: 700 !important;
         vertical-align: middle !important;
     }
     .bw-table thead th {
-        border-bottom: 3px solid #000 !important; /* Extra thick line under headers */
+        border-bottom: 3px solid #000 !important;
         font-size: 1.1rem;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
     .bw-count {
         font-size: 1.3rem;
-        font-weight: 900 !important; /* Extra heavy font for the grades */
+        font-weight: 900 !important;
     }
     .bw-zero {
-        color: #a3a3a3 !important; /* Light grey dash so it doesn't distract from the real numbers */
+        color: #a3a3a3 !important;
         font-weight: normal !important;
     }
     .bw-header-title {
@@ -120,12 +120,12 @@
                     <div class="mt-2">
                         <div class="mb-3">
                             <small class="d-block text-success font-weight-bold"><i class="fas fa-arrow-up mr-1"></i> Best Performing</small>
-                            <span class="h5 font-weight-bold text-dark">{{ best_subject.subject__name|default:"N/A" }}</span>
+                            <span class="h5 font-weight-bold text-dark text-uppercase">{{ best_subject.subject__name|default:"N/A" }}</span>
                             <span class="badge badge-success ml-2">{{ best_subject.avg_score|floatformat:1|default:"0" }}%</span>
                         </div>
                         <div>
                             <small class="d-block text-danger font-weight-bold"><i class="fas fa-arrow-down mr-1"></i> Needs Improvement</small>
-                            <span class="h5 font-weight-bold text-dark">{{ worst_subject.subject__name|default:"N/A" }}</span>
+                            <span class="h5 font-weight-bold text-dark text-uppercase">{{ worst_subject.subject__name|default:"N/A" }}</span>
                             <span class="badge badge-danger ml-2">{{ worst_subject.avg_score|floatformat:1|default:"0" }}%</span>
                         </div>
                     </div>
@@ -198,6 +198,7 @@
         </div>
 
         <script>
+            // These labels are now being fed the exact names from your views.py fix!
             const labels = JSON.parse('{{ chart_labels_json|safe }}');
             const data = JSON.parse('{{ chart_data_json|safe }}');
             const progressData = JSON.parse('{{ progress_data_json|safe }}');
@@ -205,7 +206,7 @@
             new Chart(document.getElementById('subjectChart'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: labels, // The x-axis will now render the names
                     datasets: [{
                         label: 'Average Score (%)',
                         data: data,
@@ -214,8 +215,24 @@
                     }]
                 },
                 options: {
-                    scales: { y: { beginAtZero: true, max: 100 } },
-                    animation: { duration: 0 }
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: { weight: 'bold' } // Makes the text on x-axis stand out
+                            }
+                        },
+                        y: { beginAtZero: true, max: 100 }
+                    },
+                    animation: { duration: 0 },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' Average Score: ' + context.parsed.y + '%';
+                                }
+                            }
+                        }
+                    }
                 }
             });
 

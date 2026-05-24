@@ -1,0 +1,30 @@
+# 1. Python Cache (Prevents weird bugs from old code)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 2. Virtual Environments (Docker has its own Python environment!)
+venv/
+env/
+.venv/
+
+# 3. Local Databases (You don't want your local test data in production)
+db.sqlite3
+*.sqlite3
+
+# 4. Environment Variables (CRITICAL: Never copy secrets into a Docker image)
+.env
+.env.local
+
+# 5. Git History (Saves a lot of space)
+.git/
+.gitignore
+
+# 6. User Uploads / Media (Optional, but good practice so you don't copy local test images)
+media/
+
+# 7. IDE/OS Files
+.idea/
+.vscode/
+.DS_Store

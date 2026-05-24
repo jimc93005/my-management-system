@@ -23,6 +23,23 @@
                 <div class="card-body p-4 p-md-5 bg-light">
 
                     <div id="standardLoginForm">
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger shadow-sm border-0 small mb-4 rounded">
+                                <strong>⚠️ Login Failed:</strong>
+                                <ul class="mb-0 mt-1">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
                         <form method="POST" action="{% url 'users:login' %}"> {% csrf_token %}
                             <div class="form-group mb-4">
                                 <label class="font-weight-bold text-secondary small text-uppercase">Username</label>
