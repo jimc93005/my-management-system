@@ -27,24 +27,38 @@ SECRET_KEY = 'django-insecure-v&vy05gnofd954!t2y4na4wxy+6kit+1a0-3_6jvwnxj@$@*u^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.localhost', '127.0.0.1', 'localhost']
 
 
 # Application definition
 
-INSTALLED_APPS = [
-    'students_app',
-    'users',
-    'bootstrap4',
-    'django.contrib.admin',
-    'django.contrib.auth',
+SHARED_APPS = [
+    'django_tenants',
+    'schools_manager',
+
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+TENANT_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'students_app',
+    'users',
+    'bootstrap4',
+
+]
+
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+TENANT_MODEL = "schools_manager.School"
+TENANT_DOMAIN_MODEL = "schools_manager.Domain"
+SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
+
 
 MIDDLEWARE = [
+     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,6 +69,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'projectfolder.urls'
+PUBLIC_SCHEMA_URLCONF = 'projectfolder.urls_public'
 
 TEMPLATES = [
     {
@@ -80,9 +95,11 @@ import os  # Make sure this is at the top of your settings.py file!
 
 # ... scroll down to DATABASES ...
 
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_tenants.postgresql_backend',
         'NAME': os.environ.get('DB_NAME', 'school_tenant_db'),
         'USER': os.environ.get('DB_USER', 'admin'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'supersecretpassword'),
@@ -93,6 +110,10 @@ DATABASES = {
     }
 }
 
+
+DATABASE_ROUTERS = (
+    'django_tenants.routers.TenantSyncRouter',
+)
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -144,5 +165,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'students_app:dashboard'
-# LOGOUT_REDIRECT_URL = 'users:login'
+LOGOUT_REDIRECT_URL = 'users:login'
 AUTH_USER_MODEL = 'users.CustomUser'

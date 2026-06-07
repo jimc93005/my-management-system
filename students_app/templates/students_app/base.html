@@ -5,7 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
 
-    <title>{% block title %}School Management System{% endblock %}</title>
+   <title>
+    {% if request.tenant.schema_name == 'public' %}
+        Master Admin Portal
+    {% elif request.tenant.name %}
+        {{ request.tenant.name|title }} | School Portal
+    {% elif request.tenant.schema_name %}
+        {{ request.tenant.schema_name|title }} | School Portal
+    {% else %}
+        School Portal
+    {% endif %}
+</title>
 
     {% bootstrap_css %}
 
