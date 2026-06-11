@@ -2152,3 +2152,65 @@ def notification_list(request):
     notifications = StaffNotification.objects.filter(recipient=request.user).order_by('-created_at')
 
     return render(request, 'students_app/notification_list.html', {'notifications': notifications})
+
+# DOCUMENT UPLOADING AND ARCHIVE VIEWS
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import Folder, Document
+from .forms import FolderForm, DocumentForm
+
+
+def document_manager(request):
+    folders = Folder.objects.all().prefetch_related('documents')
+
+    if request.method == 'POST':
+        # 1. CREATE FOLDER
+        if 'create_folder' in request.POST:
+            folder_form = FolderForm(request.POST)
+            if folder_form.is_valid():
+                folder_form.save()
+                messages.success(request, "Folder created successfully!")
+                return redirect('students_app:document_manager')
+
+        # 2. UPLOAD DOCUMENT
+        elif 'upload_document' in request.POST:
+            document_form = DocumentForm(request.POST, request.FILES)
+            if document_form.is_valid():
+                document_form.save()
+                messages.success(request, "Document uploaded securely!")
+                return redirect('students_app:document_manager')
+
+        # 👇 NEW: 3. DELETE SPECIFIC DOCUMENT 👇
+        elif 'delete_document' in request.POST:
+            doc_id = request.POST.get('doc_id')
+            doc = Document.objects.filter(id=doc_id).first()
+            if doc:
+                # Delete the physical file from the hard drive first
+                doc.file.delete(save=False)
+                # Then delete the record from the database
+                doc.delete()
+                messages.warning(request, f"File '{doc.title}' was permanently deleted.")
+            return redirect('students_app:document_manager')
+
+        # 👇 NEW: 4. DELETE ENTIRE FOLDER 👇
+        elif 'delete_folder' in request.POST:
+            folder_id = request.POST.get('folder_id')
+            folder = Folder.objects.filter(id=folder_id).first()
+            if folder:
+                # Delete all physical files inside this folder first to save hard drive space
+                for doc in folder.documents.all():
+                    doc.file.delete(save=False)
+                # Then delete the folder (which cascades and deletes the doc database rows)
+                folder.delete()
+                messages.error(request, f"Folder '{folder.name}' and all its contents were destroyed.")
+            return redirect('students_app:document_manager')
+
+    folder_form = FolderForm()
+    document_form = DocumentForm()
+
+    context = {
+        'folders': folders,
+        'folder_form': folder_form,
+        'document_form': document_form,
+    }
+    return render(request, 'students_app/document_manager.html', context)

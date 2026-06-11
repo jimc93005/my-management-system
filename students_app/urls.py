@@ -109,6 +109,9 @@ urlpatterns = [
     path('messages/read/<int:notification_id>/', views.read_notification, name='read_notification'),
     path('messages/inbox/', views.notification_list, name='notification_list'),
 
+    # DOCUMENTS UPLOADING URLS
+     path('documents/', views.document_manager, name='document_manager'),
+
 
 
 

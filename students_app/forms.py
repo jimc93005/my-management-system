@@ -271,3 +271,19 @@ class DepartmentEventForm(forms.ModelForm):
             'end_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+from django import forms
+from .models import Folder, Document
+
+class FolderForm(forms.ModelForm):
+    class Meta:
+        model = Folder
+        fields = ['name', 'description']
+        # No widgets needed! Bootstrap4 handles it.
+
+class DocumentForm(forms.ModelForm):
+    class Meta:
+        model = Document
+        fields = ['title', 'folder', 'file']
+        # No widgets needed!

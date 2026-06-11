@@ -1,0 +1,276 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<style>
+    .folder-fullscreen {
+        position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important;
+        z-index: 9999 !important; border-radius: 0 !important; overflow-y: auto !important; background-color: #f8f9fa !important;
+    }
+    .file-item { transition: background-color 0.2s ease; }
+    .file-item:hover { background-color: #e9ecef !important; }
+
+    /* Ensure our custom modals ALWAYS pop up over the fullscreen folder */
+    .modal { z-index: 10050 !important; }
+    .modal-backdrop { z-index: 10040 !important; }
+</style>
+
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="font-weight-bold mb-0">
+                <i class="fas fa-folder-open text-primary mr-2"></i> Digital Filing Cabinet
+            </h2>
+            <p class="text-muted mb-0">Securely manage files for {{ request.tenant.name|default:request.tenant.schema_name|title }}</p>
+        </div>
+        <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary shadow-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fas fa-info-circle mr-2"></i> {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm mb-4 border-0" style="border-top: 4px solid #007bff !important;">
+                <div class="card-header bg-white font-weight-bold border-0 pt-3">
+                    <i class="fas fa-folder-plus text-primary mr-1"></i> Create New Folder
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="create_folder" value="1">
+                        {% bootstrap_form folder_form %}
+                        <button type="submit" class="btn btn-primary btn-block font-weight-bold shadow-sm">Create Folder</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0" style="border-top: 4px solid #28a745 !important;">
+                <div class="card-header bg-white font-weight-bold border-0 pt-3">
+                    <i class="fas fa-file-upload text-success mr-1"></i> Upload Document
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="upload_document" value="1">
+                        {% bootstrap_form document_form %}
+                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm">Secure Upload</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            {% if folders %}
+                <div class="row" id="folderAccordion">
+                    {% for folder in folders %}
+                    <div class="col-md-6 mb-4">
+
+                        <div class="card shadow-sm h-100 border-0" id="folderCard{{ folder.id }}">
+
+                            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3"
+                                 data-toggle="collapse" data-target="#folderCollapse{{ folder.id }}" style="cursor: pointer;">
+                                <h5 class="mb-0 font-weight-bold text-dark text-truncate" style="max-width: 60%;">
+                                    <i class="fas fa-folder text-warning mr-2"></i>{{ folder.name }}
+                                </h5>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge badge-light border text-muted px-2 py-1 mr-2">{{ folder.documents.count }} files</span>
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2 mr-2"
+                                            onclick="event.stopPropagation(); toggleFullscreen('folderCard{{ folder.id }}', 'fsIcon{{ folder.id }}');" title="Expand">
+                                        <i class="fas fa-expand" id="fsIcon{{ folder.id }}"></i>
+                                    </button>
+                                    <i class="fas fa-chevron-down text-muted" style="font-size: 0.8rem;"></i>
+                                </div>
+                            </div>
+
+                            <div id="folderCollapse{{ folder.id }}" class="collapse" data-parent="#folderAccordion">
+                                {% if folder.description %}
+                                <div class="card-body pb-2 pt-3 bg-light">
+                                    <p class="text-muted small mb-0"><i class="fas fa-info-circle mr-1"></i> {{ folder.description }}</p>
+                                </div>
+                                {% endif %}
+
+                                <div class="px-3 py-2 bg-light border-bottom">
+                                    <div class="input-group input-group-sm shadow-sm">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control border-left-0" id="searchInput{{ folder.id }}" onkeyup="filterFiles('searchInput{{ folder.id }}', 'fileList{{ folder.id }}')" placeholder="Search files...">
+                                    </div>
+                                </div>
+
+                                <ul class="list-group list-group-flush mt-0" id="fileList{{ folder.id }}">
+                                    {% for doc in folder.documents.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 border-0 bg-light file-item">
+
+                                        <div class="d-flex align-items-center overflow-hidden">
+                                            <i class="far fa-file-pdf text-danger mr-3" style="font-size: 1.5rem;"></i>
+                                            <div>
+                                                <span class="d-block text-dark font-weight-bold text-truncate file-title" style="max-width: 170px; font-size: 0.9rem;">{{ doc.title }}</span>
+                                                <small class="text-muted d-block" style="font-size: 0.75rem;">{{ doc.uploaded_at|date:"M d, Y" }}</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center">
+                                            <div class="btn-group shadow-sm mr-2">
+                                                <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-white border text-primary" title="View"><i class="fas fa-eye"></i></a>
+                                                <a href="{{ doc.file.url }}" download class="btn btn-sm btn-white border text-success" title="Download"><i class="fas fa-download"></i></a>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-white border text-danger shadow-sm"
+                                                    onclick="confirmDocDelete('{{ doc.id }}', '{{ doc.title|escapejs }}')" title="Delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="list-group-item text-muted small py-4 font-italic border-0 bg-light text-center">No documents match your search.</li>
+                                    {% endfor %}
+
+                                    <li class="list-group-item bg-white border-top mt-2 py-3 shadow-sm">
+                                        <form method="POST" enctype="multipart/form-data" class="d-flex align-items-center flex-wrap">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="upload_document" value="1">
+                                            <input type="hidden" name="folder" value="{{ folder.id }}">
+                                            <input type="text" name="title" class="form-control form-control-sm mr-2 mb-2 mb-md-0" placeholder="File title..." required style="max-width: 150px;">
+                                            <input type="file" name="file" class="form-control-file form-control-sm mr-2 mb-2 mb-md-0" required style="max-width: 180px;">
+                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold ml-auto shadow-sm"><i class="fas fa-upload"></i></button>
+                                        </form>
+                                    </li>
+                                </ul>
+
+                                <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center rounded-bottom">
+                                    <small class="text-muted font-mono">ID: {{ folder.id }}</small>
+                                    <button type="button" class="btn btn-sm btn-outline-danger shadow-sm font-weight-bold"
+                                            onclick="confirmFolderDelete('{{ folder.id }}', '{{ folder.name|escapejs }}')">
+                                        <i class="fas fa-trash-alt mr-1"></i> Delete Folder
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center p-5 bg-white border rounded shadow-sm">
+                    <i class="fas fa-archive fa-4x text-light mb-3"></i>
+                    <h4 class="font-weight-bold">Your cabinet is empty</h4>
+                    <p class="text-muted">Use the panel on the left to create your first folder and start uploading documents.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteDocModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white border-0">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Delete Document</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <p class="mb-2" style="font-size: 1.1rem;">Are you sure you want to permanently delete:</p>
+        <strong id="modalDocTitle" class="text-dark d-block mb-3" style="font-size: 1.2rem;"></strong>
+        <p class="text-muted small mb-0">This action cannot be undone. The file will be erased from the server.</p>
+      </div>
+      <div class="modal-footer justify-content-center bg-light border-0">
+        <button type="button" class="btn btn-secondary px-4 font-weight-bold shadow-sm" data-dismiss="modal">Cancel</button>
+        <form method="POST" class="m-0 p-0">
+            {% csrf_token %}
+            <input type="hidden" name="delete_document" value="1">
+            <input type="hidden" name="doc_id" id="modalDocId" value="">
+            <button type="submit" class="btn btn-danger px-4 font-weight-bold shadow-sm">Yes, Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteFolderModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg border-danger">
+      <div class="modal-header bg-danger text-white border-0">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-radiation-alt mr-2"></i> Destroy Entire Folder</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <h4 class="text-danger font-weight-bold mb-3">WARNING</h4>
+        <p class="mb-2">You are about to delete the folder:</p>
+        <strong id="modalFolderName" class="text-dark d-block mb-3" style="font-size: 1.3rem;"></strong>
+        <div class="alert alert-warning text-left small mb-0">
+            <i class="fas fa-info-circle mr-1"></i> This will also permanently delete <strong>EVERY SINGLE FILE</strong> inside this folder.
+        </div>
+      </div>
+      <div class="modal-footer justify-content-center bg-light border-0">
+        <button type="button" class="btn btn-secondary px-4 font-weight-bold shadow-sm" data-dismiss="modal">Cancel</button>
+        <form method="POST" class="m-0 p-0">
+            {% csrf_token %}
+            <input type="hidden" name="delete_folder" value="1">
+            <input type="hidden" name="folder_id" id="modalFolderId" value="">
+            <button type="submit" class="btn btn-danger px-4 font-weight-bold shadow-sm">Destroy Folder</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Document Deletion trigger
+    function confirmDocDelete(docId, docTitle) {
+        document.getElementById('modalDocId').value = docId;
+        document.getElementById('modalDocTitle').innerText = docTitle;
+        $('#deleteDocModal').modal('show');
+    }
+
+    // Folder Deletion trigger
+    function confirmFolderDelete(folderId, folderName) {
+        document.getElementById('modalFolderId').value = folderId;
+        document.getElementById('modalFolderName').innerText = folderName;
+        $('#deleteFolderModal').modal('show');
+    }
+
+    // Filter Logic
+    function filterFiles(inputId, listId) {
+        let input = document.getElementById(inputId).value.toLowerCase();
+        let list = document.getElementById(listId);
+        let items = list.getElementsByClassName('file-item');
+        for (let i = 0; i < items.length; i++) {
+            let title = items[i].getElementsByClassName('file-title')[0].innerText.toLowerCase();
+            if (title.includes(input)) { items[i].style.setProperty('display', 'flex', 'important'); }
+            else { items[i].style.setProperty('display', 'none', 'important'); }
+        }
+    }
+
+    // Fullscreen Logic
+    function toggleFullscreen(cardId, iconId) {
+        let card = document.getElementById(cardId);
+        let icon = document.getElementById(iconId);
+        card.classList.toggle('folder-fullscreen');
+        if (card.classList.contains('folder-fullscreen')) {
+            icon.classList.remove('fa-expand'); icon.classList.add('fa-compress');
+            document.body.style.overflow = 'hidden';
+            let collapseBody = card.querySelector('.collapse');
+            if (!collapseBody.classList.contains('show')) { $(collapseBody).collapse('show'); }
+        } else {
+            icon.classList.remove('fa-compress'); icon.classList.add('fa-expand');
+            document.body.style.overflow = 'auto';
+        }
+    }
+</script>
+{% endblock %}

@@ -415,3 +415,52 @@ class StaffNotification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.recipient.username}"
+
+
+# FILE UPLOADING MODELS
+from django.db import connection  # 👈 This lets us see which tenant is active
+import os
+
+
+# 1. The Physical Security Guard
+def tenant_directory_path(instance, filename):
+    """
+    Dynamically creates a file path based on the current tenant and folder.
+    Format: media/tenant_name/folder_name/filename.ext
+    """
+    tenant_name = connection.schema_name
+    folder_name = instance.folder.name.replace(" ", "_").lower()
+    return f'school_documents/{tenant_name}/{folder_name}/{filename}'
+
+
+# 2. The Folder Model
+class Folder(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+# 3. The Document Model
+class Document(models.Model):
+    title = models.CharField(max_length=200)
+    folder = models.ForeignKey(Folder, related_name='documents', on_delete=models.CASCADE)
+
+    # Notice we pass our security guard function to 'upload_to'
+    file = models.FileField(upload_to=tenant_directory_path)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    # Optional: Track who uploaded it if you have your users set up!
+    # uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['-uploaded_at']

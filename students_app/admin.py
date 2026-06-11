@@ -30,3 +30,18 @@ admin.site.register(SubjectDepartment)
 admin.site.register(Attendance)
 
 # users/admin.py
+
+
+from django.contrib import admin
+from .models import Folder, Document
+
+@admin.register(Folder)
+class FolderAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
+
+@admin.register(Document)
+class DocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'folder', 'uploaded_at')
+    list_filter = ('folder',)
+    search_fields = ('title',)

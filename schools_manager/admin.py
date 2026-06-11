@@ -3,7 +3,7 @@ from .models import School, Domain
 
 # 1. Create a custom Admin Site just for managing tenants
 class TenantAdminSite(admin.AdminSite):
-    site_header = "Master Landlord Administration"
+    site_header = "Collins Tenants Administration"
     site_title = "Tenant Manager"
     index_title = "Welcome to the Master Portal"
 

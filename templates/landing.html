@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere SaaS | Next-Gen School Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Smooth infinite marquee animation for the moving tiles */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 25s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <nav class="border-b border-slate-800 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">EduSphere</span>
+            <span class="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-mono">SaaS v2.0</span>
+        </div>
+        <div>
+            <a href="/admin_tenants/" class="text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition duration-200 shadow-lg shadow-slate-950/50">
+                Landlord Control Panel &rarr;
+            </a>
+        </div>
+    </nav>
+
+    <header class="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
+        <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight md:leading-none">
+            One Core Database. <br class="hidden md:block">
+            <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Infinite, Isolated School Networks.</span>
+        </h1>
+        <p class="mt-6 text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
+            EduSphere introduces state-of-the-art database multi-tenancy. Empower thousands of institutions with completely separated, lightning-fast academic micro-systems from a single central deployment.
+        </p>
+    </header>
+
+    <section class="bg-slate-950 py-10 border-y border-slate-800 overflow-hidden relative">
+        <div class="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
+        <div class="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
+
+        <div class="animate-marquee space-x-6 flex items-center">
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🛡️</span> <span class="font-medium tracking-wide text-sm">PostgreSQL Schema Isolation</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">📊</span> <span class="font-medium tracking-wide text-sm">Real-time Student Roster Analytics</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">⚡</span> <span class="font-medium tracking-wide text-sm">Automated Attendance Tracking</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">📅</span> <span class="font-medium tracking-wide text-sm">Dynamic Timetable Calendars</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🔑</span> <span class="font-medium tracking-wide text-sm">Granular Staff & Teacher Auth</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🌐</span> <span class="font-medium tracking-wide text-sm">Instant Subdomain Provisioning</span>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🛡️</span> <span class="font-medium tracking-wide text-sm">PostgreSQL Schema Isolation</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">📊</span> <span class="font-medium tracking-wide text-sm">Real-time Student Roster Analytics</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">⚡</span> <span class="font-medium tracking-wide text-sm">Automated Attendance Tracking</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">📅</span> <span class="font-medium tracking-wide text-sm">Dynamic Timetable Calendars</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🔑</span> <span class="font-medium tracking-wide text-sm">Granular Staff & Teacher Auth</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
+                <span class="text-xl">🌐</span> <span class="font-medium tracking-wide text-sm">Instant Subdomain Provisioning</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-5xl mx-auto px-6 py-24">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Engineered for Radical Data Security</h2>
+            <p class="mt-4 text-slate-400 font-light max-w-xl mx-auto">Traditional management portals mix data together. EduSphere builds digital fortress walls around every client.</p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl">
+                <div class="bg-red-500/10 text-red-400 p-3 rounded-2xl w-fit border border-red-500/20 font-bold mb-5">THE PROBLEM</div>
+                <h3 class="text-xl font-bold text-white mb-3">Cross-Tenant Leakage & Heavy Migrations</h3>
+                <p class="text-slate-400 font-light leading-relaxed">
+                    Single-database applications run the constant risk of query leakage where School A could accidentally parse rows belonging to School B, alongside messy global structural alterations.
+                </p>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl">
+                <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-2xl w-fit border border-emerald-500/20 font-bold mb-5">OUR SOLUTION</div>
+                <h3 class="text-xl font-bold text-white mb-3">Isolated Database Schemas via Routers</h3>
+                <p class="text-slate-400 font-light leading-relaxed">
+                    By binding custom subdomains to isolated routing channels, data is completely sequestered at the architectural engine layer. Zero pollution, extreme speed, absolute structural compliance.
+                </p>
+            </div>
+        </div>
+    </section>
+
+   <footer class="bg-slate-950 border-t border-slate-800 text-slate-400 py-16 px-6 mt-12 relative z-10">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+
+            <div class="md:col-span-1">
+                <span class="text-2xl font-black text-white tracking-tight">EduSphere Inc.</span>
+                <p class="mt-4 text-sm font-light text-slate-500 leading-relaxed">
+                    Pioneering robust multi-tenant architectures for academic institutions worldwide. Built for scale, engineered for security.
+                </p>
+            </div>
+
+            <div>
+                <h4 class="text-white font-bold text-sm uppercase tracking-wider">Contact Us</h4>
+                <ul class="mt-4 space-y-4 text-sm font-light">
+                    <li class="flex items-center space-x-3">
+                        <span class="text-lg">📧</span>
+                        <a href="mailto:jimc93005@gmail.com" class="hover:text-indigo-400 transition">jimc93005@gmail.com</a>
+                    </li>
+                    <li class="flex items-center space-x-3">
+                        <span class="text-lg">📞</span>
+                        <a href="tel:+265880325161" class="hover:text-indigo-400 transition">+265 880 325 161</a>
+                    </li>
+                    <li class="flex items-start space-x-3">
+                        <span class="text-lg">📍</span>
+                        <span>Malawi<br>Global Operations Center</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-white font-bold text-sm uppercase tracking-wider">Legal & Privacy</h4>
+                <ul class="mt-4 space-y-3 text-sm font-light">
+                    <li><a href="#" class="hover:text-indigo-400 transition">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-indigo-400 transition">Terms of Service</a></li>
+                    <li><a href="#" class="hover:text-indigo-400 transition">Data Processing Agreement</a></li>
+                    <li><a href="#" class="hover:text-indigo-400 transition">Cookie Preferences</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-white font-bold text-sm uppercase tracking-wider">System Status</h4>
+                <ul class="mt-4 space-y-3 text-sm font-light">
+                    <li>
+                        <span class="text-slate-500">Master Database:</span>
+                        <span class="text-emerald-400 font-medium flex items-center mt-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+                            Operational
+                        </span>
+                    </li>
+                    <li class="mt-4"><span class="text-slate-500">Engine Version:</span> v2.0.0 (Stable)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto mt-12 pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center text-xs text-slate-600 font-mono">
+            <p>&copy; 2026 EduSphere Architectural Engine. All rights reserved.</p>
+            <div class="mt-4 md:mt-0 space-x-6">
+                <a href="#" class="hover:text-slate-400 transition">Twitter / X</a>
+                <a href="#" class="hover:text-slate-400 transition">LinkedIn</a>
+                <a href="#" class="hover:text-slate-400 transition">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
