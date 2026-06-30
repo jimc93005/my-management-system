@@ -77,7 +77,7 @@ urlpatterns = [
 
     # ATTENDANCE REGISTER URLS
     path('attendance/', views.attendance_selector, name='attendance_selector'),
-    path('attendance/<str:class_id>/<str:date_str>/', views.take_attendance, name='take_attendance'),
+    path('attendances/<str:class_id>/<str:date_str>/', views.take_attendance, name='take_attendance'),
 
     # STATISTICS URLS
     path('statistics/', views.academic_statistics, name='academic_statistics'),
@@ -111,6 +111,13 @@ urlpatterns = [
 
     # DOCUMENTS UPLOADING URLS
      path('documents/', views.document_manager, name='document_manager'),
+
+    # PHOTOS UPLOAD URLS
+     path('school-photos/', views.edit_school_photos, name='edit_school_photos'),
+
+
+     # ATTENDANCE HISTORY URLS
+     path('student/<int:student_id>/attendance-history/', views.student_attendance_history, name='student_attendance_history'),
 
 
 

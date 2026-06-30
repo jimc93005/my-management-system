@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Students
+from .models import Students, AttendanceWarning
 from .models import Subject
 from .models import Grade
 from .models import SchoolProfile
@@ -13,6 +13,7 @@ from .models import ClassLevel
 from .models import TeachingAssignment
 from .models import SubjectDepartment
 from .models import Attendance
+from .models import AttendanceWarning
 
 
 admin.site.register(Students)
@@ -28,6 +29,7 @@ admin.site.register(ClassLevel)
 admin.site.register(TeachingAssignment)
 admin.site.register(SubjectDepartment)
 admin.site.register(Attendance)
+admin.site.register(AttendanceWarning)
 
 # users/admin.py
 

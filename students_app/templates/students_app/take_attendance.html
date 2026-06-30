@@ -4,63 +4,78 @@
 
 <div class="container mt-4 mb-5">
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="font-weight-bold text-dark mb-1"><i class="fas fa-clipboard-list mr-2 text-primary"></i>Class Roster</h2>
-            <h5 class="text-muted">
-                <span class="badge badge-primary mr-2">{{ class_obj.class_level }}</span>
+            <h5 class="text-muted mb-0">
+                <span class="badge badge-primary mr-2 shadow-sm" style="font-size: 1rem;">{{ class_obj.class_level }}</span>
                 <i class="far fa-calendar-alt mx-1"></i> {{ attendance_date|date:"l, F j, Y" }}
             </h5>
         </div>
         <div class="mt-3 mt-md-0">
-            <a href="{% url 'students_app:attendance_selector' %}" class="btn btn-outline-secondary rounded-pill shadow-sm">
-                <i class="fas fa-sync-alt mr-1"></i> Change Class/Date
+            <a href="{% url 'students_app:attendance_selector' %}" class="btn btn-outline-secondary rounded-pill shadow-sm font-weight-bold">
+                <i class="fas fa-arrow-left mr-1"></i> Change Class/Date
             </a>
         </div>
+    </div>
+
+    <div class="alert alert-info shadow-sm border-0 mb-4" style="border-left: 5px solid #3b82f6 !important; background-color: #f8fafc;">
+        <i class="fas fa-info-circle text-primary mr-2"></i>
+        <strong>Pro-tip:</strong> The Smart Attendance system is actively monitoring. Marking a student <strong>Absent</strong> for 3 consecutive days will automatically alert the Headteacher. <em>Holidays are excluded from warnings.</em>
     </div>
 
     <form method="POST" action="{% url 'students_app:take_attendance' class_obj.id attendance_date|date:'Y-m-d' %}">
         {% csrf_token %}
 
-        <div class="card shadow-sm border-0 rounded-lg overflow-hidden mb-4">
+        <div class="card shadow-sm border-0 rounded-lg overflow-hidden mb-5">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-secondary">
+                <table class="table align-middle mb-0" id="attendanceTable">
+                    <thead class="bg-light text-secondary text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
                         <tr>
-                            <th class="px-4 py-3" style="width: 40%;">Student Name</th>
-                            <th class="text-center">Present</th>
-                            <th class="text-center">Absent</th>
-                            <th class="text-center">Late</th>
+                            <th class="px-4 py-3 border-0" style="width: 35%;">Student Name</th>
+                            <th class="text-center border-0">Present</th>
+                            <th class="text-center border-0">Absent</th>
+                            <th class="text-center border-0">Late</th>
+                            <th class="text-center border-0">Holiday</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for student in students %}
-                        <tr>
-                            <td class="px-4 py-3">
-                                <span class="font-weight-bold text-dark">{{ student.surname|upper }}, {{ student.first_name }}</span>
+                        <tr id="row_{{ student.id }}" class="attendance-row transition-colors">
+                            <td class="px-4 py-3 border-bottom-0">
+                               <a href="{% url 'students_app:student_attendance_history' student.id %}" class="font-weight-bold text-primary text-decoration-none" style="font-size: 1.1rem;" title="Click to view full attendance history">
+                                   {{ student.surname|upper }}, {{ student.first_name }} <i class="fas fa-external-link-alt small ml-1 text-muted"></i>
+                                </a>
                                 <br>
                                 <small class="text-muted">#{{ student.student_id }}</small>
                             </td>
 
-                            <td class="text-center">
+                            <td class="text-center border-bottom-0">
                                 <div class="custom-control custom-radio custom-control-inline">
-                                    <input type="radio" id="present_{{ student.id }}" name="status_{{ student.id }}" value="Present" class="custom-control-input"
+                                    <input type="radio" id="present_{{ student.id }}" name="status_{{ student.id }}" value="Present" class="custom-control-input status-radio" data-row="row_{{ student.id }}"
                                     {% if status_map|dict_get:student.id == 'Present' or not status_map|dict_get:student.id %}checked{% endif %} required>
                                     <label class="custom-control-label text-success font-weight-bold" for="present_{{ student.id }}">P</label>
                                 </div>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center border-bottom-0">
                                 <div class="custom-control custom-radio custom-control-inline">
-                                    <input type="radio" id="absent_{{ student.id }}" name="status_{{ student.id }}" value="Absent" class="custom-control-input"
+                                    <input type="radio" id="absent_{{ student.id }}" name="status_{{ student.id }}" value="Absent" class="custom-control-input status-radio" data-row="row_{{ student.id }}"
                                     {% if status_map|dict_get:student.id == 'Absent' %}checked{% endif %} required>
                                     <label class="custom-control-label text-danger font-weight-bold" for="absent_{{ student.id }}">A</label>
                                 </div>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center border-bottom-0">
                                 <div class="custom-control custom-radio custom-control-inline">
-                                    <input type="radio" id="late_{{ student.id }}" name="status_{{ student.id }}" value="Late" class="custom-control-input"
+                                    <input type="radio" id="late_{{ student.id }}" name="status_{{ student.id }}" value="Late" class="custom-control-input status-radio" data-row="row_{{ student.id }}"
                                     {% if status_map|dict_get:student.id == 'Late' %}checked{% endif %} required>
                                     <label class="custom-control-label text-warning font-weight-bold" for="late_{{ student.id }}">L</label>
+                                </div>
+                            </td>
+                            <td class="text-center border-bottom-0">
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="holiday_{{ student.id }}" name="status_{{ student.id }}" value="Holiday" class="custom-control-input status-radio" data-row="row_{{ student.id }}"
+                                    {% if status_map|dict_get:student.id == 'Holiday' %}checked{% endif %} required>
+                                    <label class="custom-control-label text-info font-weight-bold" for="holiday_{{ student.id }}">H</label>
                                 </div>
                             </td>
                         </tr>
@@ -70,28 +85,84 @@
             </div>
         </div>
 
-        <div class="position-sticky text-center shadow-lg bg-white p-3 rounded" style="bottom: 20px; z-index: 100;">
-            <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill font-weight-bold shadow">
-                <i class="fas fa-save mr-2"></i> Save Attendance
-            </button>
+        <div class="position-sticky text-center pb-4" style="bottom: 20px; z-index: 100;">
+            <div class="d-inline-block shadow-lg bg-white p-2 rounded-pill border">
+                <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill font-weight-bold shadow-sm" style="transition: transform 0.2s ease;">
+                    <i class="fas fa-save mr-2"></i> Save Roster
+                </button>
+            </div>
         </div>
     </form>
 
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const radios = document.querySelectorAll('.status-radio');
+
+        // Function to update row color based on which radio is checked
+        function updateRowColor(rowId, status) {
+            const row = document.getElementById(rowId);
+            // Reset classes (added bg-light-info for Holiday)
+            row.classList.remove('bg-light-danger', 'bg-light-warning', 'bg-light-success', 'bg-light-info');
+
+            // Add new class based on status
+            if (status === 'Absent') {
+                row.classList.add('bg-light-danger');
+            } else if (status === 'Late') {
+                row.classList.add('bg-light-warning');
+            } else if (status === 'Present') {
+                row.classList.add('bg-light-success');
+            } else if (status === 'Holiday') {
+                row.classList.add('bg-light-info'); // Turns the row light blue!
+            }
+        }
+
+        // 1. Run it immediately on page load to color existing data
+        radios.forEach(radio => {
+            if (radio.checked) {
+                updateRowColor(radio.getAttribute('data-row'), radio.value);
+            }
+        });
+
+        // 2. Listen for clicks so it changes instantly
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateRowColor(this.getAttribute('data-row'), this.value);
+            });
+        });
+    });
+</script>
+
 <style>
-    /* Make radio buttons slightly larger for easy tapping on mobile */
+    /* Make radio buttons larger for easy tapping on tablets/phones */
     .custom-control-label::before,
     .custom-control-label::after {
-        width: 1.5rem;
-        height: 1.5rem;
-        top: 0;
+        width: 1.8rem;
+        height: 1.8rem;
+        top: -0.1rem;
+        cursor: pointer;
     }
     .custom-control-label {
-        padding-left: 0.5rem;
+        padding-left: 0.8rem;
         padding-top: 0.2rem;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+        cursor: pointer;
     }
+
+    /* Smooth color transitions for the rows */
+    .transition-colors {
+        transition: background-color 0.3s ease;
+    }
+
+    /* Subtle background colors for visual scanning */
+    .bg-light-danger { background-color: #fee2e2 !important; }  /* Very light red */
+    .bg-light-warning { background-color: #fef3c7 !important; } /* Very light yellow */
+    .bg-light-success { background-color: #ffffff !important; } /* Keep present white for cleanliness */
+    .bg-light-info { background-color: #e0f2fe !important; }    /* NEW: Very light blue for Holiday */
+
+    /* Ensure borders don't double up and look messy */
+    .table td, .table th { border-top: 1px solid #f1f5f9; }
 </style>
 
 {% endblock %}

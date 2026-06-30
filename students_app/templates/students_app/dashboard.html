@@ -321,6 +321,106 @@
             </div>
         </div>
 
+        <h5 class="font-weight-bold text-dark mt-5 mb-3"><i class="fas fa-clipboard-user text-primary mr-2"></i> Today's Attendance & Alerts</h5>
+
+        <div class="row mb-5">
+            <div class="col-lg-5 mb-4">
+                <div class="card shadow-sm border-0 h-100 rounded-lg">
+                    <div class="card-header bg-white border-0 pt-4 pb-0">
+                        <h6 class="font-weight-bold text-secondary text-uppercase mb-0">Daily Roster Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded shadow-sm border-left" style="border-left-width: 4px !important; border-left-color: #22c55e !important;">
+                            <span class="font-weight-bold text-dark"><i class="fas fa-user-check text-success mr-2"></i> Present</span>
+                            <span class="badge badge-success badge-pill" style="font-size: 1.1rem;">{{ attendance_stats.present|default:"0" }}</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded shadow-sm border-left" style="border-left-width: 4px !important; border-left-color: #ef4444 !important;">
+                            <span class="font-weight-bold text-dark"><i class="fas fa-user-times text-danger mr-2"></i> Absent</span>
+                            <span class="badge badge-danger badge-pill" style="font-size: 1.1rem;">{{ attendance_stats.absent|default:"0" }}</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded shadow-sm border-left" style="border-left-width: 4px !important; border-left-color: #f59e0b !important;">
+                            <span class="font-weight-bold text-dark"><i class="fas fa-user-clock text-warning mr-2"></i> Late</span>
+                            <span class="badge badge-warning badge-pill text-dark" style="font-size: 1.1rem;">{{ attendance_stats.late|default:"0" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7 mb-4">
+                <div class="card shadow-sm border-0 h-100 rounded-lg" style="border-top: 4px solid #ef4444 !important;">
+                    <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h6 class="font-weight-bold text-danger text-uppercase mb-0">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> Action Required
+                        </h6>
+                        {% if active_warnings %}
+                            <span class="badge badge-danger shadow-sm">{{ active_warnings.count }} Alerts</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-body">
+                        {% if active_warnings %}
+                            <div class="list-group list-group-flush">
+                                {% for warning in active_warnings %}
+                                    <div class="list-group-item px-0 py-3 border-bottom">
+                                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                            <h6 class="font-weight-bold text-dark mb-0">{{ warning.student.surname|upper }}, {{ warning.student.first_name }}</h6>
+                                            <small class="text-muted"><i class="far fa-clock"></i> {{ warning.date_flagged|timesince }} ago</small>
+                                        </div>
+                                        <p class="mb-2 text-danger small font-weight-bold">{{ warning.reason }}</p>
+
+                                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm font-weight-bold" data-toggle="modal" data-target="#resolveModal{{ warning.id }}">
+                                            <i class="fas fa-check mr-1"></i> Mark Resolved
+                                        </button>
+                                    </div>
+
+                                    <div class="modal fade" id="resolveModal{{ warning.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content border-0 shadow-lg rounded-lg overflow-hidden">
+                                                <div class="modal-header bg-success text-white border-0">
+                                                    <h5 class="modal-title font-weight-bold"><i class="fas fa-clipboard-check mr-2"></i> Resolve Attendance Warning</h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <form method="POST" action="{% url 'students_app:dashboard' %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-body p-4">
+                                                        <div class="alert alert-warning border-0 shadow-sm mb-4">
+                                                            <i class="fas fa-info-circle mr-1"></i> You are clearing the alert for <strong>{{ warning.student.first_name }} {{ warning.student.surname }}</strong>.
+                                                        </div>
+                                                        <input type="hidden" name="resolve_warning" value="1">
+                                                        <input type="hidden" name="warning_id" value="{{ warning.id }}">
+                                                        <div class="form-group mb-0">
+                                                            <label class="font-weight-bold text-dark">Action Taken (Optional Notes)</label>
+                                                            <textarea name="resolution_notes" class="form-control bg-light border-0 shadow-sm" rows="3" placeholder="e.g., Called parents, student was sick..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 bg-light">
+                                                        <button type="button" class="btn btn-secondary font-weight-bold shadow-sm rounded-pill px-4" data-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-success font-weight-bold shadow-sm rounded-pill px-4"><i class="fas fa-save mr-1"></i> Confirm & Resolve</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="d-inline-flex align-items-center justify-content-center bg-light text-success rounded-circle mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+                                    <i class="fas fa-shield-check"></i>
+                                </div>
+                                <h6 class="font-weight-bold text-secondary">All Clear!</h6>
+                                <p class="text-muted small mb-0">There are no active attendance warnings for your class.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row mb-5">
             <div class="col-md-5 mb-4">
                 <div class="card border-0 shadow-sm rounded-lg h-100">

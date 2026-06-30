@@ -13,8 +13,7 @@ urlpatterns = [
     # 👇 THE SECRET LANDLORD ADMIN 👇
     path('admin_tenants/', tenant_admin_site.urls),
     path('lobby-auth/', include(([
-        # When the Lobby looks for 'users:login' after a logout,
-        # it hits this line and redirects you cleanly to the home page (/).
+       
         path('login/', RedirectView.as_view(url='/', permanent=False), name='login'),
     ], 'users'))),
 

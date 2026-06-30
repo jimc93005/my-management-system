@@ -21,6 +21,7 @@ from django.utils.dateparse import parse_date
 from datetime import date
 from .models import Attendance
 from .models import StaffNotification
+from django.contrib.auth import get_user_model
 
 
 
@@ -57,11 +58,24 @@ from django.contrib.auth.decorators import login_required
 from .models import SubDepartment, DepartmentEvent
 from .forms import DepartmentEventForm
 
-
+# Make sure these are imported at the top of your views.py!
+from .models import SchoolCoverPhoto, CarouselEvent
 
 
 def index(request):
-    return render(request, 'students_app/index.html')
+    # 1. Grab the school's profile (for the cover photo)
+    school_profile = SchoolCoverPhoto.objects.filter(pk=1).first()
+
+    # 2. Grab all the sliding event photos
+    carousel_events = CarouselEvent.objects.all()
+
+    # 3. Pack them into the context dictionary
+    context = {
+        'school_profile': school_profile,
+        'carousel_events': carousel_events,
+    }
+
+    return render(request, 'students_app/index.html', context)
 
 # VIEWS FOR STUDENTS FUNCTIONS
 
@@ -166,15 +180,7 @@ def delete_student(request, student_id):
 
     return render(request, 'students_app/delete_student.html', context)
 
-# editing student
 
-
-import json
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-
-
-# Make sure Subject is imported at the top of your views.py
 
 def edit_student(request, student_id):
     if not request.user.has_perm('students_app.change_students'):
@@ -923,12 +929,8 @@ def subdepartment_role_create(request, subdepartment_id):
 
 
 # TEACHERS VIEWES
-from django.db.models import Q
-from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth import get_user_model
+
+
 
 # Fetch your CustomUser model
 User = get_user_model()
@@ -1136,9 +1138,36 @@ def change_class_level(request, student_id):
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+from datetime import date
+
+
+# Make sure Attendance and AttendanceWarning are imported at the top!
+# from .models import Students, Subject, Grade, ClassLevel, StaffNotification, Attendance, AttendanceWarning
+
 @login_required()
 def dashboard(request):
     user = request.user
+
+
+    # 👇 NEW: HANDLE RESOLVING RED FLAGS 👇
+    if request.method == 'POST' and 'resolve_warning' in request.POST:
+        warning_id = request.POST.get('warning_id')
+        resolution_notes = request.POST.get('resolution_notes', '')
+
+        # Make sure you imported AttendanceWarning at the top of views.py!
+        warning = AttendanceWarning.objects.filter(id=warning_id).first()
+        if warning:
+            warning.is_resolved = True
+            warning.resolved_by = user
+            warning.resolution_notes = resolution_notes
+            warning.save()
+            messages.success(request, f"Warning for {warning.student.first_name} has been resolved and cleared.")
+        return redirect('students_app:dashboard')
+    # 👆 END NEW LOGIC 👆
+
+    # --- Role Checks ---
+    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
+        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
 
     # --- Role Checks ---
     is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
@@ -1157,8 +1186,6 @@ def dashboard(request):
         'is_hod': is_hod,
         'is_form_teacher': is_form_teacher,
         'is_teacher': is_teacher,
-
-        # Now Python knows what this is!
         'unread_notifications': unread_notifications,
         'unread_count': unread_notifications.count(),
     }
@@ -1228,7 +1255,7 @@ def dashboard(request):
             context['class_stats'] = class_stats
 
     # -----------------------------------------------------
-    # 3. FORM TEACHER DATA
+    # 3. FORM TEACHER DATA (UPDATED WITH ATTENDANCE)
     # -----------------------------------------------------
     if is_form_teacher:
         my_class = user.my_form_class
@@ -1255,12 +1282,29 @@ def dashboard(request):
                                 1) if g_grades.count() > 0 else 0,
         }
 
+        # 👇 NEW: SMART ATTENDANCE DASHBOARD LOGIC 👇
+        today = date.today()
+        todays_attendance = Attendance.objects.filter(student__in=class_students, date=today)
+
+        # Calculate daily totals
+        context['attendance_stats'] = {
+            'present': todays_attendance.filter(status='Present').count(),
+            'absent': todays_attendance.filter(status='Absent').count(),
+            'late': todays_attendance.filter(status='Late').count(),
+            'not_recorded': class_students.count() - todays_attendance.count()
+        }
+
+        # Grab any active Red Flag warnings for students in this specific class
+        context['active_warnings'] = AttendanceWarning.objects.filter(
+            student__in=class_students,
+            is_resolved=False
+        ).select_related('student').order_by('-date_flagged')
+
     # -----------------------------------------------------
     # 4. REGULAR TEACHER DATA
     # -----------------------------------------------------
     if is_teacher:
         context['subjects'] = Subject.objects.filter(teacher_subject=user)
-        # Note: I removed the unread_notifications line from down here since it's now at the top!
 
     return render(request, 'students_app/dashboard.html', context)
 @login_required(login_url='login')
@@ -1512,7 +1556,7 @@ def alumni_list(request):
 # ATTENDANCE VIEW FUNCTIONS
 @login_required()
 def attendance_selector(request):
-    if not request.user.has_perm('students_app.view_students'):
+    if not request.user.has_perm('students_app.view_attendance'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " access this operation. Please contact"
                                   " the Headteacher if you need this feature.")
@@ -1529,44 +1573,63 @@ def attendance_selector(request):
 
     return render(request, 'students_app/attendance_selector.html', {'classes': all_classes, 'today': today})
 
+
 @login_required(login_url='login')
 def take_attendance(request, class_id, date_str):
-    if not request.user.has_perm('students_app.add_attendance'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+    if not request.user.has_perm('students_app.view_attendance'):
+        messages.warning(request, "🔒 Oops! You don't have permission to access this operation.")
         return redirect('students_app:dashboard')
+
     attendance_date = parse_date(date_str)
     if not attendance_date:
         messages.error(request, "Invalid date format.")
         return redirect('students_app:attendance_selector')
 
-    # Get ONLY active students for this specific class
     students = Students.objects.filter(class_level_id=class_id, status='Active').order_by('surname')
     class_obj = get_object_or_404(ClassLevel, id=class_id)
 
+
     if not students.exists():
-        messages.warning(request, f"No active students found in {class_obj.class_level}.")
+        messages.warning(request, f"No active students found in Form {class_obj.class_level}.")
         return redirect('students_app:attendance_selector')
 
     # --- SAVE THE ATTENDANCE (POST REQUEST) ---
     if request.method == 'POST':
         for student in students:
-            # The HTML form will send radio buttons named 'status_5', 'status_6', etc.
             status = request.POST.get(f'status_{student.id}')
             if status:
-                # Magic Django function: Updates the record if it exists, creates it if it doesn't!
+                # 1. Save the daily attendance
                 Attendance.objects.update_or_create(
                     student=student,
                     date=attendance_date,
                     defaults={'status': status}
                 )
 
-        messages.success(request, f"Attendance for {class_obj.class_level} on {attendance_date} saved successfully!")
-        return redirect('students_app:take_attendance', class_id=class_id, date_str=date_str)
+                # 👇 NEW: 2. SMART WARNING LOGIC 👇
+                if status == 'Absent':
+                    # Grab the 3 most recent attendance records for this student
+                    last_three = Attendance.objects.filter(student=student).order_by('-date')[:3]
+
+                    # If there are exactly 3 records, and EVERY SINGLE ONE is 'Absent'
+                    if last_three.count() == 3 and all(record.status == 'Absent' for record in last_three):
+
+                        # Check if a warning already exists so we don't spam the headteacher
+                        warning_exists = AttendanceWarning.objects.filter(
+                            student=student,
+                            is_resolved=False
+                        ).exists()
+
+                        if not warning_exists:
+                            # Trigger the Red Flag!
+                            AttendanceWarning.objects.create(
+                                student=student,
+                                reason=f"Missed 3 consecutive days ending on {attendance_date}"
+                            )
+
+        messages.success(request, f"Attendance for form {class_obj.class_level} on {attendance_date} saved successfully!")
+        return redirect('students_app:attendance_selector')
 
     # --- LOAD THE ROSTER (GET REQUEST) ---
-    # Fetch records if attendance was already taken today, so we can pre-select the radio buttons
     existing_records = Attendance.objects.filter(student__in=students, date=attendance_date)
     status_map = {record.student_id: record.status for record in existing_records}
 
@@ -1574,18 +1637,61 @@ def take_attendance(request, class_id, date_str):
         'students': students,
         'class_obj': class_obj,
         'attendance_date': attendance_date,
-        'status_map': status_map,  # We pass this "cheat sheet" to the template
+        'status_map': status_map,
     }
     return render(request, 'students_app/take_attendance.html', context)
 
+
+from .models import Students, Attendance, AttendanceWarning
+from django.shortcuts import get_object_or_404
+
+
+@login_required(login_url='login')
+def student_attendance_history(request, student_id):
+    student = get_object_or_404(Students, id=student_id)
+    warnings = AttendanceWarning.objects.filter(student=student).order_by('-date_flagged')
+
+    # 1. Grab filter dates from the URL (if the user clicked "Filter")
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    is_filtered = False
+
+    # 2. Base query for all records to calculate overall stats accurately
+    all_records = Attendance.objects.filter(student=student)
+    total_days = all_records.exclude(status='Holiday').count()  # We don't count Holidays against them!
+    present_days = all_records.filter(status='Present').count()
+    absent_days = all_records.filter(status='Absent').count()
+    late_days = all_records.filter(status='Late').count()
+
+    attendance_percentage = round((present_days / total_days * 100), 1) if total_days > 0 else 0
+
+    # 3. Apply the filter OR default to the last 5 days for the Log UI
+    if start_date and end_date:
+        # User requested a specific date range
+        attendance_records = all_records.filter(date__range=[start_date, end_date]).order_by('-date')
+        is_filtered = True
+    else:
+        # Default: Show only the most recent 5 records in the table
+        attendance_records = all_records.order_by('-date')[:5]
+
+    context = {
+        'student': student,
+        'attendance_records': attendance_records,
+        'warnings': warnings,
+        'is_filtered': is_filtered,  # Tells HTML to show the "Custom Filter Active" badge
+        'stats': {
+            'total': total_days,
+            'present': present_days,
+            'absent': absent_days,
+            'late': late_days,
+            'percentage': attendance_percentage
+        }
+    }
+    return render(request, 'students_app/student_attendance_history.html', context)
+
+
+
 # STATISTICS VIEW
-from django.db.models import Avg
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-import json
-
-
 @login_required()
 def academic_statistics(request):
     if not request.user.has_perm('students_app.view_subject'):
@@ -2154,6 +2260,7 @@ def notification_list(request):
     return render(request, 'students_app/notification_list.html', {'notifications': notifications})
 
 # DOCUMENT UPLOADING AND ARCHIVE VIEWS
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Folder, Document
@@ -2172,15 +2279,44 @@ def document_manager(request):
                 messages.success(request, "Folder created successfully!")
                 return redirect('students_app:document_manager')
 
-        # 2. UPLOAD DOCUMENT
+        # 👇 UPDATED: 2. BULK UPLOAD DOCUMENTS 👇
         elif 'upload_document' in request.POST:
-            document_form = DocumentForm(request.POST, request.FILES)
-            if document_form.is_valid():
-                document_form.save()
-                messages.success(request, "Document uploaded securely!")
-                return redirect('students_app:document_manager')
+            # Grab the folder ID and title from either the left panel form or the quick-upload form
+            folder_id = request.POST.get('folder')
+            title_input = request.POST.get('title', '').strip()
 
-        # 👇 NEW: 3. DELETE SPECIFIC DOCUMENT 👇
+            # getlist() captures EVERY file if they highlighted multiple PDFs
+            files = request.FILES.getlist('file')
+
+            if folder_id and files:
+                folder_instance = Folder.objects.filter(id=folder_id).first()
+                if folder_instance:
+                    for uploaded_file in files:
+                        # Smart Naming Logic
+                        if title_input and len(files) == 1:
+                            # 1 file + custom title = Use custom title
+                            final_title = title_input
+                        elif title_input and len(files) > 1:
+                            # Multiple files + custom title = Append filename to avoid exact duplicates
+                            final_title = f"{title_input} - {uploaded_file.name}"
+                        else:
+                            # No custom title = Just use the file's original name
+                            final_title = uploaded_file.name
+
+                        Document.objects.create(
+                            title=final_title,
+                            folder=folder_instance,
+                            file=uploaded_file
+                        )
+                    messages.success(request, f"Successfully uploaded {len(files)} document(s)!")
+                else:
+                    messages.error(request, "The selected folder does not exist.")
+            else:
+                messages.warning(request, "Please select a folder and at least one file.")
+
+            return redirect('students_app:document_manager')
+
+        # 3. DELETE SPECIFIC DOCUMENT
         elif 'delete_document' in request.POST:
             doc_id = request.POST.get('doc_id')
             doc = Document.objects.filter(id=doc_id).first()
@@ -2192,7 +2328,7 @@ def document_manager(request):
                 messages.warning(request, f"File '{doc.title}' was permanently deleted.")
             return redirect('students_app:document_manager')
 
-        # 👇 NEW: 4. DELETE ENTIRE FOLDER 👇
+        # 4. DELETE ENTIRE FOLDER
         elif 'delete_folder' in request.POST:
             folder_id = request.POST.get('folder_id')
             folder = Folder.objects.filter(id=folder_id).first()
@@ -2205,6 +2341,7 @@ def document_manager(request):
                 messages.error(request, f"Folder '{folder.name}' and all its contents were destroyed.")
             return redirect('students_app:document_manager')
 
+    # If it's a normal page load (GET request)
     folder_form = FolderForm()
     document_form = DocumentForm()
 
@@ -2214,3 +2351,83 @@ def document_manager(request):
         'document_form': document_form,
     }
     return render(request, 'students_app/document_manager.html', context)
+
+
+from .models import SchoolCoverPhoto, CarouselEvent
+from .forms import SchoolCoverPhotoForm, CarouselEventForm
+
+
+def edit_school_photos(request):
+    # Get the school's profile, or create an empty one if they are brand new
+    profile, created = SchoolCoverPhoto.objects.get_or_create(pk=1)
+    events = CarouselEvent.objects.all()
+
+    if request.method == 'POST':
+        # 1. Update Cover Photo
+        if 'update_profile' in request.POST:
+            profile_form = SchoolCoverPhotoForm(request.POST, request.FILES, instance=profile)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, "Cover photo updated successfully!")
+                return redirect('students_app:edit_school_photos')
+
+        # 2. Add Sliding Event Photo
+        elif 'add_event' in request.POST:
+            event_form = CarouselEventForm(request.POST, request.FILES)
+            if event_form.is_valid():
+                event_form.save()
+                messages.success(request, "Event photo added to the slide!")
+                return redirect('students_app:edit_school_photos')
+
+        # 3. Delete Sliding Photo
+        elif 'delete_event' in request.POST:
+            event_id = request.POST.get('event_id')
+            event = CarouselEvent.objects.filter(id=event_id).first()
+            if event:
+                event.image.delete(save=False)
+                event.delete()
+                messages.warning(request, "Event photo removed.")
+            return redirect('students_app:edit_school_photos')
+
+    profile_form = SchoolCoverPhotoForm(instance=profile)
+    event_form = CarouselEventForm()
+
+    context = {
+        'profile_form': profile_form,
+        'event_form': event_form,
+        'events': events,
+    }
+    return render(request, 'students_app/edit_school_photos.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

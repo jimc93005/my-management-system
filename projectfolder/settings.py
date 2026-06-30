@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-v&vy05gnofd954!t2y4na4wxy+6kit+1a0-3_6jvwnxj@$@*u^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.localhost', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -35,6 +35,9 @@ ALLOWED_HOSTS = ['.localhost', '127.0.0.1', 'localhost']
 SHARED_APPS = [
     'django_tenants',
     'schools_manager',
+    'users',
+    'django.contrib.auth',         
+    'django.contrib.admin',
 
     'django.contrib.contenttypes',
     'django.contrib.sessions',

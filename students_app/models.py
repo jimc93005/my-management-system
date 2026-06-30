@@ -2,15 +2,21 @@ from django.db import models
 import datetime
 from django.conf import settings
 
+from django.db import models
+from django.conf import settings  # Make sure this is imported at the top!
+
 
 class SubjectDepartment(models.Model):
     DEPARTMENT_SUBJECT_CHOICES = [
         ('science', 'science'),
         ('language', 'language'),
         ('humanities', 'humanities')
-
     ]
-    departments = models.CharField(null=True, blank=True, choices=DEPARTMENT_SUBJECT_CHOICES)
+
+    # Note: I added max_length=100 here. Django requires max_length for CharFields!
+    departments = models.CharField(max_length=100, null=True, blank=True, choices=DEPARTMENT_SUBJECT_CHOICES)
+
+    # 1. THE HOD (Only one person in charge)
     head_of_department = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -20,10 +26,17 @@ class SubjectDepartment(models.Model):
         help_text="The HOD responsible for this department."
     )
 
+    # 👇 2. NEW: THE STAFF MEMBERS 👇
+    # This perfectly replaces the field we deleted from CustomUser!
+    staff_members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='departments_assigned',
+        help_text="Teachers belonging to this department."
+    )
+
     def __str__(self):
         return f'{self.departments}'
-
-
 # SUBJECTS MODELS
 
 class ClassLevel(models.Model):
@@ -54,8 +67,7 @@ class MasterSubject(models.Model):
         return self.name
 class Subject(models.Model):
     name = models.ForeignKey(MasterSubject, on_delete=models.CASCADE, related_name='class_instances')
-    subject_teacher = models.CharField(
-        max_length=20)  # Note: You might want to remove this eventually since you have teacher_subject!
+
     code = models.CharField(max_length=10, unique=True)
 
     teacher_subject = models.ForeignKey(
@@ -255,9 +267,25 @@ class Grade(models.Model):
         else:
             return "No comment"
 # SCHOOL REPORT MODELS
+from django.db import models
+from django.db import connection
+
+
+def tenant_logo_path(instance, filename):
+    """
+    Dynamically generates a path based on the current tenant's schema name.
+    Example output: 'school_logos/mangochi/my_logo.png'
+    """
+    tenant_name = connection.schema_name
+    return f'school_logos/{tenant_name}/{filename}'
+
+
 class SchoolProfile(models.Model):
     name = models.CharField(max_length=255)  # School name
-    logo = models.ImageField(upload_to='school_logos/', blank=True, null=True)  # Upload logo
+
+    # 👇 UPDATED: Changed upload_to to use the new function (no quotes around it!)
+    logo = models.ImageField(upload_to=tenant_logo_path, blank=True, null=True)
+
     headteacher_name = models.CharField(max_length=255)  # Headteacher
     contact = models.CharField(max_length=255, blank=True)  # Contact info
     address = models.TextField(blank=True)  # Optional address
@@ -266,7 +294,6 @@ class SchoolProfile(models.Model):
 
     def __str__(self):
         return self.name
-
 
 # TEACHERS MODELS
 class Teacher(models.Model):
@@ -382,6 +409,7 @@ class Attendance(models.Model):
         ('Present', 'Present'),
         ('Absent', 'Absent'),
         ('Late', 'Late'),
+        ('Holiday', 'Holiday'),
     ]
 
     student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='attendance_records')
@@ -396,8 +424,30 @@ class Attendance(models.Model):
         return f"{self.student.first_name} {self.student.surname} - {self.date} - {self.status}"
 
 
-from django.db import models
-from django.conf import settings
+
+class AttendanceWarning(models.Model):
+    """
+    Automatically flags students who miss multiple consecutive days.
+    The Headteacher can view these and mark them as resolved.
+    """
+    student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='attendance_warnings')
+    date_flagged = models.DateField(auto_now_add=True)
+
+    # E.g., "Missed 3 consecutive days ending on 2026-06-15"
+    reason = models.CharField(max_length=255)
+
+    # Headteacher action tracking
+    is_resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    resolution_notes = models.TextField(blank=True, help_text="What action was taken? (e.g., Called parents)")
+
+    class Meta:
+        ordering = ['-date_flagged']
+
+    def __str__(self):
+        status = "Resolved" if self.is_resolved else "ACTION REQUIRED"
+        return f"[{status}] Warning for {self.student.first_name} {self.student.surname}"
+
 
 class StaffNotification(models.Model):
     recipient = models.ForeignKey(
@@ -448,7 +498,7 @@ class Folder(models.Model):
 
 # 3. The Document Model
 class Document(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, null=True, blank=True)
     folder = models.ForeignKey(Folder, related_name='documents', on_delete=models.CASCADE)
 
     # Notice we pass our security guard function to 'upload_to'
@@ -464,3 +514,63 @@ class Document(models.Model):
 
     class Meta:
         ordering = ['-uploaded_at']
+
+
+
+# 👇 Add this near the top if you don't have it
+from django.db import connection
+
+def tenant_image_path(instance, filename):
+    """Saves images securely into each school's private folder"""
+    tenant_name = connection.schema_name
+    return f'school_images/{tenant_name}/{filename}'
+
+class SchoolCoverPhoto(models.Model):
+    # This stores the main background Hero image
+    cover_photo = models.ImageField(upload_to=tenant_image_path, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # This is a cool trick: forcing pk=1 ensures a school can ONLY have 1 profile.
+        # If they upload a new cover photo, it overwrites the old record!
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "School Profile Settings"
+
+class CarouselEvent(models.Model):
+    # These are the sliding photos
+    image = models.ImageField(upload_to=tenant_image_path)
+    title = models.CharField(max_length=200, blank=True, help_text="Short title for the event")
+    description = models.TextField(blank=True, help_text="Write a short description to appear on the photo")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

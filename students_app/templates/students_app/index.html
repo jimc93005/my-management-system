@@ -1,24 +1,26 @@
- {% extends 'students_app/base.html' %}
+{% extends 'students_app/base.html' %}
 
 {% block content %}
 <div class="container-fluid p-0">
 
-    <div class="hero-section d-flex align-items-center text-center">
+    <div class="hero-section d-flex align-items-center text-center"
+         style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
+
         <div class="hero-overlay"></div>
 
-        <div class="container hero-content text-white">
+        <div class="container hero-content text-white mt-5">
             <div class="mb-4">
                 <div class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle shadow" style="width: 80px; height: 80px; font-size: 2.5rem;">
                     <i class="fas fa-graduation-cap"></i>
                 </div>
             </div>
 
-            <h1 class="display-3 font-weight-bold mb-4 shadow-sm">Welcome to {{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
-            <p class="lead font-weight-normal mb-5 mx-auto" style="max-width: 700px; font-size: 1.25rem;">
+            <h1 class="display-4 font-weight-bold mb-3 shadow-sm">Welcome to {{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
+            <p class="lead font-weight-normal mb-5 mx-auto" style="max-width: 700px; font-size: 1.15rem;">
                 Empowering excellence in education. Our digital management portal streamlines administration, enhances teacher collaboration, and tracks student success every step of the way.
             </p>
 
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
                 {% if user.is_authenticated %}
                     <a href="{% url 'students_app:dashboard' %}" class="btn btn-primary btn-lg rounded-pill px-5 py-3 font-weight-bold shadow-lg mx-2">
                         <i class="fas fa-chart-line mr-2"></i> Go to Dashboard
@@ -29,13 +31,32 @@
                     </a>
                 {% endif %}
             </div>
+
+            {% if carousel_events %}
+            <div class="mx-auto mt-4 preview-slider-container" style="max-width: 500px; cursor: pointer;" data-toggle="modal" data-target="#galleryModal" title="Click to view full gallery">
+                <p class="small text-light font-weight-bold text-uppercase tracking-wide mb-2"><i class="fas fa-camera mr-1"></i> Campus Highlights (Click to expand)</p>
+                <div id="smallCarousel" class="carousel slide shadow-lg rounded-lg overflow-hidden border border-light" data-ride="carousel" style="border-width: 3px !important;">
+                    <div class="carousel-inner">
+                        {% for event in carousel_events %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Highlight" style="height: 250px; object-fit: cover;">
+                            <div class="carousel-caption d-none d-md-block p-2" style="background: rgba(0,0,0,0.6); bottom: 0; left: 0; right: 0;">
+                                <h6 class="mb-0 font-weight-bold text-white text-truncate">{{ event.title|default:"Campus Event" }}</h6>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 
-    <div class="container" style="margin-top: -50px; position: relative; z-index: 10;">
+    <div class="container" style="margin-top: 50px; position: relative; z-index: 10;">
         <div class="row justify-content-center">
             <div class="col-md-4 mb-4">
-                <div class="card border-0 shadow text-center h-100 rounded-lg">
+                <div class="card border-0 shadow-sm text-center h-100 rounded-lg">
                     <div class="card-body p-4">
                         <i class="fas fa-chalkboard-teacher fa-2x text-success mb-3"></i>
                         <h5 class="font-weight-bold">Expert Staff</h5>
@@ -44,7 +65,7 @@
                 </div>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="card border-0 shadow text-center h-100 rounded-lg">
+                <div class="card border-0 shadow-sm text-center h-100 rounded-lg">
                     <div class="card-body p-4">
                         <i class="fas fa-laptop-code fa-2x text-info mb-3"></i>
                         <h5 class="font-weight-bold">Modern Platform</h5>
@@ -57,44 +78,86 @@
 
 </div>
 
+{% if carousel_events %}
+<div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-header border-0 pb-0 justify-content-end">
+                <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close" style="opacity: 1; font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="largeCarousel" class="carousel slide shadow-lg rounded-lg overflow-hidden" data-ride="carousel">
+                    <div class="carousel-inner bg-dark rounded-lg">
+                        {% for event in carousel_events %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Event photo" style="height: 70vh; min-height: 500px; object-fit: contain; background-color: #000;">
+
+                            {% if event.title or event.description %}
+                            <div class="carousel-caption d-none d-md-block rounded shadow-lg" style="background: rgba(15, 23, 42, 0.9); padding: 20px 30px; bottom: 30px; border-top: 3px solid #8b5cf6; max-width: 80%; margin: 0 auto;">
+                                <h3 class="font-weight-bold text-white mb-2">{{ event.title }}</h3>
+                                <p class="text-light mb-0" style="font-size: 1.15rem; font-weight: 300;">{{ event.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a class="carousel-control-prev" href="#largeCarousel" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true" style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#largeCarousel" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true" style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <style>
-    /* Ensure the body doesn't have weird margins */
     body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #f8f9fa;}
 
     .hero-section {
-        /* THIS IS THE BACKGROUND IMAGE */
-        /* Currently using a placeholder image of a beautiful campus */
-        background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
         background-size: cover;
         background-position: center;
-        background-attachment: fixed; /* Creates a cool parallax scrolling effect */
-        height: 80vh; /* Takes up 80% of the screen height */
-        min-height: 600px;
+        background-attachment: fixed;
+        min-height: 100vh; /* Changed to 100vh to fit the new slider elegantly */
         position: relative;
+        padding-top: 60px;
+        padding-bottom: 60px;
     }
 
-    /* The dark shadow over the image so white text is readable */
     .hero-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(to bottom, rgba(0, 32, 96, 0.7), rgba(0, 0, 0, 0.6));
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(0, 0, 0, 0.7));
         z-index: 1;
     }
 
-    /* Puts the text IN FRONT of the dark overlay */
     .hero-content {
-        position: relative;
-        z-index: 2;
+        position: relative; z-index: 2;
     }
 
-    /* Smooth button hover effect */
     .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
-        transition: all 0.3s ease;
+        transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important; transition: all 0.3s ease;
+    }
+
+    /* Small subtle scale effect when hovering over the preview slider */
+    .preview-slider-container:hover {
+        transform: scale(1.02);
+        transition: transform 0.3s ease;
     }
 </style>
+
+<script>
+    $('#smallCarousel').on('slide.bs.carousel', function (e) {
+        $('#largeCarousel').carousel(e.to);
+    });
+    $('#largeCarousel').on('slide.bs.carousel', function (e) {
+        $('#smallCarousel').carousel(e.to);
+    });
+</script>
 {% endblock %}

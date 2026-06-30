@@ -1,0 +1,132 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="font-weight-bold mb-0">
+                <i class="fas fa-cog text-secondary mr-2"></i> School Appearance Settings
+            </h2>
+            <p class="text-muted mb-0">Manage your {{ request.tenant.name|default:"School" }} landing page cover photo and event slider.</p>
+        </div>
+        <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary shadow-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fas fa-info-circle mr-2"></i> {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row mb-5">
+
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="card shadow-sm border-0 h-100" style="border-top: 4px solid #8b5cf6 !important;">
+                <div class="card-header bg-white font-weight-bold border-0 pt-4 pb-0">
+                    <i class="fas fa-image mr-2" style="color: #8b5cf6;"></i> Main Background Photo
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">This photo appears behind the main welcome text at the top of your site.</p>
+
+                    {% if profile_form.instance.cover_photo %}
+                        <div class="mb-4 rounded-lg overflow-hidden shadow-sm border" style="height: 140px; position: relative;">
+                            <div class="position-absolute bg-dark text-white px-2 py-1 small rounded-bottom" style="top:0; left:15px; opacity: 0.8;">Current</div>
+                            <img src="{{ profile_form.instance.cover_photo.url }}" class="w-100 h-100" style="object-fit: cover;" alt="Current Cover">
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="update_profile" value="1">
+
+                        {% bootstrap_field profile_form.cover_photo %}
+
+                        <button type="submit" class="btn btn-primary btn-block font-weight-bold shadow-sm mt-3">
+                            <i class="fas fa-save mr-1"></i> Update Background
+                        </button>
+                    </form>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100" style="border-top: 4px solid #f59e0b !important;">
+                <div class="card-header bg-white font-weight-bold border-0 pt-4 pb-0">
+                    <i class="fas fa-plus-circle text-warning mr-2"></i> Add Event to Slider
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Upload photos of campus events. These will slide automatically on your homepage.</p>
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="add_event" value="1">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% bootstrap_field event_form.image %}
+                                {% bootstrap_field event_form.title %}
+                            </div>
+                            <div class="col-md-6">
+                                {% bootstrap_field event_form.description %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning text-dark btn-block font-weight-bold shadow-sm mt-2">
+                            <i class="fas fa-upload mr-1"></i> Add Photo to Slider
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4 mt-5 pb-2 border-bottom d-flex align-items-center">
+        <h4 class="font-weight-bold mb-0"><i class="fas fa-images text-info mr-2"></i> Manage Active Slider Photos</h4>
+        <span class="badge badge-light border text-muted ml-3">{{ events.count }} Active</span>
+    </div>
+
+    <div class="row">
+        {% for event in events %}
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="card shadow-sm h-100 border-0 rounded-lg overflow-hidden group">
+                    <img src="{{ event.image.url }}" class="card-img-top border-bottom" style="height: 160px; object-fit: cover;" alt="Event Image">
+
+                    <div class="card-body p-3 bg-light d-flex flex-column">
+                        <h6 class="font-weight-bold text-dark text-truncate mb-1" title="{{ event.title|default:'Untitled' }}">
+                            {{ event.title|default:"<em class='text-muted font-weight-normal'>No title</em>"|safe }}
+                        </h6>
+                        <p class="small text-muted mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 40px;">
+                            {{ event.description|default:"No description provided." }}
+                        </p>
+
+                        <form method="POST" class="mt-auto m-0 p-0" onsubmit="return confirm('Are you sure you want to remove this photo from your homepage slider?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_event" value="1">
+                            <input type="hidden" name="event_id" value="{{ event.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger btn-block font-weight-bold shadow-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Remove Event
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-5 bg-white rounded-lg shadow-sm border border-dashed">
+                <i class="fas fa-photo-video fa-3x text-light mb-3"></i>
+                <h5 class="font-weight-bold text-secondary">Your slider is empty</h5>
+                <p class="text-muted">Use the form above to upload your first campus event photo. It will appear on your dashboard instantly!</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

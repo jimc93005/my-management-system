@@ -71,7 +71,7 @@ class SubjectForm(forms.ModelForm):
             'target_class',     # NEW: Added target class
             'departments',
             'teacher_subject',  # NEW: Added the secure teacher dropdown
-            'subject_teacher'   # Kept your old field just in case!
+
         ]
 
         widgets = {
@@ -80,7 +80,7 @@ class SubjectForm(forms.ModelForm):
             'target_class': forms.Select(attrs={'class': 'form-control'}),     # NEW
             'departments': forms.Select(attrs={'class': 'form-control'}),
             'teacher_subject': forms.Select(attrs={'class': 'form-control'}),  # NEW
-            'subject_teacher': forms.TextInput(attrs={'class': 'form-control'}),
+
         }
 
 # SCHOOL REPORT FORMS
@@ -183,7 +183,7 @@ class TeacherRegistrationForm(forms.ModelForm):
         fields = [
             'first_name', 'last_name', 'email', 'username', 'password',
             'employment_number', 'gender', 'phone_number', 'district_of_origin', 'religion',
-            'department',  # Added this so you can assign their subject department!
+
             'is_teacher', 'is_hod', 'is_headteacher', 'is_deputy'
         ]
 
@@ -273,17 +273,56 @@ class DepartmentEventForm(forms.ModelForm):
         }
 
 
+
 from django import forms
 from .models import Folder, Document
+
+
+# 👇 THE FIX: Create a custom widget that explicitly tells Django we are doing a bulk upload 👇
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
 
 class FolderForm(forms.ModelForm):
     class Meta:
         model = Folder
         fields = ['name', 'description']
-        # No widgets needed! Bootstrap4 handles it.
+
 
 class DocumentForm(forms.ModelForm):
+    title = forms.CharField(
+        required=False,
+        help_text="Leave blank to use the original file name."
+    )
+
+    # 👇 We use our new custom widget here! 👇
+    file = forms.FileField(
+        widget=MultipleFileInput(attrs={'multiple': True})
+    )
+
     class Meta:
         model = Document
         fields = ['title', 'folder', 'file']
-        # No widgets needed!
+
+
+from .models import SchoolCoverPhoto, CarouselEvent
+
+class SchoolCoverPhotoForm(forms.ModelForm):
+    class Meta:
+        model = SchoolCoverPhoto
+        fields = ['cover_photo']
+        labels = {'cover_photo': 'Upload Main Cover Photo'}
+
+class CarouselEventForm(forms.ModelForm):
+    class Meta:
+        model = CarouselEvent
+        fields = ['image', 'title', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+
+# class SchoolCoverPhotoForm(forms.ModelForm):
+#     class Meta:
+#         model = SchoolProfile # Assuming this is where cover_photo lives in models.py
+#         fields = ['cover_photo']
+#         labels = {'cover_photo': 'Upload Main Cover Photo'}

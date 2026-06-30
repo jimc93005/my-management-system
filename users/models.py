@@ -10,13 +10,7 @@ class CustomUser(AbstractUser):
     is_headteacher = models.BooleanField(default=False)
     is_deputy = models.BooleanField(default=False)
     # Ensure it points to students_app.SubjectDepartment
-    department = models.ForeignKey(
-        'students_app.SubjectDepartment',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='hod_staff'
-    )
+   
     # Add these to your User / Teacher model
     GENDER_CHOICES = [
         ('Male', 'Male'),

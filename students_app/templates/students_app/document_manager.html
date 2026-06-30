@@ -142,9 +142,12 @@
                                             {% csrf_token %}
                                             <input type="hidden" name="upload_document" value="1">
                                             <input type="hidden" name="folder" value="{{ folder.id }}">
-                                            <input type="text" name="title" class="form-control form-control-sm mr-2 mb-2 mb-md-0" placeholder="File title..." required style="max-width: 150px;">
-                                            <input type="file" name="file" class="form-control-file form-control-sm mr-2 mb-2 mb-md-0" required style="max-width: 180px;">
-                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold ml-auto shadow-sm"><i class="fas fa-upload"></i></button>
+
+                                            <input type="text" name="title" class="form-control form-control-sm mr-2 mb-2 mb-md-0" placeholder="Optional title..." style="max-width: 150px;">
+
+                                            <input type="file" name="file" class="form-control-file form-control-sm mr-2 mb-2 mb-md-0" required multiple style="max-width: 250px;">
+
+                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold ml-auto shadow-sm"><i class="fas fa-upload"></i> Bulk Upload</button>
                                         </form>
                                     </li>
                                 </ul>

@@ -1,9 +1,6 @@
 from django.db.models import Sum, Avg
 from .models import Grade, Students
 
-from django.db.models import Sum, Avg
-
-
 def build_term_reports(student, level_filter=None):
     all_grades = Grade.objects.filter(student=student)
 
@@ -11,10 +8,9 @@ def build_term_reports(student, level_filter=None):
     if level_filter:
         all_grades = all_grades.filter(class_level_snapshot__icontains=level_filter)
 
-    # all_grades = Grade.objects.filter(student=student)
     term_reports = {}
 
-    # 1. Organize grades (This part remains mostly the same)
+    # 1. Organize grades
     for grade in all_grades:
         year = grade.academic_year
         term = grade.term
@@ -27,7 +23,6 @@ def build_term_reports(student, level_filter=None):
                 'grades': [], 'subject_count': 0, 'average': 0,
                 'position': None, 'promotion_status': '',
                 'head_remark': '', 'class_comment': '',
-                # Let's also store the historical class for this term
                 'historical_class': grade.class_level_snapshot or student.class_level.class_level
             }
 
@@ -47,14 +42,12 @@ def build_term_reports(student, level_filter=None):
             term_reports[year][term]['average'] = average
 
             # --- HISTORICAL POSITION CALCULATION ---
-            # Find all students who took exams in THIS year, THIS term, and THIS historical class
             cohort_grades = Grade.objects.filter(
                 academic_year=year,
                 term=term,
                 class_level_snapshot=historical_class
             )
 
-            # Get unique student IDs in this cohort
             cohort_student_ids = cohort_grades.values_list('student_id', flat=True).distinct()
             total_students_in_term = cohort_student_ids.count()
 
@@ -77,7 +70,21 @@ def build_term_reports(student, level_filter=None):
                 if record['student_id'] == student.id:
                     term_reports[year][term]['position'] = position
 
-            # --- Remarks (Remains the same as your logic) ---
+            # =========================================================
+            # 👇 NEW: THE CORE ENGLISH OVERRIDE LOGIC 👇
+            # =========================================================
+            english_failed = False
+            for g in term_grades:
+                # Check if the subject is English (case-insensitive)
+                if 'english' in str(g.subject.name).lower():
+                    grade_remark = g.get_remark()
+                    # If remark is F (Forms 1-2) or 7, 8, 9 (Forms 3-4), flag it!
+                    if grade_remark in ['F', '7', '8', '9']:
+                        english_failed = True
+                    break # We found English, no need to check the rest of the loop
+            # =========================================================
+
+            # --- Remarks ---
             avg_score = average
             if avg_score >= 75:
                 status, remark, class_teacher_comment = "Pass", "Excellent performance.", "A brilliant student..."
@@ -88,6 +95,12 @@ def build_term_reports(student, level_filter=None):
             else:
                 status, remark, class_teacher_comment = "Fail", "Unsatisfactory...", "Performance is quite weak..."
 
+            # 👇 NEW: APPLY THE OVERRIDE IF THEY FAILED ENGLISH 👇
+            if status == "Pass" and english_failed:
+                status = "Fail"
+                remark = "Failed: Did not pass English."
+                class_teacher_comment = "Overall average is passing, but failed English. English is a strict requirement for promotion."
+
             term_reports[year][term]['promotion_status'] = status
             term_reports[year][term]['head_remark'] = remark
             term_reports[year][term]['class_comment'] = class_teacher_comment
@@ -97,7 +110,6 @@ def build_term_reports(student, level_filter=None):
             subjects = set(g.subject for g in grades_in_term)
 
             for subject in subjects:
-                # Compare against the historical class, not the current one
                 subject_grades = Grade.objects.filter(
                     subject=subject,
                     academic_year=year,
@@ -120,7 +132,5 @@ def build_term_reports(student, level_filter=None):
                                 student_grade.subject_position = subject_position
                                 student_grade.subject_total = total_subject_students
 
-    # Return total_students based on their current class just for the profile header,
-    # but the reports are all completely historical now.
     current_total_students = Students.objects.filter(class_level=student.class_level).count()
     return term_reports, current_total_students
