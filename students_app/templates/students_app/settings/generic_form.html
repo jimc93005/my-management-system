@@ -1,0 +1,489 @@
+{% extends 'students_app/base.html' %}
+{% load bootstrap4 %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <!-- Back Button -->
+    <div class="mb-4">
+
+        <a href="{% url back_url %}"
+           class="btn btn-outline-secondary rounded-pill px-4 shadow-sm transition-hover">
+
+            <i class="fas fa-arrow-left mr-2"></i>
+
+            Back to Configuration
+
+        </a>
+
+    </div>
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card custom-card">
+
+                <!-- ================= HEADER ================= -->
+
+                <div class="card-header header-gradient text-center border-0">
+
+                    <div class="icon-circle mx-auto shadow">
+
+                        {% if 'Rule' in title %}
+                            <i class="fas fa-balance-scale"></i>
+
+                        {% elif 'Class' in title %}
+                            <i class="fas fa-school"></i>
+
+                        {% elif 'Department' in title %}
+                            <i class="fas fa-building"></i>
+
+                        {% elif 'Subject' in title %}
+                            <i class="fas fa-book"></i>
+
+                        {% elif 'Teacher' in title %}
+                            <i class="fas fa-chalkboard-teacher"></i>
+
+                        {% elif 'Student' in title %}
+                            <i class="fas fa-user-graduate"></i>
+
+                        {% elif 'Grade' in title %}
+                            <i class="fas fa-award"></i>
+
+                        {% else %}
+                            <i class="fas fa-cogs"></i>
+
+                        {% endif %}
+
+                    </div>
+
+                    <h2 class="mt-4 mb-2 font-weight-bold text-white">
+
+                        {{ title }}
+
+                    </h2>
+
+                    <p class="text-white-50 mb-0">
+
+                        Please complete the information below and save your changes.
+
+                    </p>
+
+                </div>
+
+                <!-- ================= BODY ================= -->
+
+                <div class="card-body p-5">
+
+                    <div class="alert alert-primary border-0 shadow-sm rounded-lg">
+
+                        <i class="fas fa-info-circle mr-2"></i>
+
+                        Fields marked with
+                        <strong>*</strong>
+                        are required.
+
+                    </div>
+
+                    <form method="POST" novalidate>
+
+                        {% csrf_token %}
+
+                        {% bootstrap_form form %}
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="{% url back_url %}"
+                               class="btn btn-light border rounded-pill px-4">
+
+                                <i class="fas fa-times mr-2"></i>
+
+                                Cancel
+
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary rounded-pill px-5 save-btn">
+
+                                <i class="fas fa-save mr-2"></i>
+
+                                Save Configuration
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<style>
+
+/* ==========================================================
+   PROFESSIONAL GENERIC FORM
+========================================================== */
+
+body{
+    background:#eef3f8;
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+}
+
+/* Decorative Background */
+
+.container{
+    position:relative;
+}
+
+.container::before{
+
+    content:'';
+
+    position:absolute;
+
+    width:250px;
+
+    height:250px;
+
+    border-radius:50%;
+
+    background:rgba(37,99,235,.08);
+
+    top:-60px;
+
+    right:-70px;
+
+    z-index:0;
+
+}
+
+.container::after{
+
+    content:'';
+
+    position:absolute;
+
+    width:180px;
+
+    height:180px;
+
+    border-radius:50%;
+
+    background:rgba(59,130,246,.06);
+
+    bottom:-40px;
+
+    left:-40px;
+
+    z-index:0;
+
+}
+
+/* ==========================================================
+   CARD
+========================================================== */
+
+.custom-card{
+
+    position:relative;
+
+    z-index:10;
+
+    border:none;
+
+    border-radius:24px;
+
+    overflow:hidden;
+
+    background:#fff;
+
+    box-shadow:
+        0 20px 45px rgba(0,0,0,.08);
+
+}
+
+/* ==========================================================
+   HEADER
+========================================================== */
+
+.header-gradient{
+
+    background:
+    linear-gradient(
+        135deg,
+        #1d4ed8,
+        #2563eb,
+        #3b82f6
+    );
+
+    padding:45px;
+
+}
+
+.icon-circle{
+
+    width:95px;
+
+    height:95px;
+
+    background:white;
+
+    color:#2563eb;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:38px;
+
+    transition:.3s;
+
+}
+
+.icon-circle:hover{
+
+    transform:rotate(10deg) scale(1.05);
+
+}
+
+/* ==========================================================
+   BODY
+========================================================== */
+
+.card-body{
+
+    padding:45px;
+
+}
+
+/* ==========================================================
+   LABELS
+========================================================== */
+
+label{
+
+    font-weight:700;
+
+    color:#334155;
+
+    margin-bottom:8px;
+
+}
+
+/* ==========================================================
+   INPUTS
+========================================================== */
+
+.form-control{
+
+    border-radius:12px;
+
+    border:1px solid #d7dde8;
+
+    min-height:48px;
+
+    transition:.25s;
+
+}
+
+.form-control:focus{
+
+    border-color:#2563eb;
+
+    box-shadow:
+
+    0 0 0 .2rem rgba(37,99,235,.18);
+
+}
+
+textarea.form-control{
+
+    min-height:120px;
+
+}
+
+/* ==========================================================
+   SELECT BOXES
+========================================================== */
+
+select{
+
+    border-radius:12px!important;
+
+}
+
+/* ==========================================================
+   HELP TEXT
+========================================================== */
+
+.form-text{
+
+    color:#64748b!important;
+
+    font-size:.83rem;
+
+}
+
+/* ==========================================================
+   ERRORS
+========================================================== */
+
+.invalid-feedback{
+
+    display:block;
+
+    font-size:.85rem;
+
+}
+
+.alert{
+
+    border-radius:12px;
+
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+.btn{
+
+    transition:.25s;
+
+}
+
+.btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+.save-btn{
+
+    font-weight:600;
+
+    letter-spacing:.3px;
+
+    box-shadow:
+
+    0 10px 20px rgba(37,99,235,.18);
+
+}
+
+.save-btn:hover{
+
+    box-shadow:
+
+    0 18px 30px rgba(37,99,235,.28);
+
+}
+
+/* ==========================================================
+   BACK BUTTON
+========================================================== */
+
+.transition-hover{
+
+    transition:.25s;
+
+}
+
+.transition-hover:hover{
+
+    transform:translateY(-2px);
+
+}
+
+/* ==========================================================
+   DIVIDER
+========================================================== */
+
+hr{
+
+    border-top:1px solid #edf2f7;
+
+}
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media(max-width:768px){
+
+    .card-body{
+
+        padding:30px;
+
+    }
+
+    .header-gradient{
+
+        padding:35px;
+
+    }
+
+    .icon-circle{
+
+        width:70px;
+
+        height:70px;
+
+        font-size:28px;
+
+    }
+
+    h2{
+
+        font-size:1.5rem;
+
+    }
+
+}
+
+/* ==========================================================
+   NICE ANIMATION
+========================================================== */
+
+.custom-card{
+
+    animation:fadeUp .45s ease;
+
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(20px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+</style>
+
+{% endblock %}

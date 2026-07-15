@@ -22,7 +22,7 @@
                 </div>
 
                 <div class="card-body p-5 bg-light">
-                    <form action="{% url 'students_app:edit_staff_profile' staff.id %}" method="post">
+                    <form action="{% url 'students_app:edit_staff_profile' staff.id %}" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
                         <div class="bg-white p-4 rounded shadow-sm border mb-4">
@@ -49,6 +49,17 @@
                                 <div class="col-md-4 mb-3">{% bootstrap_field form.district_of_origin %}</div>
                                 <div class="col-md-4 mb-3">{% bootstrap_field form.religion %}</div>
                             </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mt-2">
+                                    <div class="p-3 bg-light border rounded">
+                                        <label class="font-weight-bold text-dark mb-2">
+                                            <i class="fas fa-file-signature text-secondary mr-2"></i> Official Signature
+                                        </label>
+                                        {% bootstrap_field form.signature show_label=False %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <hr class="my-4">
@@ -63,5 +74,36 @@
         </div>
     </div>
 </div>
-<style> body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; } </style>
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+
+    /* Neaten up the file input */
+    input[type="file"] {
+        background-color: #ffffff;
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        width: 100%;
+    }
+
+    /* Style Django's default "Currently: [link]" text for existing images */
+    .form-group a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+        word-break: break-all;
+    }
+
+    .form-group a:hover {
+        text-decoration: underline;
+    }
+
+    /* Make the clear checkbox text look nicer */
+    .form-group label[for$="-clear_id"] {
+        color: #dc3545;
+        font-weight: 600;
+        margin-left: 5px;
+    }
+</style>
 {% endblock %}

@@ -1,0 +1,289 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-5 px-md-5">
+
+    <div class="row mb-5 align-items-center">
+        <div class="col-md-8">
+            <h2 class="font-weight-bold text-dark mb-1"><i class="fas fa-cogs text-primary mr-2"></i> {{ page_title }}</h2>
+            <p class="text-muted mb-0">Manage grading scales, rules, and class level assignments.</p>
+        </div>
+        <div class="col-md-4 text-md-right mt-3 mt-md-0">
+            <a href="{% url 'students_app:dashboard' %}" class="btn btn-outline-secondary rounded-pill font-weight-bold px-4 shadow-sm">
+                <i class="fas fa-home mr-1"></i> Return to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded-lg alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-xl-7 mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h4 class="font-weight-bold text-dark mb-0"><i class="fas fa-balance-scale-right text-info mr-2"></i> Grading Scales</h4>
+                <a href="{% url 'students_app:add_grading_system' %}" class="btn btn-info btn-sm rounded-pill font-weight-bold shadow-sm px-3">
+                    <i class="fas fa-plus mr-1"></i> New Scale
+                </a>
+            </div>
+
+           <div class="accordion" id="gradingScaleAccordion">
+
+    {% for system in grading_systems %}
+    <div class="card border-0 shadow-sm rounded-lg mb-3 hover-lift">
+
+        <div class="card-header bg-white p-0" id="heading{{ system.id }}">
+            <button
+                class="btn btn-block text-left d-flex justify-content-between align-items-center py-3 px-4"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapse{{ system.id }}"
+                aria-expanded="false"
+                aria-controls="collapse{{ system.id }}"
+                style="text-decoration:none; background:none; border:none;">
+
+                <div>
+                    <i class="fas fa-folder text-info mr-2"></i>
+                    <span class="font-weight-bold text-dark">
+                        {{ system.name }}
+                    </span>
+                </div>
+
+                <span class="badge badge-soft-info border">
+                    {{ system.boundaries.count }} Rules
+                </span>
+
+            </button>
+        </div>
+
+        <div
+            id="collapse{{ system.id }}"
+            class="collapse"
+            aria-labelledby="heading{{ system.id }}"
+            data-parent="#gradingScaleAccordion">
+
+            <div class="card-body">
+
+                <p class="text-muted small mb-4">
+                    {{ system.description|default:"No description provided." }}
+                </p>
+
+                <h6 class="font-weight-bold text-secondary text-uppercase"
+                    style="font-size:0.75rem; letter-spacing:1px;">
+                    Configured Rules
+                </h6>
+
+                {% if system.boundaries.all %}
+
+                <div class="table-responsive bg-light rounded border mb-3">
+
+                    <table class="table table-sm table-borderless mb-0">
+
+                        <thead class="text-muted border-bottom"
+                               style="font-size:0.75rem;">
+
+                            <tr>
+                                <th class="pl-3">Range</th>
+                                <th>Grade</th>
+                                <th>Remark</th>
+                                <th>Action</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody style="font-size:0.85rem;">
+
+                        {% for rule in system.boundaries.all %}
+
+                            <tr>
+
+                                <td class="pl-3 font-weight-bold text-dark">
+                                    {{ rule.min_score }} - {{ rule.max_score }}
+                                </td>
+
+                                <td>
+                                    <span class="badge badge-dark">
+                                        {{ rule.grade_name }}
+                                    </span>
+                                </td>
+
+                                <td class="text-muted">
+                                    {{ rule.remark }}
+                                </td>
+
+                                <td>
+                                    <a href="{% url 'students_app:edit_grade_boundary' rule.id %}"
+                                     class="btn btn-sm btn-outline-primary rounded-pill">
+                                     <i class="fas fa-edit mr-1"></i> Edit
+                                     </a>
+                                </td>>
+
+                            </tr>
+
+                        {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                {% else %}
+
+                <div class="alert alert-light border text-center p-3 mb-3">
+
+                    <i class="fas fa-exclamation-circle text-warning mb-2 fa-lg d-block"></i>
+
+                    <small class="text-muted">
+                        No rules configured yet.
+                    </small>
+
+                </div>
+
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+
+                    <a href="{% url 'students_app:add_grade_boundary' system.id %}"
+                       class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
+
+                        <i class="fas fa-plus-circle mr-1"></i>
+
+                        Add Grade Rule
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="col-12">
+
+        <div class="card border-dashed bg-transparent text-center p-5 shadow-sm rounded-lg">
+
+            <i class="fas fa-folder-open fa-3x text-muted mb-3 opacity-50"></i>
+
+            <h5 class="text-dark font-weight-bold">
+                No Grading Scales Found
+            </h5>
+
+            <p class="text-muted mb-4">
+
+                You need to create at least one grading scale before you can assign grades.
+
+            </p>
+
+            <a href="{% url 'students_app:add_grading_system' %}"
+               class="btn btn-primary rounded-pill font-weight-bold shadow px-4">
+
+                Create First Scale
+
+            </a>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+        </div>
+
+        <div class="col-xl-5 mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h4 class="font-weight-bold text-dark mb-0"><i class="fas fa-chalkboard text-success mr-2"></i> Class Management</h4>
+                <a href="{% url 'students_app:add_class_level' %}" class="btn btn-success btn-sm rounded-pill font-weight-bold shadow-sm px-3">
+                    <i class="fas fa-plus mr-1"></i> New Class
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light text-secondary">
+                            <tr style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                <th class="border-0 px-4 py-3">Class Level</th>
+                                <th class="border-0 py-3">Grading Scale</th>
+                                <th class="border-0 py-3 text-right pr-4">Form Teacher</th>
+                                <th class="border-0 py-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for class_obj in classes %}
+                            <tr>
+                                <td class="px-4 py-3 font-weight-bold text-dark">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-3" style="width: 35px; height: 35px; font-size: 0.8rem; font-weight: 800;">
+                                            {{ class_obj.level_order }}
+                                        </div>
+                                        {{ class_obj.class_level }}
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    {% if class_obj.grading_system %}
+                                        <span class="badge badge-soft-info border px-2 py-1"><i class="fas fa-check-circle mr-1"></i> {{ class_obj.grading_system.name }}</span>
+                                    {% else %}
+                                        <span class="badge badge-soft-danger border px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Unassigned</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-right pr-4 text-muted small font-weight-bold">
+                                    {% if class_obj.form_teacher %}
+                                        {{ class_obj.form_teacher.first_name }} {{ class_obj.form_teacher.last_name }}
+                                    {% else %}
+                                        <span class="text-danger">Unassigned</span>
+
+                                </td>
+                                    {% endif %}
+                                <td class="py-3 text-center">
+                                    <a href="{% url 'students_app:edit_class_level' class_obj.id %}" class="btn btn-sm btn-light text-primary rounded-circle shadow-sm" data-toggle="tooltip" title="Edit Class">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <i class="fas fa-chalkboard-teacher fa-2x text-muted mb-2 opacity-50"></i>
+                                    <p class="text-muted mb-0">No classes have been registered yet.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f4f7f9; font-family: 'Inter', sans-serif; }
+
+    /* Soft Badges */
+    .badge-soft-info { background-color: #e0f2fe; color: #0369a1; }
+    .badge-soft-danger { background-color: #fee2e2; color: #b91c1c; }
+
+    /* Card Interactions */
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+    .transition-hover { transition: background-color 0.2s, color 0.2s; }
+
+    /* Utilities */
+    .rounded-lg { border-radius: 0.75rem !important; }
+    .border-dashed { border: 2px dashed #cbd5e1; }
+    .opacity-50 { opacity: 0.5; }
+</style>
+{% endblock %}

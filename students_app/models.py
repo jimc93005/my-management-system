@@ -1,33 +1,137 @@
 from django.db import models
 import datetime
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 
-from django.db import models
-from django.conf import settings  # Make sure this is imported at the top!
+# 1. THE MASTER TEMPLATE
+class GradingSystem(models.Model):
+    """e.g., 'Junior Secondary Scale (A-F)', 'Senior Secondary Scale (1-9)'"""
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+# 2. THE DYNAMIC RULES
+class GradeBoundary(models.Model):
+    """Replaces your hardcoded if/else statements."""
+    grading_system = models.ForeignKey(GradingSystem, on_delete=models.CASCADE, related_name='boundaries')
+    min_score = models.FloatField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100)
+        ],
+        help_text="Enter a value between 0 and 100."
+    )
+
+    max_score = models.FloatField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100)
+        ],
+        help_text="Enter a value between 0 and 100."
+    )
+    grade_name = models.CharField(max_length=10)  # e.g., 'A', '1', 'B+'
+    remark = models.CharField(max_length=100)  # e.g., 'Excellent', 'Very Good'
+
+    def clean(self):
+        super().clean()
+
+        # 1. Safety check: If fields are empty in the form, don't validate them yet
+        if self.min_score is None or self.max_score is None:
+            return
+
+        # 2. Check if min is greater than max (Your original logic, enhanced for UI)
+        if self.min_score > self.max_score:
+            raise ValidationError({
+                'min_score': "Minimum score cannot be greater than maximum score."
+            })
+        if self.grading_system_id is None:
+            return
+        # 3. PREVENT OVERLAPPING RULES:
+        # Check if any other rule in THIS specific grading system overlaps with this range
+        overlapping_query = GradeBoundary.objects.filter(
+            grading_system=self.grading_system,
+            min_score__lte=self.max_score,
+            max_score__gte=self.min_score
+        )
+
+        # If we are EDITING an existing rule, don't let it compare against itself!
+        if self.pk:
+            overlapping_query = overlapping_query.exclude(pk=self.pk)
+
+        if overlapping_query.exists():
+            # Find which rule it clashes with to give a helpful error message
+            clashing_rule = overlapping_query.first()
+            raise ValidationError(
+                f"🚨 Overlap Error: This range ({self.min_score} - {self.max_score}) "
+                f"conflicts with the existing rule '{clashing_rule.grade_name}' "
+                f"({clashing_rule.min_score} - {clashing_rule.max_score})."
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Keeps your excellent validation safeguard intact!
+        super().save(*args, **kwargs)
+
+
+
+
+    class Meta:
+        ordering = ['-min_score']  # Sorts highest to lowest
+
+    def __str__(self):
+        system_name = self.grading_system.name if self.grading_system else "No System"
+        return f"{system_name}: {self.grading_system.name}: {self.min_score}-{self.max_score} ({self.grade_name})"
+
+
+
+# 3. THE DYNAMIC CLASS LEVEL
+class ClassLevel(models.Model):
+    """Replaces hardcoded 'Form 1', 'Form 2' strings."""
+    class_level = models.CharField(max_length=50, unique=True)  # e.g., "Form 1"
+    level_order = models.IntegerField(default=0, help_text="Used to sort classes (e.g., 1 for Form 1, 2 for Form 2)")
+
+    # Link the class to a specific grading system!
+    grading_system = models.ForeignKey(GradingSystem, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Link the class to its Form Teacher (solving our signature issue!)
+    form_teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="my_form_class",)
+
+    class Meta:
+        ordering = ['level_order']
+
+    def __str__(self):
+        return self.class_level
+
 
 
 class SubjectDepartment(models.Model):
-    DEPARTMENT_SUBJECT_CHOICES = [
-        ('science', 'science'),
-        ('language', 'language'),
-        ('humanities', 'humanities')
-    ]
+    # 1. THE DEPARTMENT DETAILS
+    departments = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Enter the department name (e.g., Science, Languages, Humanities)"
+    )
 
-    # Note: I added max_length=100 here. Django requires max_length for CharFields!
-    departments = models.CharField(max_length=100, null=True, blank=True, choices=DEPARTMENT_SUBJECT_CHOICES)
+    description = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Optional: Briefly describe the focus of this department."
+    )
 
-    # 1. THE HOD (Only one person in charge)
+    # 2. THE HOD (Only one person in charge)
     head_of_department = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='my_headed_department',
+        related_name='my_headed_department',  # Cleaner related name
         help_text="The HOD responsible for this department."
     )
 
-    # 👇 2. NEW: THE STAFF MEMBERS 👇
-    # This perfectly replaces the field we deleted from CustomUser!
+    # 3. THE STAFF MEMBERS
     staff_members = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -35,30 +139,16 @@ class SubjectDepartment(models.Model):
         help_text="Teachers belonging to this department."
     )
 
-    def __str__(self):
-        return f'{self.departments}'
-# SUBJECTS MODELS
-
-class ClassLevel(models.Model):
-    CLASS_LEVELS = [
-        ('1', 'Form 1'),
-        ('2', 'Form 2'),
-        ('3', 'Form 3'),
-        ('4', 'Form 4'),
-        ]
-
-    class_level = models.CharField(max_length=20, choices=CLASS_LEVELS)
-    form_teacher = models.OneToOneField(
-        settings.AUTH_USER_MODEL,  # Or 'Teacher' if you use a separate model
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='my_form_class',
-        help_text="The teacher responsible for this entire class."
-    )
+    class Meta:
+        ordering = ['departments']  # Automatically sorts departments alphabetically in the admin/UI
+        verbose_name = "Subject Department"
+        verbose_name_plural = "Subject Departments"
 
     def __str__(self):
-        return self.get_class_level_display()
+        return self.departments
+
+
+
 
 class MasterSubject(models.Model):
     name = models.CharField(max_length=100, unique=True, help_text="e.g., Mathematics, Computer Science, Economics")
@@ -152,6 +242,9 @@ class Students(models.Model):
 
 
 from django.db import models
+# GRADING MASTER MODELS
+
+from django.db import models
 
 
 class Grade(models.Model):
@@ -160,12 +253,18 @@ class Grade(models.Model):
         ('2', 'Term 2'),
         ('3', 'Term 3'),
     ]
-    student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='grades')
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    student = models.ForeignKey('Students', on_delete=models.CASCADE, related_name='grades')
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE)
     score = models.FloatField()
     academic_year = models.CharField(max_length=10)
     term = models.CharField(max_length=10, choices=TERM_CHOICES)
-    class_level_snapshot = models.CharField(max_length=10, null=True, blank=True)
+
+    # -------------------------------------------------------
+    # SNAPSHOT FIELDS (Crucial for Historical SaaS Accuracy)
+    # -------------------------------------------------------
+    class_level_snapshot = models.CharField(max_length=50, null=True, blank=True)
+    grade_letter_snapshot = models.CharField(max_length=10, null=True, blank=True)
+    remark_snapshot = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         unique_together = ("student", "subject", "academic_year", "term",)
@@ -175,97 +274,55 @@ class Grade(models.Model):
                 f'{self.student.surname} - '
                 f'{self.subject.name} - '
                 f'{self.score} - '
-                f'{self.term} -'
-                f' {self.academic_year}')
+                f'Term {self.term} - '
+                f'{self.academic_year}')
 
     def save(self, *args, **kwargs):
-        # Capture the class level at the time this grade is recorded
+        # 1. Capture the class level snapshot
         if not self.class_level_snapshot and self.student and self.student.class_level:
             self.class_level_snapshot = str(self.student.class_level.class_level)
+
+        # 2. DYNAMIC GRADING ENGINE (Calculates exactly once upon saving)
+        # Check if the student's class actually has a grading system assigned
+        if self.score is not None and self.student and self.student.class_level and getattr(self.student.class_level,
+                                                                                            'grading_system', None):
+
+            # Import locally to avoid circular import issues
+            from .models import GradeBoundary
+
+            # Ask the database to find the matching rule!
+            matching_boundary = GradeBoundary.objects.filter(
+                grading_system=self.student.class_level.grading_system,
+                min_score__lte=self.score,
+                max_score__gte=self.score
+            ).first()
+
+            if matching_boundary:
+                self.grade_letter_snapshot = matching_boundary.grade_name
+                self.remark_snapshot = matching_boundary.remark
+            else:
+                self.grade_letter_snapshot = "N/A"
+                self.remark_snapshot = "Score out of bounds"
+
         super().save(*args, **kwargs)
 
+    # -------------------------------------------------------
+    # LEGACY HELPERS (Prevents your HTML templates from breaking)
+    # -------------------------------------------------------
     def get_remark(self):
         """
-        Returns the grade (A–F for Form 1–2, 1–9 for Form 3–4)
-        based on the score and the class level recorded at the time.
+        Returns the dynamically calculated grade letter from the snapshot.
+        This keeps {{ grade.get_remark }} working perfectly in your PDF!
         """
-        # 1. Convert the level to a lowercase string so we can safely search it
-        level_to_check = str(self.class_level_snapshot or self.student.class_level).lower()
-
-        # 2. Check if the string CONTAINS the number '1' or '2'
-        if '1' in level_to_check or '2' in level_to_check:
-            # ---------- FORM 1 & 2 (A, B, C, D, F) ----------
-            if self.score >= 80:
-                return 'A'
-            elif self.score >= 70:
-                return 'B'
-            elif self.score >= 60:
-                return 'C'
-            elif self.score >= 50:
-                return 'D'
-            else:
-                return 'F'
-
-        else:
-            # ---------- FORM 3 & 4 (1–9) ----------
-            if self.score >= 80:
-                return '1'
-            elif self.score >= 75:
-                return '2'
-            elif self.score >= 65:
-                return '3'
-            elif self.score >= 55:
-                return '4'
-            elif self.score >= 45:
-                return '5'
-            elif self.score >= 35:
-                return '6'
-            elif self.score >= 25:
-                return '7'
-            elif self.score >= 15:
-                return '8'
-            else:
-                return '9'
-    # ---------------------------
-    #   COMMENT SYSTEM
-    # ---------------------------
+        return self.grade_letter_snapshot or "N/A"
 
     def get_comment(self):
         """
-        Returns a human comment based on the remark.
+        Returns the dynamically calculated remark from the snapshot.
+        This keeps {{ grade.get_comment }} working perfectly in your PDF!
         """
+        return self.remark_snapshot or "No comment"
 
-        remark = self.get_remark()
-
-        # Comments for A–F
-        comment_map_letters = {
-            'A': 'Excellent performance',
-            'B': 'Very Good',
-            'C': 'Good',
-            'D': 'Pass, but needs improvement',
-            'F': 'Failed, must work harder'
-        }
-
-        # Comments for 1–9
-        comment_map_numbers = {
-            '1': 'Excellent',
-            '2': 'Very Good',
-            '3': 'Good',
-            '4': 'Credit',
-            '5': 'Satisfactory',
-            '6': 'Pass',
-            '7': 'Weak',
-            '8': 'Very Weak',
-            '9': 'Fail'
-        }
-
-        # Return the correct comments depending on remark type
-        if remark in comment_map_letters:
-            return comment_map_letters[remark]
-        elif remark in comment_map_numbers:
-            return comment_map_numbers[remark]
-        else:
-            return "No comment"
 # SCHOOL REPORT MODELS
 from django.db import models
 from django.db import connection
@@ -291,6 +348,12 @@ class SchoolProfile(models.Model):
     address = models.TextField(blank=True)  # Optional address
     email = models.EmailField(max_length=200, blank=True, null=True)
     motto = models.CharField(max_length=200, blank=True, null=True)
+    headteacher_signature = models.ImageField(
+        upload_to=tenant_logo_path,
+        null=True,
+        blank=True,
+        help_text="Upload the Headteacher's signature (Transparent PNG preferred)"
+    )
 
     def __str__(self):
         return self.name
@@ -549,22 +612,7 @@ class CarouselEvent(models.Model):
         ordering = ['-uploaded_at']
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# FLEXIBLE GRADING SYSTEM FOR SCHOOLS
 
 
 

@@ -22,6 +22,10 @@ from datetime import date
 from .models import Attendance
 from .models import StaffNotification
 from django.contrib.auth import get_user_model
+from .models import GradingSystem, GradeBoundary, ClassLevel
+from .forms import GradingSystemForm, GradeBoundaryForm, ClassLevelForm
+from .models import SubjectDepartment
+from .forms import SubjectDepartmentForm
 
 
 
@@ -330,21 +334,35 @@ def class_list(request):
                                   " access this operation. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
-    classes = ClassLevel.CLASS_LEVELS
-    return render(request, 'students_app/class_list.html', {'classes': classes})
 
+    # Grab the classes dynamically from the database
+    class_objects = ClassLevel.objects.all().order_by('level_order')
+
+    # Package them as (value, label) pairs to keep the HTML template's loop happy!
+    classes = [(c.class_level, c.class_level) for c in class_objects]
+
+    return render(request, 'students_app/class_list.html', {'classes': classes})
 # PLACING THE STUDENTS IN THEIR RESPECTIVE CLASSES
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import Students, ClassLevel, SchoolProfile  # Make sure SchoolProfile is imported!
+
+
 @login_required(login_url='login')
 def students_by_class(request, class_level):
     if not request.user.has_perm('students_app.view_classlevel'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
+
     query = request.GET.get('q', '')  # Get search term from URL
 
-    # THE FIX: Add status='Active' to ensure alumni don't show up in current classes!
-    student_list = Students.objects.filter(class_level=class_level, status='Active')
+    # Filter students
+    student_list = Students.objects.filter(class_level__class_level=class_level, status='Active')
 
     if query:
         # Filter by name or ID
@@ -361,13 +379,35 @@ def students_by_class(request, class_level):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Grab the actual class object to pass to the template
+    try:
+        class_obj = ClassLevel.objects.get(class_level=class_level)
+    except ClassLevel.DoesNotExist:
+        class_obj = None
+        messages.error(request, "Class not found.")
+        return redirect('students_app:class_list')
+
+    # 👇 NEW: Fetch the current academic year and term for the Download Button
+    school_profile = SchoolProfile.objects.first()
+
+    # Adjust these field names to match exactly what they are called in your SchoolProfile model!
+    current_year = getattr(school_profile, 'current_academic_year', '2023-2024')
+    current_term = getattr(school_profile, 'current_term', '1')
+
     context = {
         'page_obj': page_obj,
-        'class_level': class_level,
+        'class_level': class_level,  # This is the string name
+        'class_obj': class_obj,  # This is the actual database object
         'count': student_list.count(),
-        'query': query  # Pass back to template to keep text in search box
+        'query': query,
+
+        # 👇 NEW: Added to context for the template
+        'current_year': current_year,
+        'current_term': current_term,
     }
     return render(request, 'students_app/students_by_class.html', context)
+
+
 # GRADES VIEWS
 
 # students_app/views.py
@@ -386,33 +426,32 @@ def add_grade(request, student_id):
     # -------------------------------------------------------
     # 1. SECURITY FILTER: Only fetch subjects permitted for this user
     # -------------------------------------------------------
+    # -------------------------------------------------------
+    # 1. SECURITY FILTER: Only fetch subjects permitted for this user
+    # -------------------------------------------------------
     if user.is_headteacher or user.is_deputy:
         # Admins can grade any subject the student is taking
         subjects = student.subject.all()
-
-    elif user.is_hod:
-        # HODs can only grade subjects within their department
-        if hasattr(user, 'department'):
-            subjects = student.subject.filter(departments=user.department)
-        else:
-            subjects = student.subject.none()
-
-    elif user.is_teacher:
-        # ---> THE FOREIGN KEY UPGRADE IS HERE <---
-        # We now compare the student's Class object directly to the Subject's Class object!
-        subjects = student.subject.filter(
-            teacher_subject=user,
-            target_class=student.class_level
-        )
-
     else:
-        subjects = student.subject.none()
+        # Start with empty lists
+        hod_subjects = student.subject.none()
+        teacher_subjects = student.subject.none()
+
+        # Check HOD privileges
+        if user.is_hod and hasattr(user, 'department') and user.department:
+            hod_subjects = student.subject.filter(departments=user.department)
+
+        # Check direct Teacher privileges
+        if user.is_teacher:
+            teacher_subjects = student.subject.filter(teacher_subject=user)
+
+        # MERGE THEM! The '|' symbol safely combines both lists of subjects.
+        subjects = hod_subjects | teacher_subjects
 
     # If the filter results in zero subjects, bounce them out!
     if not subjects.exists():
         messages.error(request, f"You do not teach any subjects to {student.first_name} for their current class level.")
         return redirect('students_app:dashboard')
-
     # -------------------------------------------------------
     # 2. Academic years for dropdown
     # -------------------------------------------------------
@@ -673,37 +712,43 @@ def school_report(request, student_id, academic_year, term):
 
 # PDF GENERATION VIEWSz
 
-@login_required(login_url='login')
+
+@login_required(login_url='users:login')
 def school_report_pdf(request, student_id, academic_year, term):
+    # 1. SECURITY CHECK
     if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
+
     student = get_object_or_404(Students, id=student_id)
     school_profile = SchoolProfile.objects.first()
 
-    # (Your existing logic for report data...)
+    # 2. FETCH REPORT DATA (Your existing logic)
     term_reports, total_students = build_term_reports(student)
     report_data = term_reports.get(academic_year, {}).get(term)
 
     if not report_data:
         raise Http404("Report not found")
 
-    # --- THE FIX: ROBUST PATH HANDLING ---
-    school_logo_uri = None
-    if school_profile and school_profile.logo:
-        # 1. Get the absolute path on the hard drive
-        #    e.g., C:\Users\You\Project\media\logos\school.png
-        image_path = Path(school_profile.logo.path)
+    # 3. HELPER FUNCTION: Convert Database Images to Secure Local URIs for WeasyPrint
+    def get_image_uri(image_field):
+        if image_field and hasattr(image_field, 'path'):
+            image_path = Path(image_field.path)
+            if image_path.exists():
+                return image_path.as_uri()
+        return None
 
-        # 2. Verify it exists
-        if image_path.exists():
-            # 3. Convert to URI automatically (handles file:/// and slashes for you)
-            school_logo_uri = image_path.as_uri()
-        else:
-            print(f"DEBUG: Image missing at {image_path}")
+    # 4. GRAB THE IMAGES
+    school_logo_uri = get_image_uri(school_profile.logo) if school_profile else None
+    head_sig_uri = get_image_uri(school_profile.headteacher_signature) if school_profile else None
 
+    # Safely navigate relationships to get the Form Teacher's signature
+    teacher_sig_uri = None
+    if getattr(student, 'class_level', None) and getattr(student.class_level, 'form_teacher', None):
+        teacher_sig_uri = get_image_uri(student.class_level.form_teacher.signature)
+
+    # 5. BUILD CONTEXT
     context = {
         'student': student,
         'academic_year': academic_year,
@@ -717,31 +762,27 @@ def school_report_pdf(request, student_id, academic_year, term):
         'total_students': total_students,
         'school_profile': school_profile,
 
-        # Pass the formatted URI
+        # Pass the formatted URIs to the template
         'school_logo_uri': school_logo_uri,
+        'head_sig_uri': head_sig_uri,
+        'teacher_sig_uri': teacher_sig_uri,
 
-        # Also pass STATIC_ROOT for any CSS files if needed later
         'static_root': settings.STATIC_ROOT,
     }
 
-    html_string = render_to_string(
-        'students_app/school_report_pdf.html',
-        context
-    )
+    # 6. GENERATE PDF
+    html_string = render_to_string('students_app/school_report_pdf.html', context)
 
-    # Enable "presentational_hints" to support HTML attributes like width/height better
+    # Enable presentational_hints to support HTML attributes like width/height
     pdf = HTML(
         string=html_string,
         base_url=request.build_absolute_uri()
     ).write_pdf(presentational_hints=True)
 
     response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = (
-        f'filename="school_report_{student.id}_{academic_year}_term_{term}.pdf"'
-    )
+    response['Content-Disposition'] = f'filename="school_report_{student.id}_{academic_year}_term_{term}.pdf"'
 
     return response
-
 
 # DEPARTMENTS VIEWS
 @login_required()
@@ -936,44 +977,55 @@ def subdepartment_role_create(request, subdepartment_id):
 User = get_user_model()
 
 
-@login_required()
+# Ensure we are using your unified CustomUser model
+User = get_user_model()
+
+
+@login_required(login_url='users:login')
 def teachers_list(request):
-    # Security Check: Ensure only Admins/Headteachers can view the full staff directory
-    is_admin = getattr(request.user, 'is_headteacher', False) or request.user.groups.filter(
+    user = request.user
+
+    # 1. SECURITY CHECK
+    # Simplified using your unified CustomUser boolean fields
+    is_admin = user.is_headteacher or user.is_superuser or user.groups.filter(
         name__in=['Headteacher', 'Admin']).exists()
+
     if not is_admin:
         messages.warning(request,
-                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
+                         "🔒 Oops! You don't have permission to access the staff directory. Please contact the Headteacher.")
         return redirect('students_app:dashboard')
 
-    # 1. Capture the search query from the URL
-    query = request.GET.get('q', '')
+    # 2. CAPTURE SEARCH QUERY (.strip() removes accidental spaces)
+    query = request.GET.get('q', '').strip()
 
-    # 2. Fetch the base list of teachers FROM THE USER MODEL
-    # We pull anyone who has the 'is_teacher' box checked OR is in the 'teachers' group.
-    # .distinct() ensures no one is listed twice!
+    # 3. BASE QUERY
+    # We pull anyone who is a teacher.
+    # Added 'last_name' to order_by to properly sort people with the same first name!
     teachers_queryset = User.objects.filter(
         Q(is_teacher=True) | Q(groups__name__iexact='teachers')
-    ).distinct().order_by('first_name')
+    ).distinct().order_by('first_name', 'last_name')
 
-    # 3. Apply the search filter if a query exists
+    # 4. APPLY SEARCH FILTER
     if query:
         teachers_queryset = teachers_queryset.filter(
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
             Q(employment_number__icontains=query) |
-            Q(username__icontains=query)
+            Q(username__icontains=query) |
+            Q(email__icontains=query)  # Added email search capability!
         ).distinct()
 
-    # 4. Pagination: Show 10 teachers per page
+    # 5. PAGINATION
     paginator = Paginator(teachers_queryset, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # 6. CONTEXT & RENDER
     context = {
         'teachers': page_obj,
         'page_obj': page_obj,
         'query': query,
+        'total_teachers': teachers_queryset.count(),  # Added this so you can display the total count in HTML
     }
 
     return render(request, 'students_app/teachers_list.html', context)
@@ -1173,7 +1225,8 @@ def dashboard(request):
     is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
         name__in=['Headteacher', 'Admin', 'Deputy']).exists()
     is_hod = getattr(user, 'is_hod', False) or user.groups.filter(name__iexact='HOD').exists()
-    is_form_teacher = hasattr(user, 'my_form_class') and user.my_form_class is not None
+    my_class = user.my_form_class.first()
+    is_form_teacher = my_class is not None
     is_teacher = getattr(user, 'is_teacher', False) or user.groups.filter(name__iexact='teachers').exists()
 
     # --- THE FIX: Define the notifications HERE before the context dictionary ---
@@ -1258,7 +1311,7 @@ def dashboard(request):
     # 3. FORM TEACHER DATA (UPDATED WITH ATTENDANCE)
     # -----------------------------------------------------
     if is_form_teacher:
-        my_class = user.my_form_class
+        my_class = user.my_form_class.first()
         class_students = Students.objects.filter(class_level=my_class, status='Active')
         class_grades = Grade.objects.filter(student__in=class_students)
 
@@ -1307,9 +1360,12 @@ def dashboard(request):
         context['subjects'] = Subject.objects.filter(teacher_subject=user)
 
     return render(request, 'students_app/dashboard.html', context)
+
+
+
 @login_required(login_url='login')
 def subject_detail(request, subject_id):
-    if not request.user.has_perm('students_app.view_students'):
+    if not request.user.has_perm('students_app.add_grade'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " access this operation. Please contact"
                                   " the Headteacher if you need this feature.")
@@ -2002,7 +2058,7 @@ def edit_staff_profile(request, user_id):
     staff = get_object_or_404(User, id=user_id)
 
     if request.method == 'POST':
-        form = EditStaffProfileForm(request.POST, instance=staff)
+        form = EditStaffProfileForm(request.POST, request.FILES, instance=staff)
         if form.is_valid():
             form.save()
             messages.success(request, f"Profile for {staff.first_name} updated successfully.")
@@ -2027,7 +2083,7 @@ def manage_staff_roles(request, user_id):
     staff = get_object_or_404(User, id=user_id)
 
     # Find their current form class if they have one
-    current_form_class = getattr(staff, 'my_form_class', None)
+    current_form_class = staff.my_form_class.first()
 
     # NEW: Find their current department if they are an HOD
     current_dept = getattr(staff, 'my_headed_department', None)
@@ -2153,6 +2209,10 @@ def add_master_subject(request):
             subject_name = form.cleaned_data.get('name')
             form.save()
             messages.success(request, f"The subject '{subject_name}' has been added to the school curriculum!")
+            if "save_add_another" in request.POST:
+                return redirect(
+                    "students_app:add_master_subject"
+                )
             return redirect('students_app:dashboard')
     else:
         form = MasterSubjectForm()
@@ -2266,7 +2326,7 @@ from django.contrib import messages
 from .models import Folder, Document
 from .forms import FolderForm, DocumentForm
 
-
+@login_required()
 def document_manager(request):
     folders = Folder.objects.all().prefetch_related('documents')
 
@@ -2402,32 +2462,382 @@ def edit_school_photos(request):
 
 
 
+# FLEXIBLE MASTER GRADING SYSETEM
+
+
+@login_required(login_url='users:login')
+def academic_settings(request):
+    # Security: Only Admins/Headteachers should access this configuration hub
+    is_admin = request.user.is_headteacher or request.user.is_superuser or request.user.groups.filter(
+        name__in=['Headteacher', 'Admin']).exists()
+    if not is_admin:
+        messages.error(request, "🔒 Access Denied: Only administrators can configure academic settings.")
+        return redirect('students_app:dashboard')
+
+    # Fetch all grading systems and prefetch their boundaries (rules) to prevent N+1 database queries
+    grading_systems = GradingSystem.objects.prefetch_related('boundaries').all()
+
+    # Fetch all classes, ordered by the level_order we defined
+    classes = ClassLevel.objects.select_related('grading_system', 'form_teacher').order_by('level_order')
+
+    context = {
+        'grading_systems': grading_systems,
+        'classes': classes,
+        'page_title': 'Academic Configuration Hub'
+    }
+    return render(request, 'students_app/settings/academic_settings.html', context)
+
+
+
+
+@login_required(login_url='users:login')
+def add_grading_system(request):
+    if request.method == "POST":
+        form = GradingSystemForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "✨ Grading System successfully created!")
+            return redirect('students_app:academic_settings')
+    else:
+        form = GradingSystemForm()
+
+    context = {
+        'form': form,
+        'title': 'Create New Grading Scale',
+        'back_url': 'students_app:academic_settings'
+    }
+    return render(request, 'students_app/settings/generic_form.html', context)
+
+
+@login_required(login_url='users:login')
+def add_grade_boundary(request, system_id):
+    # Find the specific grading system from the URL
+    system = get_object_or_404(GradingSystem, id=system_id)
+
+    if request.method == "POST":
+        form = GradeBoundaryForm(request.POST)
+        form.instance.grading_system = system
+        if form.is_valid():
+            # commit=False creates the object but pauses before saving to the database
+            boundary = form.save(commit=False)
+
+            # Automatically link this rule to the system we found in the URL
+            boundary.grading_system = system
+            boundary.save()
+
+            messages.success(request, f"✅ Rule '{boundary.grade_name}' added to {system.name}!")
+            return redirect('students_app:academic_settings')
+    else:
+        form = GradeBoundaryForm()
+
+    context = {
+        'form': form,
+        'title': f'Add Grade Rule to: {system.name}',
+        'back_url': 'students_app:academic_settings'
+    }
+    return render(request, 'students_app/settings/generic_form.html', context)
 
 
 
 
 
+@login_required(login_url='users:login')
+def add_class_level(request):
+    if request.method == "POST":
+        form = ClassLevelForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "🏫 New Class successfully registered!")
+            return redirect('students_app:academic_settings')
+    else:
+        form = ClassLevelForm()
+
+    context = {
+        'form': form,
+        'title': 'Register New Class',
+        'back_url': 'students_app:academic_settings'
+    }
+    return render(request, 'students_app/settings/generic_form.html', context)
 
 
 
 
+@login_required(login_url='users:login')
+def edit_class_level(request, class_id):
+    # Fetch the specific class they clicked on
+    class_obj = get_object_or_404(ClassLevel, id=class_id)
+
+    if request.method == "POST":
+        # Pass instance=class_obj so it UPDATES instead of creating a new one
+        form = ClassLevelForm(request.POST, instance=class_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"🏫 {class_obj.class_level} successfully updated!")
+            return redirect('students_app:academic_settings')
+    else:
+        # Pre-fill the form with the existing class data
+        form = ClassLevelForm(instance=class_obj)
+
+    context = {
+        'form': form,
+        'title': f'Edit Class: {class_obj.class_level}',
+        'back_url': 'students_app:academic_settings'
+    }
+    # We reuse our magical generic form!
+    return render(request, 'students_app/settings/generic_form.html', context)
 
 
 
+@login_required(login_url='users:login')
+def edit_grade_boundary(request, boundary_id):
+    # Fetch the specific grade boundary they clicked on
+    boundary = get_object_or_404(GradeBoundary, id=boundary_id)
+
+    if request.method == "POST":
+        # Pass instance=boundary so it updates instead of creating a new one
+        form = GradeBoundaryForm(request.POST, instance=boundary)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(
+                request,
+                f"✅ Grade rule '{boundary.grade_name}' successfully updated!"
+            )
+
+            return redirect('students_app:academic_settings')
+
+    else:
+        # Pre-fill the form with the existing boundary data
+        form = GradeBoundaryForm(instance=boundary)
+
+    context = {
+        'form': form,
+        'title': f'Edit Grade Rule: {boundary.grade_name}',
+        'back_url': 'students_app:academic_settings',
+    }
+
+    # Reuse the same generic form template
+    return render(
+        request,
+        'students_app/settings/generic_form.html',
+        context
+    )
 
 
 
+def subject_department_list(request):
+    """The dashboard view showing all created departments."""
+    departments = SubjectDepartment.objects.all()
+    return render(request, 'students_app/subject_department_list.html', {'departments': departments})
 
 
+def add_subject_department(request):
+    """Handles displaying and saving the department creation form."""
+    if request.method == "POST":
+        form = SubjectDepartmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "🎉 Department created successfully!")
+            return redirect('students_app:subject_department_list')
+    else:
+        form = SubjectDepartmentForm()
+
+    # Feeding data directly into your dynamic template!
+    context = {
+        'form': form,
+        'title': 'Create Subject Department',
+        'back_url': 'students_app:subject_department_list'
+    }
+    return render(request, 'students_app/settings/generic_form.html', context)
 
 
+@login_required(login_url='users:login')
+def edit_subject_department(request, dept_id):
+    # Fetch the specific class they clicked on
+    dept_obj = get_object_or_404(SubjectDepartment, id=dept_id)
+
+    if request.method == "POST":
+        # Pass instance=class_obj so it UPDATES instead of creating a new one
+        form = SubjectDepartmentForm(request.POST, instance=dept_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"🏫 {dept_obj.departments} successfully updated!")
+            return redirect('students_app:subject_department_list')
+    else:
+        # Pre-fill the form with the existing class data
+        form = SubjectDepartmentForm(instance=dept_obj)
+
+    context = {
+        'form': form,
+        'title': f'Edit : {dept_obj.departments} Department',
+        'back_url': 'students_app:subject_department_list'
+    }
+    # We reuse our magical generic form!
+    return render(request, 'students_app/settings/generic_form.html', context)
 
 
+def delete_subject_department(request, dept_id):
+    # Security check: Only allow deletion via POST request
+    if request.method == 'POST':
+        # Grab the department or return a 404 if it doesn't exist
+        dept = get_object_or_404(SubjectDepartment, id=dept_id)
+
+        # Save the name for the success message before deleting
+        dept_name = dept.departments
+
+        # Delete the record
+        dept.delete()
+
+        # Send a success message to the template
+        messages.success(request, f'Department "{dept_name}" was successfully deleted.')
+
+    # Redirect back to the departments list page
+    return redirect('students_app:subject_department_list')  # Replace with your actual list view name
 
 
+import io
+import zipfile
 
 
+# A
+
+import io
+import zipfile
+from pathlib import Path
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.template.loader import render_to_string
+from django.conf import settings
+from weasyprint import HTML
 
 
+# Make sure these match your actual imports at the top of your file!
+# from .models import Students, ClassLevel, SchoolProfile
+# from .utils import build_term_reports
 
+@login_required(login_url='users:login')
+def download_class_reports(request, class_id, academic_year, term):
+    # 1. SECURITY CHECK
+    if not request.user.has_perm('students_app.change_students'):
+        messages.warning(request, "🔒 Oops! You don't have permission to access this operation.")
+        return redirect('students_app:dashboard')
 
+    # 2. FETCH CLASS AND ACTIVE STUDENTS
+    school_class = get_object_or_404(ClassLevel, id=class_id)
+    students = Students.objects.filter(class_level=school_class, status='Active')
+
+    if not students.exists():
+        messages.warning(request, "No active students found in this class.")
+        return redirect(request.META.get('HTTP_REFERER', 'students_app:dashboard'))
+
+    # 3. SETUP IMAGES (Done outside the loop to optimize performance)
+    school_profile = SchoolProfile.objects.first()
+
+    def get_image_uri(image_field):
+        if image_field and hasattr(image_field, 'path'):
+            image_path = Path(image_field.path)
+            if image_path.exists():
+                return image_path.as_uri()
+        return None
+
+    school_logo_uri = get_image_uri(school_profile.logo) if school_profile else None
+    head_sig_uri = get_image_uri(school_profile.headteacher_signature) if school_profile else None
+
+    # 4. ZIP BUFFER AND COUNTER
+    zip_buffer = io.BytesIO()
+    files_added = 0  # Track exactly how many PDFs we successfully make
+
+    # URL parameters are always strings. Let's create an integer version of 'term' just in case.
+    try:
+        term_int = int(term)
+    except ValueError:
+        term_int = term
+
+    # Clean academic year to handle URL formatting differences
+    clean_academic_year = str(academic_year).strip()
+    slashed_academic_year = clean_academic_year.replace('-', '/')
+
+    # 5. GENERATE PDFS
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for student in students:
+            # Fetch Report Data
+            term_reports, total_students = build_term_reports(student)
+
+            # --- DIAGNOSTICS FOR YOUR TERMINAL ---
+            print(f"DEBUG: Checking {student.first_name} {student.surname}")
+
+            # Safely look for the year using both formats (Dash and Slash)
+            year_data = term_reports.get(clean_academic_year) or term_reports.get(slashed_academic_year) or {}
+
+            # Safely look for the term using string and integer
+            report_data = year_data.get(term) or year_data.get(term_int) or year_data.get(str(term))
+
+            # Skip students who don't have generated data for this term
+            if not report_data:
+                print(f"DEBUG: -> SKIPPED {student.first_name} (No matching report data)\n")
+                continue
+
+            print(f"DEBUG: -> SUCCESS for {student.first_name}\n")
+
+            # Safely get Teacher Signature
+            teacher_sig_uri = None
+            if getattr(student, 'class_level', None) and getattr(student.class_level, 'form_teacher', None):
+                teacher_sig_uri = get_image_uri(student.class_level.form_teacher.signature)
+
+            # Build Context for this specific student
+            context = {
+                'student': student,
+                'academic_year': clean_academic_year,
+                'term': term,
+                'grades': report_data['grades'],
+                'average': report_data['average'],
+                'position': report_data['position'],
+                'promotion_status': report_data['promotion_status'],
+                'head_remark': report_data['head_remark'],
+                'class_comment': report_data.get('class_comment', ''),
+                'total_students': total_students,
+                'school_profile': school_profile,
+                'school_logo_uri': school_logo_uri,
+                'head_sig_uri': head_sig_uri,
+                'teacher_sig_uri': teacher_sig_uri,
+                'static_root': settings.STATIC_ROOT,
+            }
+
+            # Generate PDF bytes
+            html_string = render_to_string('students_app/school_report_pdf.html', context)
+
+            pdf_bytes = HTML(
+                string=html_string,
+                base_url=request.build_absolute_uri()
+            ).write_pdf(presentational_hints=True)
+
+            # Clean up names for the file output (preventing illegal characters in filenames)
+            safe_first = str(getattr(student, 'first_name', student.id)).strip().replace(' ', '_')
+            safe_last = str(getattr(student, 'last_name', '')).strip().replace(' ', '_')
+            safe_year = clean_academic_year.replace('/', '-')  # Windows doesn't like slashes in filenames
+            filename = f"{safe_first}_{safe_last}_Report_{safe_year}_Term_{term}.pdf"
+
+            # Write directly to ZIP
+            zip_file.writestr(filename, pdf_bytes)
+            files_added += 1  # Increment our success tracker
+
+    # 6. RETURN RESPONSE OR ERROR
+    # If the loop finished but we didn't add any files, alert the user
+    if files_added == 0:
+        messages.warning(request,
+                         f"No reports could be generated for {clean_academic_year} Term {term}. Ensure grades are fully entered for this class.")
+        return redirect(request.META.get('HTTP_REFERER', 'students_app:dashboard'))
+
+    # Prepare and send the ZIP file
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+
+    # Clean the class name for the ZIP file title
+    class_name_safe = str(school_class).replace(' ', '_')
+    safe_year_zip = clean_academic_year.replace('/', '-')
+    response[
+        'Content-Disposition'] = f'attachment; filename="{class_name_safe}_Reports_{safe_year_zip}_Term_{term}.zip"'
+
+    return response

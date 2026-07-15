@@ -10,23 +10,24 @@
 
         <div class="container hero-content text-white mt-5">
             <div class="mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle shadow" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                <div class="hero-seal">
                     <i class="fas fa-graduation-cap"></i>
                 </div>
             </div>
 
-            <h1 class="display-4 font-weight-bold mb-3 shadow-sm">Welcome to {{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
-            <p class="lead font-weight-normal mb-5 mx-auto" style="max-width: 700px; font-size: 1.15rem;">
+            <span class="hero-eyebrow">School Management Portal</span>
+            <h1 class="hero-title mb-3">Welcome to {{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
+            <p class="hero-subtitle mb-5 mx-auto">
                 Empowering excellence in education. Our digital management portal streamlines administration, enhances teacher collaboration, and tracks student success every step of the way.
             </p>
 
             <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'students_app:dashboard' %}" class="btn btn-primary btn-lg rounded-pill px-5 py-3 font-weight-bold shadow-lg mx-2">
+                    <a href="{% url 'students_app:dashboard' %}" class="btn btn-hero btn-lg px-5 py-3 mx-2">
                         <i class="fas fa-chart-line mr-2"></i> Go to Dashboard
                     </a>
                 {% else %}
-                    <a href="{% url 'users:login' %}" class="btn btn-primary btn-lg rounded-pill px-5 py-3 font-weight-bold shadow-lg mx-2">
+                    <a href="{% url 'users:login' %}" class="btn btn-hero btn-lg px-5 py-3 mx-2">
                         <i class="fas fa-sign-in-alt mr-2"></i> Login to Portal
                     </a>
                 {% endif %}
@@ -34,13 +35,13 @@
 
             {% if carousel_events %}
             <div class="mx-auto mt-4 preview-slider-container" style="max-width: 500px; cursor: pointer;" data-toggle="modal" data-target="#galleryModal" title="Click to view full gallery">
-                <p class="small text-light font-weight-bold text-uppercase tracking-wide mb-2"><i class="fas fa-camera mr-1"></i> Campus Highlights (Click to expand)</p>
-                <div id="smallCarousel" class="carousel slide shadow-lg rounded-lg overflow-hidden border border-light" data-ride="carousel" style="border-width: 3px !important;">
+                <p class="small font-weight-bold text-uppercase mb-2 preview-slider-label"><i class="fas fa-camera mr-1"></i> Campus Highlights (Click to expand)</p>
+                <div id="smallCarousel" class="carousel slide overflow-hidden preview-slider" data-ride="carousel">
                     <div class="carousel-inner">
                         {% for event in carousel_events %}
                         <div class="carousel-item {% if forloop.first %}active{% endif %}">
                             <img src="{{ event.image.url }}" class="d-block w-100" alt="Highlight" style="height: 250px; object-fit: cover;">
-                            <div class="carousel-caption d-none d-md-block p-2" style="background: rgba(0,0,0,0.6); bottom: 0; left: 0; right: 0;">
+                            <div class="carousel-caption d-none d-md-block p-2 preview-slider-caption">
                                 <h6 class="mb-0 font-weight-bold text-white text-truncate">{{ event.title|default:"Campus Event" }}</h6>
                             </div>
                         </div>
@@ -53,24 +54,24 @@
         </div>
     </div>
 
-    <div class="container" style="margin-top: 50px; position: relative; z-index: 10;">
+    <div class="container feature-strip">
         <div class="row justify-content-center">
             <div class="col-md-4 mb-4">
-                <div class="card border-0 shadow-sm text-center h-100 rounded-lg">
-                    <div class="card-body p-4">
-                        <i class="fas fa-chalkboard-teacher fa-2x text-success mb-3"></i>
-                        <h5 class="font-weight-bold">Expert Staff</h5>
-                        <p class="text-muted small mb-0">Dedicated educators committed to nurturing the next generation of leaders.</p>
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
                     </div>
+                    <h5 class="feature-title">Expert Staff</h5>
+                    <p class="feature-text">Dedicated educators committed to nurturing the next generation of leaders.</p>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="card border-0 shadow-sm text-center h-100 rounded-lg">
-                    <div class="card-body p-4">
-                        <i class="fas fa-laptop-code fa-2x text-info mb-3"></i>
-                        <h5 class="font-weight-bold">Modern Platform</h5>
-                        <p class="text-muted small mb-0">Real-time grades, instant report cards, and seamless digital administration.</p>
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-laptop-code"></i>
                     </div>
+                    <h5 class="feature-title">Modern Platform</h5>
+                    <p class="feature-text">Real-time grades, instant report cards, and seamless digital administration.</p>
                 </div>
             </div>
         </div>
@@ -95,7 +96,7 @@
                             <img src="{{ event.image.url }}" class="d-block w-100" alt="Event photo" style="height: 70vh; min-height: 500px; object-fit: contain; background-color: #000;">
 
                             {% if event.title or event.description %}
-                            <div class="carousel-caption d-none d-md-block rounded shadow-lg" style="background: rgba(15, 23, 42, 0.9); padding: 20px 30px; bottom: 30px; border-top: 3px solid #8b5cf6; max-width: 80%; margin: 0 auto;">
+                            <div class="carousel-caption d-none d-md-block rounded shadow-lg modal-caption">
                                 <h3 class="font-weight-bold text-white mb-2">{{ event.title }}</h3>
                                 <p class="text-light mb-0" style="font-size: 1.15rem; font-weight: 300;">{{ event.description }}</p>
                             </div>
@@ -119,13 +120,18 @@
 {% endif %}
 
 <style>
-    body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #f8f9fa;}
+    /* ============ FACULTY REGISTRY THEME (matches base.html / departments) ============ */
+    body, html { margin: 0; padding: 0; }
 
     .hero-section {
+        --ink: #16213e;
+        --ink-deep: #0e1730;
+        --brass: #b8912f;
+        --brass-light: #f3e6c4;
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        min-height: 100vh; /* Changed to 100vh to fit the new slider elegantly */
+        min-height: 100vh;
         position: relative;
         padding-top: 60px;
         padding-bottom: 60px;
@@ -133,7 +139,7 @@
 
     .hero-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(0, 0, 0, 0.7));
+        background: linear-gradient(to bottom, rgba(14, 23, 48, 0.88), rgba(14, 23, 48, 0.78));
         z-index: 1;
     }
 
@@ -141,14 +147,163 @@
         position: relative; z-index: 2;
     }
 
-    .btn-primary:hover {
-        transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important; transition: all 0.3s ease;
+    .hero-seal {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: #16213e;
+        border: 2px solid #b8912f;
+        color: #f3e6c4;
+        font-size: 2.25rem;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    }
+
+    .hero-eyebrow {
+        display: inline-block;
+        font-family: 'IBM Plex Mono', 'Courier New', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #d4b45f;
+        margin-bottom: 0.75rem;
+    }
+
+    .hero-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-weight: 600;
+        font-size: 3rem;
+        letter-spacing: -0.01em;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    .hero-subtitle {
+        font-weight: 400;
+        font-size: 1.15rem;
+        max-width: 700px;
+        color: rgba(247,244,237,0.88);
+    }
+
+    .btn-hero {
+        background: #b8912f;
+        color: #0e1730;
+        font-weight: 700;
+        border: none;
+        border-radius: 50px;
+        box-shadow: 0 12px 28px rgba(184,145,47,0.4);
+        transition: all 0.25s ease;
+    }
+
+    .btn-hero:hover {
+        transform: translateY(-2px);
+        background: #cba53d;
+        box-shadow: 0 16px 34px rgba(184,145,47,0.45);
+        color: #0e1730;
     }
 
     /* Small subtle scale effect when hovering over the preview slider */
     .preview-slider-container:hover {
         transform: scale(1.02);
         transition: transform 0.3s ease;
+    }
+
+    .preview-slider-label {
+        color: #d4b45f;
+        letter-spacing: 0.06em;
+    }
+
+    .preview-slider {
+        border-radius: 0.625rem;
+        border: 2px solid rgba(184,145,47,0.55);
+        box-shadow: 0 14px 34px rgba(0,0,0,0.3);
+    }
+
+    .preview-slider-caption {
+        background: rgba(14, 23, 48, 0.75);
+        bottom: 0; left: 0; right: 0;
+    }
+
+    .modal-caption {
+        background: rgba(14, 23, 48, 0.92);
+        padding: 20px 30px;
+        bottom: 30px;
+        border-top: 3px solid #b8912f;
+        max-width: 80%;
+        margin: 0 auto;
+    }
+
+    /* ============ FEATURE STRIP ============ */
+    .feature-strip {
+        margin-top: 50px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .feature-card {
+        background: #fffdf8;
+        border: 1px solid #e4ddc9;
+        border-radius: 0.625rem;
+        box-shadow: 0 2px 10px rgba(22,33,62,0.08);
+        text-align: center;
+        padding: 2rem 1.75rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: #b8912f;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 40px rgba(22,33,62,0.14);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        background: #f3e6c4;
+        color: #b8912f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.375rem;
+    }
+
+    .feature-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-weight: 600;
+        color: #16213e;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-text {
+        color: #5b6472;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+
+    @media (max-width: 767px) {
+        .hero-title { font-size: 2rem; }
+        .hero-section { padding-top: 40px; padding-bottom: 40px; }
     }
 </style>
 

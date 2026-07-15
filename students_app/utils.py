@@ -1,10 +1,10 @@
-from django.db.models import Sum, Avg
-from .models import Grade, Students
+from django.db.models import Sum, Avg, Q
+from .models import Grade, Students, ClassLevel, GradeBoundary
+
 
 def build_term_reports(student, level_filter=None):
     all_grades = Grade.objects.filter(student=student)
 
-    # If the user clicked a specific class level, filter the grades!
     if level_filter:
         all_grades = all_grades.filter(class_level_snapshot__icontains=level_filter)
 
@@ -23,7 +23,7 @@ def build_term_reports(student, level_filter=None):
                 'grades': [], 'subject_count': 0, 'average': 0,
                 'position': None, 'promotion_status': '',
                 'head_remark': '', 'class_comment': '',
-                'historical_class': grade.class_level_snapshot or student.class_level.class_level
+                'historical_class': grade.class_level_snapshot or getattr(student.class_level, 'class_level', '')
             }
 
         term_reports[year][term]['grades'].append(grade)
@@ -41,13 +41,10 @@ def build_term_reports(student, level_filter=None):
             term_reports[year][term]['subject_count'] = count
             term_reports[year][term]['average'] = average
 
-            # --- HISTORICAL POSITION CALCULATION ---
+            # --- HISTORICAL POSITION CALCULATION (Unchanged) ---
             cohort_grades = Grade.objects.filter(
-                academic_year=year,
-                term=term,
-                class_level_snapshot=historical_class
+                academic_year=year, term=term, class_level_snapshot=historical_class
             )
-
             cohort_student_ids = cohort_grades.values_list('student_id', flat=True).distinct()
             total_students_in_term = cohort_student_ids.count()
 
@@ -66,55 +63,100 @@ def build_term_reports(student, level_filter=None):
                 if record['average'] != last_avg:
                     position = index + 1
                 last_avg = record['average']
-
                 if record['student_id'] == student.id:
                     term_reports[year][term]['position'] = position
 
             # =========================================================
-            # 👇 NEW: THE CORE ENGLISH OVERRIDE LOGIC 👇
+            # 👇 FULLY DYNAMIC OVERALL REMARKS ENGINE 👇
+            # =========================================================
+
+            # Find the grading system for this specific class
+            grading_system = None
+            try:
+                hist_class_obj = ClassLevel.objects.get(class_level=historical_class)
+                grading_system = hist_class_obj.grading_system
+            except ClassLevel.DoesNotExist:
+                pass
+
+            status = "Pass"
+            remark = "Progressing well."
+            class_teacher_comment = "Satisfactory performance."
+
+            if grading_system:
+                # Ask the database what the student's OVERALL AVERAGE means on this scale!
+                boundary = GradeBoundary.objects.filter(
+                    grading_system=grading_system,
+                    min_score__lte=average,
+                    max_score__gte=average
+                ).first()
+
+                if boundary:
+                    remark = boundary.remark
+                    # List of typical failing grade indicators
+                    fail_indicators = ['F', '9', '8', '7', 'Fail', 'U']
+
+                    if boundary.grade_name in fail_indicators:
+                        status = "Fail"
+                        class_teacher_comment = f"Average score maps to {boundary.grade_name}. Must work harder."
+                    else:
+                        status = "Pass"
+                        class_teacher_comment = f"Overall performance is {boundary.grade_name}. {boundary.remark}"
+            else:
+                # FALLBACK: If the school hasn't assigned a dynamic grading system yet, use the old hardcoded logic
+                if average >= 75:
+                    status, remark, class_teacher_comment = "Pass", "Excellent performance.", "A brilliant student..."
+                elif average >= 60:
+                    status, remark, class_teacher_comment = "Pass", "Satisfactory progress...", "Active in class..."
+                elif average >= 50:
+                    status, remark, class_teacher_comment = "Pass", "A narrow pass...", "Shows potential..."
+                else:
+                    status, remark, class_teacher_comment = "Fail", "Unsatisfactory...", "Performance is quite weak..."
+
+            # =========================================================
+            # 👇 UPDATED: ENGLISH OVERRIDE & WEAK SUBJECTS LOGIC 👇
             # =========================================================
             english_failed = False
+            fail_indicators = ['F', '9', '8', '7', 'Fail', 'U']
+            weak_subjects = []
+
             for g in term_grades:
-                # Check if the subject is English (case-insensitive)
+                # 1. Check if the subject is English
                 if 'english' in str(g.subject.name).lower():
-                    grade_remark = g.get_remark()
-                    # If remark is F (Forms 1-2) or 7, 8, 9 (Forms 3-4), flag it!
-                    if grade_remark in ['F', '7', '8', '9']:
+                    if g.grade_letter_snapshot in fail_indicators or g.get_remark() in fail_indicators:
                         english_failed = True
-                    break # We found English, no need to check the rest of the loop
-            # =========================================================
 
-            # --- Remarks ---
-            avg_score = average
-            if avg_score >= 75:
-                status, remark, class_teacher_comment = "Pass", "Excellent performance.", "A brilliant student..."
-            elif avg_score >= 60:
-                status, remark, class_teacher_comment = "Pass", "Satisfactory progress...", "Active in class..."
-            elif avg_score >= 50:
-                status, remark, class_teacher_comment = "Pass", "A narrow pass...", "Shows potential..."
-            else:
-                status, remark, class_teacher_comment = "Fail", "Unsatisfactory...", "Performance is quite weak..."
+                # 2. Check if the score is below 55 to flag for the comment
+                if g.score < 55:
+                    weak_subjects.append(str(g.subject.name))
 
-            # 👇 NEW: APPLY THE OVERRIDE IF THEY FAILED ENGLISH 👇
+            # Apply the English override if necessary
             if status == "Pass" and english_failed:
                 status = "Fail"
                 remark = "Failed: Did not pass English."
                 class_teacher_comment = "Overall average is passing, but failed English. English is a strict requirement for promotion."
 
+            # 3. Stitch the weak subjects together and append to the comment!
+            if weak_subjects:
+                if len(weak_subjects) == 1:
+                    subjects_str = weak_subjects[0]
+                else:
+                    subjects_str = ", ".join(weak_subjects[:-1]) + f" and {weak_subjects[-1]}"
+
+                # Add a space before appending to ensure clean formatting
+                class_teacher_comment += f", However, {student.first_name.capitalize()} must work hard in {subjects_str}."
+
+            # Save to report dictionary
             term_reports[year][term]['promotion_status'] = status
             term_reports[year][term]['head_remark'] = remark
             term_reports[year][term]['class_comment'] = class_teacher_comment
 
-            # --- HISTORICAL SUBJECT-WISE POSITIONING ---
+            # --- HISTORICAL SUBJECT-WISE POSITIONING (Unchanged) ---
             grades_in_term = term_reports[year][term]['grades']
             subjects = set(g.subject for g in grades_in_term)
 
             for subject in subjects:
                 subject_grades = Grade.objects.filter(
-                    subject=subject,
-                    academic_year=year,
-                    term=term,
-                    class_level_snapshot=historical_class
+                    subject=subject, academic_year=year, term=term, class_level_snapshot=historical_class
                 ).order_by('-score')
 
                 total_subject_students = subject_grades.count()
@@ -132,5 +174,9 @@ def build_term_reports(student, level_filter=None):
                                 student_grade.subject_position = subject_position
                                 student_grade.subject_total = total_subject_students
 
-    current_total_students = Students.objects.filter(class_level=student.class_level).count()
+    # Get the dynamic class total
+    current_total_students = 0
+    if student.class_level:
+        current_total_students = Students.objects.filter(class_level=student.class_level).count()
+
     return term_reports, current_total_students

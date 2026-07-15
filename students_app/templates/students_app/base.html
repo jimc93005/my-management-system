@@ -1,4 +1,5 @@
 {% load bootstrap4 %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,6 +17,7 @@
         School Portal
     {% endif %}
 </title>
+    <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}?v=2">
 
     {% bootstrap_css %}
 
@@ -102,6 +104,9 @@
                             <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:class_list' %}">
                                 <i class="fas fa-chalkboard mr-3 text-center" style="color: #8b5cf6; width: 20px;"></i> Classes
                             </a>
+                            <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:subject_department_list' %}">
+                                    <i class="fas fa-chalkboard mr-2" style="color: #64748b;"></i> Academic departments
+                                </a>
                             <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:subjects_list' %}">
                                 <i class="fas fa-book-open mr-3 text-center" style="color: #ec4899; width: 20px;"></i> Subjects
                             </a>
@@ -133,12 +138,16 @@
                                 <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:edit_school_profile' %}">
                                     <i class="fas fa-cog mr-2" style="color: #64748b;"></i> School Settings
                                 </a>
+                                <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:academic_settings' %}">
+                                    <i class="fas fa-sliders-h mr-2" style="color: #64748b;"></i> Academic Settings
+                                </a>
 
                                 <div class="dropdown-divider"></div>
 
                                 <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:add_class' %}">
                                     <i class="fas fa-chalkboard mr-2" style="color: #64748b;"></i> Add New Class
                                 </a>
+
 
                                 <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:add_master_subject' %}">
                                     <i class="fas fa-book-open mr-2" style="color: #64748b;"></i> Add Master Subject

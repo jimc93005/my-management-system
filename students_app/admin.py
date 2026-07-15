@@ -14,6 +14,9 @@ from .models import TeachingAssignment
 from .models import SubjectDepartment
 from .models import Attendance
 from .models import AttendanceWarning
+from .models import GradeBoundary
+from .models import GradingSystem
+
 
 
 admin.site.register(Students)
@@ -30,6 +33,8 @@ admin.site.register(TeachingAssignment)
 admin.site.register(SubjectDepartment)
 admin.site.register(Attendance)
 admin.site.register(AttendanceWarning)
+admin.site.register(GradeBoundary)
+admin.site.register(GradingSystem)
 
 # users/admin.py
 

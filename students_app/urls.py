@@ -119,6 +119,32 @@ urlpatterns = [
      # ATTENDANCE HISTORY URLS
      path('student/<int:student_id>/attendance-history/', views.student_attendance_history, name='student_attendance_history'),
 
+    # ==========================================
+    # ACADEMIC SETTINGS & CONFIGURATION
+    # ==========================================
+
+    # 1. The Main Control Panel Hub
+    path('settings/academic/', views.academic_settings, name='academic_settings'),
+
+    # 2. Grading System Routes
+    path('settings/grading/add/', views.add_grading_system, name='add_grading_system'),
+    path('settings/grading/<int:system_id>/boundary/add/', views.add_grade_boundary, name='add_grade_boundary'),
+
+    # 3. Class Level Routes
+    path('settings/classes/add/', views.add_class_level, name='add_class_level'),
+    path('settings/classes/<int:class_id>/edit/', views.edit_class_level, name='edit_class_level'),
+    path('settings/grading/boundary/<int:boundary_id>/edit/',views.edit_grade_boundary,name='edit_grade_boundary'),
+
+    # ***********************************DEPARTMENTS OF THE SUBJECTS****************************
+
+    path('settings/departments/', views.subject_department_list, name='subject_department_list'),
+    path('settings/departments/add/', views.add_subject_department, name='add_subject_department'),
+    path('settings/departments/<int:dept_id>/edit/', views.edit_subject_department, name='edit_subject_department'),
+    path('settings/departments/<int:dept_id>/delete/', views.delete_subject_department, name='delete_subject_department'),
+
+    # DOWNLOADING BULKY REPORTS
+    path('reports/class/<int:class_id>/<str:academic_year>/<str:term>/download-zip/',
+         views.download_class_reports, name='download_class_reports_zip')
 
 
 
@@ -126,6 +152,4 @@ urlpatterns = [
 
 
 
-
-
-]
+ ]

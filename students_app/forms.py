@@ -95,6 +95,7 @@ class SchoolProfileForm(forms.ModelForm):
             'email',
             'headteacher_name',
             'logo',
+            'headteacher_signature',
         ]
 
 
@@ -158,7 +159,7 @@ class TeacherForm(forms.ModelForm):
             'gender',
             'subject',
             'class_level'
-
+        #
         ]
 
 
@@ -182,7 +183,7 @@ class TeacherRegistrationForm(forms.ModelForm):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'username', 'password',
-            'employment_number', 'gender', 'phone_number', 'district_of_origin', 'religion',
+            'employment_number', 'gender', 'phone_number', 'district_of_origin', 'religion', 'signature',
 
             'is_teacher', 'is_hod', 'is_headteacher', 'is_deputy'
         ]
@@ -194,7 +195,7 @@ class EditStaffProfileForm(forms.ModelForm):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'employment_number',
-            'gender', 'phone_number', 'district_of_origin', 'religion'
+            'gender', 'phone_number', 'district_of_origin', 'religion','signature',
         ]
 
 
@@ -235,19 +236,53 @@ class ManageStaffRolesForm(forms.Form):
 
 User = get_user_model()
 
+# class ClassLevelForm(forms.ModelForm):
+#     class Meta:
+#         model = ClassLevel
+#         fields = ['class_level', 'form_teacher']
+#         labels = {
+#             'class_level': 'Select Class Level',
+#             'form_teacher': 'Assign Form Teacher (Optional)'
+#         }
+#
+#     def __init__(self, *args, **kwargs):
+#         super(ClassLevelForm, self).__init__(*args, **kwargs)
+#         # Only show staff who are marked as teachers in the dropdown
+#         self.fields['form_teacher'].queryset = User.objects.filter(is_teacher=True).order_by('first_name')
+
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()  # Make sure to use the unified CustomUser model!
+
+
 class ClassLevelForm(forms.ModelForm):
     class Meta:
         model = ClassLevel
-        fields = ['class_level', 'form_teacher']
+        # 1. Combined all the fields from both forms
+        fields = ['class_level', 'level_order', 'grading_system', 'form_teacher']
+
+        # 2. Kept your clean labels
         labels = {
-            'class_level': 'Select Class Level',
-            'form_teacher': 'Assign Form Teacher (Optional)'
+            'class_level': 'Class Name (e.g., Form 1, Grade 8)',
+            'form_teacher': 'Assign Form Teacher (Optional)',
+            'grading_system': 'Grading Scale'
+        }
+
+        # 3. Kept the new helpful instructions
+        help_texts = {
+            'level_order': 'Number used to sort classes in menus (e.g., 1 for Form 1, 2 for Form 2).',
+            'grading_system': 'Which grading scale should this class use for report cards?',
         }
 
     def __init__(self, *args, **kwargs):
         super(ClassLevelForm, self).__init__(*args, **kwargs)
-        # Only show staff who are marked as teachers in the dropdown
-        self.fields['form_teacher'].queryset = User.objects.filter(is_teacher=True).order_by('first_name')
+
+        # 4. Kept your brilliant filtering logic!
+        # (I added 'last_name' to the order_by so teachers with the same first name are alphabetized correctly)
+        self.fields['form_teacher'].queryset = User.objects.filter(is_teacher=True).order_by('first_name', 'last_name')
+
+
 
 
 class MasterSubjectForm(forms.ModelForm):
@@ -321,8 +356,49 @@ class CarouselEventForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 2}),
         }
 
-# class SchoolCoverPhotoForm(forms.ModelForm):
-#     class Meta:
-#         model = SchoolProfile # Assuming this is where cover_photo lives in models.py
-#         fields = ['cover_photo']
-#         labels = {'cover_photo': 'Upload Main Cover Photo'}
+# SMART GADING SYSTEMS
+
+from .models import GradingSystem, GradeBoundary, ClassLevel
+
+# 1. Form to create the Master System (e.g., "Main Scale")
+class GradingSystemForm(forms.ModelForm):
+    class Meta:
+        model = GradingSystem
+        fields = ['name', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Briefly describe this grading scale...'}),
+        }
+
+# 2. Form to add the specific rules (A, B, C) to a System
+class GradeBoundaryForm(forms.ModelForm):
+    class Meta:
+        model = GradeBoundary
+        fields = ['min_score', 'max_score', 'grade_name', 'remark']
+        help_texts = {
+            'min_score': 'Example: 80',
+            'max_score': 'Example: 100',
+            'grade_name': 'Example: A, B+, or 1',
+            'remark': 'Example: Excellent, Very Good',
+        }
+
+User = get_user_model()
+class SubjectDepartmentForm(forms.ModelForm):
+    class Meta:
+        model = SubjectDepartment
+        fields = ['departments', 'description', 'head_of_department', 'staff_members']
+        widgets = {
+            'departments': forms.TextInput(attrs={'placeholder': 'e.g., Mathematics, Sciences'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional description of department focus...'}),
+            'head_of_department': forms.Select(),
+            'staff_members': forms.SelectMultiple(attrs={'help_text': 'Hold Ctrl (or Cmd on Mac) to select multiple teachers.'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['head_of_department'].empty_label = "--- Select an HOD (Optional) ---"
+
+
+
+
+
+

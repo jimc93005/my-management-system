@@ -20,7 +20,7 @@
                 </div>
             </form>
 
-            <a href="{% url 'students_app:add_teachers' %}" class="btn btn-success shadow-sm text-nowrap d-flex align-items-center justify-content-center">
+            <a href="{% url 'students_app:add_staff' %}" class="btn btn-success shadow-sm text-nowrap d-flex align-items-center justify-content-center">
                 <i class="fas fa-plus mr-2"></i> Add New Teacher
             </a>
         </div>
@@ -64,7 +64,7 @@
                                 </td>
                                 <td class="text-right pr-4">
                                     <div class="d-flex justify-content-end gap-2">
-                                        <a href="{% url 'students_app:edit_teachers' teacher.id %}"
+                                        <a href="{% url 'students_app:edit_staff_profile' teacher.id %}"
                                            class="btn btn-sm btn-outline-primary px-3 rounded-pill shadow-sm">
                                            <i class="fas fa-edit mr-1"></i> Edit
                                         </a>
