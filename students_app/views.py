@@ -351,67 +351,94 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Students, ClassLevel, SchoolProfile  # Make sure SchoolProfile is imported!
 
+import datetime
+from django.db.models import Q, Count  # <-- Ensure Count is imported!
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import Students, ClassLevel, Grade
 
-@login_required(login_url='login')
+
 def students_by_class(request, class_level):
     if not request.user.has_perm('students_app.view_classlevel'):
         messages.warning(request,
                          "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
 
-    query = request.GET.get('q', '')  # Get search term from URL
+    query = request.GET.get('q', '')
 
-    # Filter students
+    # 1. Base Query
     student_list = Students.objects.filter(class_level__class_level=class_level, status='Active')
 
+    # 2. Grab the actual class object
+    try:
+        class_obj = ClassLevel.objects.get(class_level=class_level)
+    except ClassLevel.DoesNotExist:
+        messages.error(request, "Class not found.")
+        return redirect('students_app:class_list')
+
+    # Ensure we have the exact string used in the snapshot (e.g., "Form 1")
+    class_name_str = str(class_obj.class_level)
+
+    # 3. Auto-Detect Current Year and Term (NOW FILTERED BY SNAPSHOT)
+    latest_grade = Grade.objects.filter(
+        student__class_level=class_obj,
+        class_level_snapshot=class_name_str  # <--- THE FIX: Must belong to this class!
+    ).order_by('-academic_year', '-term').first()
+
+    if latest_grade:
+        current_year = latest_grade.academic_year
+        current_term = latest_grade.term
+    else:
+        current_year = str(datetime.date.today().year)
+        current_term = '1'
+
+    # 4. Search Filter
     if query:
-        # Filter by name or ID
         student_list = student_list.filter(
             Q(first_name__icontains=query) |
             Q(surname__icontains=query) |
             Q(student_id__icontains=query)
         )
 
-    student_list = student_list.order_by('surname')
+    # 5. THE MAGIC DATABASE SWEEP (NOW FILTERED BY SNAPSHOT)
+    student_list = student_list.annotate(
+        expected_grades=Count('subject', distinct=True),
+        entered_grades=Count(
+            'grades',
+            filter=Q(
+                grades__academic_year=current_year,
+                grades__term=current_term,
+                grades__class_level_snapshot=class_name_str  # <--- THE FIX
+            ),
+            distinct=True
+        )
+    ).order_by('surname')
 
-    # Pagination
+    # 6. Pagination
     paginator = Paginator(student_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Grab the actual class object to pass to the template
-    try:
-        class_obj = ClassLevel.objects.get(class_level=class_level)
-    except ClassLevel.DoesNotExist:
-        class_obj = None
-        messages.error(request, "Class not found.")
-        return redirect('students_app:class_list')
-
-    # 👇 NEW: Fetch the current academic year and term for the Download Button
-    school_profile = SchoolProfile.objects.first()
-
-    # Adjust these field names to match exactly what they are called in your SchoolProfile model!
-    current_year = getattr(school_profile, 'current_academic_year', '2023-2024')
-    current_term = getattr(school_profile, 'current_term', '1')
+    # 7. Safe Percentage Calculation
+    for student in page_obj:
+        if student.expected_grades > 0:
+            student.grade_progress = int((student.entered_grades / student.expected_grades) * 100)
+            student.is_completed = student.entered_grades >= student.expected_grades
+        else:
+            student.grade_progress = 0
+            student.is_completed = False
 
     context = {
         'page_obj': page_obj,
-        'class_level': class_level,  # This is the string name
-        'class_obj': class_obj,  # This is the actual database object
+        'class_level': class_level,
+        'class_obj': class_obj,
         'count': student_list.count(),
         'query': query,
-
-        # 👇 NEW: Added to context for the template
         'current_year': current_year,
         'current_term': current_term,
     }
     return render(request, 'students_app/students_by_class.html', context)
-
-
-# GRADES VIEWS
-
-# students_app/views.py
-# students_app/views.py
 
 @login_required(login_url='login')
 def add_grade(request, student_id):
@@ -1200,13 +1227,11 @@ from datetime import date
 def dashboard(request):
     user = request.user
 
-
-    # 👇 NEW: HANDLE RESOLVING RED FLAGS 👇
+    # 👇 HANDLE RESOLVING RED FLAGS 👇
     if request.method == 'POST' and 'resolve_warning' in request.POST:
         warning_id = request.POST.get('warning_id')
         resolution_notes = request.POST.get('resolution_notes', '')
 
-        # Make sure you imported AttendanceWarning at the top of views.py!
         warning = AttendanceWarning.objects.filter(id=warning_id).first()
         if warning:
             warning.is_resolved = True
@@ -1220,16 +1245,13 @@ def dashboard(request):
     # --- Role Checks ---
     is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
         name__in=['Headteacher', 'Admin', 'Deputy']).exists()
-
-    # --- Role Checks ---
-    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
-        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
     is_hod = getattr(user, 'is_hod', False) or user.groups.filter(name__iexact='HOD').exists()
+
     my_class = user.my_form_class.first()
     is_form_teacher = my_class is not None
     is_teacher = getattr(user, 'is_teacher', False) or user.groups.filter(name__iexact='teachers').exists()
 
-    # --- THE FIX: Define the notifications HERE before the context dictionary ---
+    # --- Notifications ---
     unread_notifications = StaffNotification.objects.filter(recipient=user, is_read=False)
 
     # Base Context
@@ -1308,10 +1330,12 @@ def dashboard(request):
             context['class_stats'] = class_stats
 
     # -----------------------------------------------------
-    # 3. FORM TEACHER DATA (UPDATED WITH ATTENDANCE)
+    # 3. FORM TEACHER DATA
     # -----------------------------------------------------
     if is_form_teacher:
         my_class = user.my_form_class.first()
+        my_class_name_str = str(my_class.class_level)  # Get the exact string for snapshot matching
+
         class_students = Students.objects.filter(class_level=my_class, status='Active')
         class_grades = Grade.objects.filter(student__in=class_students)
 
@@ -1335,11 +1359,10 @@ def dashboard(request):
                                 1) if g_grades.count() > 0 else 0,
         }
 
-        # 👇 NEW: SMART ATTENDANCE DASHBOARD LOGIC 👇
+        # --- SMART ATTENDANCE DASHBOARD LOGIC ---
         today = date.today()
         todays_attendance = Attendance.objects.filter(student__in=class_students, date=today)
 
-        # Calculate daily totals
         context['attendance_stats'] = {
             'present': todays_attendance.filter(status='Present').count(),
             'absent': todays_attendance.filter(status='Absent').count(),
@@ -1347,11 +1370,55 @@ def dashboard(request):
             'not_recorded': class_students.count() - todays_attendance.count()
         }
 
-        # Grab any active Red Flag warnings for students in this specific class
         context['active_warnings'] = AttendanceWarning.objects.filter(
             student__in=class_students,
             is_resolved=False
         ).select_related('student').order_by('-date_flagged')
+
+        # =========================================================
+        # 👇 MASTER CLASS GRADING PROGRESS LOGIC (FILTERED BY SNAPSHOT) 👇
+        # =========================================================
+
+        expected_result = class_students.annotate(
+            sub_count=Count('subject')
+        ).aggregate(total=Sum('sub_count'))
+
+        total_expected = expected_result['total'] or 0
+
+        # Auto-Detect Current Year & Term (NOW FILTERED BY SNAPSHOT)
+        latest_class_grade = Grade.objects.filter(
+            student__in=class_students,
+            class_level_snapshot=my_class_name_str  # <--- THE FIX
+        ).order_by('-academic_year', '-term').first()
+
+        if latest_class_grade:
+            track_year = latest_class_grade.academic_year
+            track_term = latest_class_grade.term
+        else:
+            track_year = str(datetime.date.today().year)
+            track_term = '1'
+
+        # Calculate TOTAL ENTERED GRADES for this term (NOW FILTERED BY SNAPSHOT)
+        total_entered = Grade.objects.filter(
+            student__in=class_students,
+            academic_year=track_year,
+            term=track_term,
+            class_level_snapshot=my_class_name_str  # <--- THE FIX
+        ).count()
+
+        if total_expected > 0:
+            class_grading_progress = int((total_entered / total_expected) * 100)
+        else:
+            class_grading_progress = 0
+
+        context.update({
+            'track_year': track_year,
+            'track_term': track_term,
+            'total_expected': total_expected,
+            'total_entered': total_entered,
+            'class_grading_progress': class_grading_progress,
+        })
+        # 👆 END PROGRESS LOGIC 👆
 
     # -----------------------------------------------------
     # 4. REGULAR TEACHER DATA
@@ -1360,7 +1427,6 @@ def dashboard(request):
         context['subjects'] = Subject.objects.filter(teacher_subject=user)
 
     return render(request, 'students_app/dashboard.html', context)
-
 
 
 @login_required(login_url='login')
@@ -2696,34 +2762,20 @@ def delete_subject_department(request, dept_id):
     return redirect('students_app:subject_department_list')  # Replace with your actual list view name
 
 
+
+
+
+
 import io
 import zipfile
-
-
-# A
-
-import io
-import zipfile
-from pathlib import Path
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.template.loader import render_to_string
-from django.conf import settings
-from weasyprint import HTML
-
-
-# Make sure these match your actual imports at the top of your file!
-# from .models import Students, ClassLevel, SchoolProfile
-# from .utils import build_term_reports
+import datetime
 
 @login_required(login_url='users:login')
 def download_class_reports(request, class_id, academic_year, term):
     # 1. SECURITY CHECK
     if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to access this operation.")
-        return redirect('students_app:dashboard')
+        messages.warning(request, "🔒 Oops! You don't have permission to access to download the zip reports.")
+        return redirect( request.META.get('HTTP_REFERER', 'students_app:dashboard'))
 
     # 2. FETCH CLASS AND ACTIVE STUDENTS
     school_class = get_object_or_404(ClassLevel, id=class_id)
@@ -2733,7 +2785,7 @@ def download_class_reports(request, class_id, academic_year, term):
         messages.warning(request, "No active students found in this class.")
         return redirect(request.META.get('HTTP_REFERER', 'students_app:dashboard'))
 
-    # 3. SETUP IMAGES (Done outside the loop to optimize performance)
+    # 3. SETUP IMAGES
     school_profile = SchoolProfile.objects.first()
 
     def get_image_uri(image_field):
@@ -2748,49 +2800,67 @@ def download_class_reports(request, class_id, academic_year, term):
 
     # 4. ZIP BUFFER AND COUNTER
     zip_buffer = io.BytesIO()
-    files_added = 0  # Track exactly how many PDFs we successfully make
+    files_added = 0
 
-    # URL parameters are always strings. Let's create an integer version of 'term' just in case.
-    try:
-        term_int = int(term)
-    except ValueError:
-        term_int = term
-
-    # Clean academic year to handle URL formatting differences
+    # Build possible year strings based on URL
     clean_academic_year = str(academic_year).strip()
-    slashed_academic_year = clean_academic_year.replace('-', '/')
+    possible_years = [clean_academic_year, clean_academic_year.replace('-', '/')]
+    if '-' in clean_academic_year:
+        possible_years.extend(clean_academic_year.split('-'))
+    elif '/' in clean_academic_year:
+        possible_years.extend(clean_academic_year.split('/'))
+
+    target_term_str = str(term).strip().lower()  # E.g., "1"
 
     # 5. GENERATE PDFS
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for student in students:
-            # Fetch Report Data
             term_reports, total_students = build_term_reports(student)
 
-            # --- DIAGNOSTICS FOR YOUR TERMINAL ---
-            print(f"DEBUG: Checking {student.first_name} {student.surname}")
+            print(f"\n--- DIAGNOSTICS FOR: {student.first_name} {student.surname} ---")
+            print(f"URL Year Passed: '{clean_academic_year}' | URL Term Passed: '{target_term_str}'")
+            print(f"Raw Keys found in DB for this student: {list(term_reports.keys())}")
 
-            # Safely look for the year using both formats (Dash and Slash)
-            year_data = term_reports.get(clean_academic_year) or term_reports.get(slashed_academic_year) or {}
+            # 👇 BULLETPROOF SEARCH 👇
+            year_data = {}
+            actual_year_used = clean_academic_year
+            report_data = None
 
-            # Safely look for the term using string and integer
-            report_data = year_data.get(term) or year_data.get(term_int) or year_data.get(str(term))
+            # Loop through the database dictionary keys and FORCE them into strings to check
+            for db_year, terms_dict in term_reports.items():
+                db_year_str = str(db_year).strip()
+
+                # Check if the DB string matches ANY of our possible strings
+                if db_year_str in possible_years:
+                    year_data = terms_dict
+                    actual_year_used = db_year_str
+                    print(f"✅ SUCCESS: Matched Year -> '{db_year_str}'")
+
+                    # Now aggressively match the term
+                    print(f"Raw Term Keys found in DB for {db_year_str}: {list(year_data.keys())}")
+                    for db_term, data in year_data.items():
+                        # Compare "1" to "1", handling if DB saved it as "Term 1"
+                        db_term_str = str(db_term).strip().lower()
+                        if db_term_str == target_term_str or target_term_str in db_term_str:
+                            report_data = data
+                            print(f"✅ SUCCESS: Matched Term -> '{db_term_str}'")
+                            break
+                    break  # Stop looking for years, we found it
 
             # Skip students who don't have generated data for this term
-            if not report_data:
-                print(f"DEBUG: -> SKIPPED {student.first_name} (No matching report data)\n")
+            if not report_data :
+                print(f"❌ SKIPPED: Could not find matching Year/Term combo in dictionary.")
                 continue
-
-            print(f"DEBUG: -> SUCCESS for {student.first_name}\n")
 
             # Safely get Teacher Signature
             teacher_sig_uri = None
             if getattr(student, 'class_level', None) and getattr(student.class_level, 'form_teacher', None):
                 teacher_sig_uri = get_image_uri(student.class_level.form_teacher.signature)
 
-            # Build Context for this specific student
+            # Build Context
             context = {
                 'student': student,
-                'academic_year': clean_academic_year,
+                'academic_year': actual_year_used,
                 'term': term,
                 'grades': report_data['grades'],
                 'average': report_data['average'],
@@ -2814,30 +2884,179 @@ def download_class_reports(request, class_id, academic_year, term):
                 base_url=request.build_absolute_uri()
             ).write_pdf(presentational_hints=True)
 
-            # Clean up names for the file output (preventing illegal characters in filenames)
+            # File output
             safe_first = str(getattr(student, 'first_name', student.id)).strip().replace(' ', '_')
             safe_last = str(getattr(student, 'last_name', '')).strip().replace(' ', '_')
-            safe_year = clean_academic_year.replace('/', '-')  # Windows doesn't like slashes in filenames
+            safe_year = actual_year_used.replace('/', '-')
             filename = f"{safe_first}_{safe_last}_Report_{safe_year}_Term_{term}.pdf"
 
-            # Write directly to ZIP
             zip_file.writestr(filename, pdf_bytes)
-            files_added += 1  # Increment our success tracker
+            files_added += 1
 
-    # 6. RETURN RESPONSE OR ERROR
-    # If the loop finished but we didn't add any files, alert the user
+            # 6. RETURN RESPONSE
     if files_added == 0:
         messages.warning(request,
                          f"No reports could be generated for {clean_academic_year} Term {term}. Ensure grades are fully entered for this class.")
         return redirect(request.META.get('HTTP_REFERER', 'students_app:dashboard'))
 
-    # Prepare and send the ZIP file
     response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
 
-    # Clean the class name for the ZIP file title
     class_name_safe = str(school_class).replace(' ', '_')
     safe_year_zip = clean_academic_year.replace('/', '-')
     response[
         'Content-Disposition'] = f'attachment; filename="{class_name_safe}_Reports_{safe_year_zip}_Term_{term}.zip"'
 
     return response
+
+
+# =========================================================
+# 1. MAIN GRADEBOOK VIEW (Grid & Rank Tabs)
+# =========================================================
+@login_required(login_url='login')
+def subject_gradebook(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id)
+    user = request.user
+
+    # SECURITY CHECK: Is this user allowed to grade this subject?
+    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
+        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
+    is_subject_teacher = getattr(user, 'is_teacher', False) and subject.teacher_subject == user
+
+    # Optional: Allow HODs to view/edit their department's subjects
+    is_hod = getattr(user, 'is_hod', False) and hasattr(user,
+                                                        'my_headed_department') and user.my_headed_department == subject.departments
+
+    if not (is_admin or is_subject_teacher or is_hod):
+        messages.warning(request, "🔒 You do not have permission to access this subject's gradebook.")
+        return redirect('students_app:dashboard')
+
+    # Fetch all active students taking this specific subject
+    students = Students.objects.filter(subject=subject, status='Active').order_by('surname', 'first_name')
+
+    # Dynamic years for the dropdown
+    current_year = datetime.datetime.now().year
+    years = list(range(current_year - 2, current_year + 5))
+
+    # --- HANDLE FORM SUBMISSION (BULK SAVE) ---
+    if request.method == "POST":
+        academic_year = request.POST.get('academic_year')
+        term = request.POST.get('term')
+
+        if not academic_year or not term:
+            messages.error(request, "Please select an academic year and term.")
+            return redirect('students_app:subject_gradebook', subject_id=subject.id)
+
+        grades_saved = 0
+        # Loop through all students in the class
+        for student in students:
+            # Look for an input field named e.g., 'score_45'
+            score_val = request.POST.get(f'score_{student.id}')
+
+            if score_val and score_val.strip() != '':
+                try:
+                    score = float(score_val)
+                    # Create or update the grade in a single rapid action
+                    Grade.objects.update_or_create(
+                        student=student,
+                        subject=subject,
+                        academic_year=academic_year,
+                        term=term,
+                        defaults={
+                            "score": score,
+                            "class_level_snapshot": str(student.class_level) if student.class_level else "Unassigned"
+                        }
+                    )
+                    grades_saved += 1
+                except ValueError:
+                    pass  # Ignore if they accidentally typed text instead of a number
+
+        messages.success(request, f"Successfully saved {grades_saved} grades for {subject.name}!")
+        return redirect('students_app:subject_gradebook', subject_id=subject.id)
+
+    context = {
+        'subject': subject,
+        'students': students,
+        'years': years,
+    }
+    return render(request, 'students_app/subject_gradebook.html', context)
+
+
+# =========================================================
+# 2. AJAX ENDPOINT (Fetches Live Data for the Form)
+# =========================================================
+@login_required
+def fetch_subject_grades(request, subject_id):
+    """
+    Silently called by Javascript when the teacher changes the Year/Term dropdown.
+    Returns existing grades so the input boxes can be pre-filled.
+    """
+    year = request.GET.get('year')
+    term = request.GET.get('term')
+
+    grades = Grade.objects.filter(subject_id=subject_id, academic_year=year, term=term)
+
+    # Build a dictionary formatted as { "student_id": "score" }
+    grades_dict = {str(grade.student.id): grade.score for grade in grades}
+
+    return JsonResponse({
+        'exists': len(grades_dict) > 0,
+        'grades': grades_dict
+    })
+
+
+# =========================================================
+# 3. PDF EXPORT (Ranked Student Results)
+# =========================================================
+@login_required
+def export_subject_ranked_pdf(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id)
+    year = request.GET.get('academic_year')
+    term = request.GET.get('term')
+
+    if not year or not term:
+        messages.error(request, "Please select an academic year and term to generate a PDF.")
+        return redirect('students_app:subject_gradebook', subject_id=subject.id)
+
+    # Fetch grades and sort them automatically by highest score
+    ranked_grades = Grade.objects.filter(
+        subject=subject, academic_year=year, term=term
+    ).select_related('student').order_by('-score')
+
+    school_profile = SchoolProfile.objects.first()
+
+    context = {
+        'subject': subject,
+        'academic_year': year,
+        'term': term,
+        'ranked_grades': ranked_grades,
+        'school_profile': school_profile,
+    }
+
+    # Generate PDF
+    html_string = render_to_string('students_app/subject_ranked_pdf.html', context)
+    pdf_bytes = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    filename = f"{subject.name}_Ranked_Results_Term_{term}_{year.replace('/', '-')}.pdf"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

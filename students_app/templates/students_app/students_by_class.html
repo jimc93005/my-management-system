@@ -173,6 +173,7 @@
                         <th>Student Name</th>
                         <th>Age</th>
                         <th>Student ID</th>
+                        <th class="text-center">Grading Status (Term {{ current_term }})</th>
                         <th class="text-end">Action</th>
                     </tr>
                 </thead>
@@ -190,6 +191,30 @@
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ student.age }} yrs</span></td>
                         <td><code class="text-muted" style="font-size: 0.9rem;">#{{ student.student_id }}</code></td>
+
+                        <!-- NEW GRADING STATUS COLUMN -->
+                        <td class="text-center align-middle" style="width: 25%;">
+                            {% if student.expected_grades == 0 %}
+                                <span class="badge bg-light text-secondary border px-2 py-1">
+                                    <i class="fas fa-exclamation-circle me-1"></i> No Subjects
+                                </span>
+                            {% elif student.is_completed %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm fw-bold">
+                                    <i class="fas fa-check-circle me-1"></i> Completed ({{ student.entered_grades }}/{{ student.expected_grades }})
+                                </span>
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="progress shadow-sm me-2" style="height: 8px; width: 100px; border-radius: 10px; background-color: #e2e8f0;">
+                                        <div class="progress-bar {% if student.grade_progress > 75 %}bg-primary{% elif student.grade_progress > 25 %}bg-warning{% else %}bg-danger{% endif %} progress-bar-striped progress-bar-animated"
+                                             role="progressbar"
+                                             style="width: {{ student.grade_progress }}%;">
+                                        </div>
+                                    </div>
+                                    <small class="fw-bold text-muted" style="font-size: 0.85rem;">{{ student.entered_grades }}/{{ student.expected_grades }}</small>
+                                </div>
+                            {% endif %}
+                        </td>
+
                         <td class="text-end">
                              <a href="{% url 'students_app:student_profile' student.id %}"
                                class="btn btn-sm btn-light border rounded-pill px-3">

@@ -144,7 +144,11 @@ urlpatterns = [
 
     # DOWNLOADING BULKY REPORTS
     path('reports/class/<int:class_id>/<str:academic_year>/<str:term>/download-zip/',
-         views.download_class_reports, name='download_class_reports_zip')
+         views.download_class_reports, name='download_class_reports_zip'),
+
+    path('subject/<int:subject_id>/gradebook/', views.subject_gradebook, name='subject_gradebook'),
+    path('subject/<int:subject_id>/gradebook/fetch/', views.fetch_subject_grades, name='fetch_subject_grades'),
+    path('subject/<int:subject_id>/gradebook/pdf/', views.export_subject_ranked_pdf, name='export_subject_ranked_pdf'),
 
 
 

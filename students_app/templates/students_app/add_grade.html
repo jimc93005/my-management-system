@@ -109,7 +109,6 @@
         background-color: #fff !important;
     }
 </style>
-
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const yearSelect = document.getElementById("yearSelect");
@@ -129,23 +128,30 @@
                 fetch(`/get-existing-grades/${studentId}/?year=${year}&term=${term}`)
                     .then(response => response.json())
                     .then(data => {
-                        if (data.exists) {
-                            // Show warning and cancel button
+                        let hasRelevantGrades = false;
+
+                        // Loop through ONLY the subjects this specific teacher is allowed to grade
+                        gradeInputs.forEach(input => {
+                            const subjectName = input.getAttribute("name"); // e.g., "score_5"
+
+                            // If the database has a grade for THIS specific input box
+                            if (data.grades && data.grades[subjectName] !== undefined) {
+                                hasRelevantGrades = true; // We found an overlap!
+                                input.value = data.grades[subjectName]; // Populate it
+                            } else {
+                                input.value = ""; // Keep it blank if no grade exists yet
+                            }
+                        });
+
+                        // ONLY show the warning if an overlap was found for THIS teacher's subjects
+                        if (hasRelevantGrades) {
                             warningBanner.classList.remove("d-none");
                             cancelBtn.classList.remove("d-none");
 
                             saveBtn.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Overwrite Grades';
                             saveBtn.classList.replace("btn-primary", "btn-warning");
-
-                            // Fill inputs with old grades
-                            gradeInputs.forEach(input => {
-                                const subjectName = input.getAttribute("name");
-                                if (data.grades[subjectName] !== undefined) {
-                                    input.value = data.grades[subjectName];
-                                }
-                            });
                         } else {
-                            // Normal state if no grades exist
+                            // Normal state if no grades exist for these specific subjects
                             resetUI();
                         }
                     })
@@ -168,6 +174,7 @@
             saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Save Grades';
             saveBtn.classList.replace("btn-warning", "btn-primary");
 
+            // Clear all inputs
             gradeInputs.forEach(input => input.value = "");
         }
 
