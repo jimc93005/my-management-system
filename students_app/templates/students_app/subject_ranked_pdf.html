@@ -209,24 +209,14 @@
                 <td class="fw-bold">{{ grade.student.surname|upper }}, {{ grade.student.first_name }}</td>
 
                 <!-- Score Column with dynamic coloring -->
-                <td class="text-center fw-bold
-                    {% if grade.score >= 75 %}text-success
-                    {% elif grade.score >= 50 %}text-warning
-                    {% else %}text-danger{% endif %}">
+               <!-- Score Column -->
+                <td class="text-center fw-bold">
                     {{ grade.score }}
                 </td>
 
-                <!-- Dynamic Remark Calculation -->
-                <td class="text-center">
-                    {% if grade.score >= 75 %}
-                        <span style="color: #047857;">Distinction</span>
-                    {% elif grade.score >= 60 %}
-                        <span style="color: #0369a1;">Credit</span>
-                    {% elif grade.score >= 50 %}
-                        <span style="color: #b45309;">Pass</span>
-                    {% else %}
-                        <span style="color: #be123c; font-weight: bold;">Fail</span>
-                    {% endif %}
+               <!-- Dynamic Remark Calculation -->
+                <td class="text-center fw-bold text-dark">
+                    {{ grade.get_remark }}
                 </td>
             </tr>
             {% empty %}

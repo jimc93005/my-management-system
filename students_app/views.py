@@ -1972,12 +1972,16 @@ from django.contrib import messages
 
 # Ensure Students and ClassLevel are imported at the top!
 @login_required(login_url='login')
+# Ensure you have this at the top of your file:
+# from .models import Students, ClassLevel, Subject
+
+@login_required(login_url='login')
 def promote_students(request):
     if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
+
     classes = ClassLevel.objects.all().order_by('class_level')
 
     # 1. GET: Which class are we looking at right now?
@@ -2007,9 +2011,21 @@ def promote_students(request):
                 class_to_update = Students.objects.filter(class_level_id=hidden_source_id, status='Active')
                 count = class_to_update.count()
 
+                # Get a list of the students BEFORE updating, so we can loop through them
+                students_list = list(class_to_update)
+
+                # 1. Promote them to the new class
                 class_to_update.update(class_level=target_class)
+
+                # 2. Fetch the subjects assigned to the NEW class
+                target_subjects = Subject.objects.filter(target_class=target_class)
+
+                # 3. Auto-assign the new curriculum to every student
+                for student in students_list:
+                    student.subject.set(target_subjects)
+
                 messages.success(request,
-                                 f"Successfully promoted the entire class ({count} students) to {target_class.class_level}.")
+                                 f"Successfully promoted {count} students to {target_class.class_level}. Subjects have been auto-updated!")
 
             return redirect(f"{request.path}?class_filter={hidden_source_id}")
 
@@ -2027,12 +2043,26 @@ def promote_students(request):
                 messages.error(request, "Please select a Target Class.")
             else:
                 target_class = get_object_or_404(ClassLevel, id=target_class_id)
+
+                # Grab instances before updating
+                students_list = list(students_to_update)
+
+                # 1. Promote class level
                 students_to_update.update(class_level=target_class)
+
+                # 2. Fetch new subjects
+                target_subjects = Subject.objects.filter(target_class=target_class)
+
+                # 3. Reassign curriculum
+                for student in students_list:
+                    student.subject.set(target_subjects)
+
                 messages.success(request,
-                                 f"Successfully promoted {count} selected students to {target_class.class_level}.")
+                                 f"Successfully promoted {count} selected students to {target_class.class_level}. Subjects have been auto-updated!")
 
         # ACTION C: GRADUATE & ARCHIVE
         elif action_type == 'graduate_selected':
+            # We don't wipe subjects on graduation so they keep their historical final-year record
             students_to_update.update(status='Graduated')
             messages.success(request, f"Successfully graduated {count} students. They are now in the Alumni Archive.")
 
@@ -2691,7 +2721,7 @@ def edit_grade_boundary(request, boundary_id):
     )
 
 
-
+@login_required()
 def subject_department_list(request):
     """The dashboard view showing all created departments."""
     departments = SubjectDepartment.objects.all()

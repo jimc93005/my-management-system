@@ -10,29 +10,42 @@ def build_term_reports(student, level_filter=None):
 
     term_reports = {}
 
-    # 1. Organize grades
+    # 1. Organize grades (UPDATED WITH CLASS-LOCK)
     for grade in all_grades:
         year = grade.academic_year
         term = grade.term
+
+        # Grab the snapshot for this specific grade
+        current_snapshot = grade.class_level_snapshot or getattr(student.class_level, 'class_level', '')
 
         if not year or not term: continue
 
         if year not in term_reports: term_reports[year] = {}
         if term not in term_reports[year]:
+            # Lock this term's bucket to the FIRST class level we find
             term_reports[year][term] = {
                 'grades': [], 'subject_count': 0, 'average': 0,
                 'position': None, 'promotion_status': '',
                 'head_remark': '', 'class_comment': '',
-                'historical_class': grade.class_level_snapshot or getattr(student.class_level, 'class_level', '')
+                'historical_class': current_snapshot
             }
 
-        term_reports[year][term]['grades'].append(grade)
+        # STRICT FILTER: Only append the grade if it matches this term's locked class!
+        if current_snapshot == term_reports[year][term]['historical_class']:
+            term_reports[year][term]['grades'].append(grade)
 
     # 2. Calculate Averages, Positions, and Remarks
     for year in term_reports:
         for term in term_reports[year]:
             historical_class = term_reports[year][term]['historical_class']
-            term_grades = Grade.objects.filter(student=student, academic_year=year, term=term)
+
+            # STRICT FILTER: Only query grades matching the locked class!
+            term_grades = Grade.objects.filter(
+                student=student,
+                academic_year=year,
+                term=term,
+                class_level_snapshot=historical_class
+            )
 
             total = term_grades.aggregate(total=Sum('score'))['total'] or 0
             count = term_grades.count()
@@ -41,7 +54,7 @@ def build_term_reports(student, level_filter=None):
             term_reports[year][term]['subject_count'] = count
             term_reports[year][term]['average'] = average
 
-            # --- HISTORICAL POSITION CALCULATION (Unchanged) ---
+            # --- HISTORICAL POSITION CALCULATION (Updated with Strict Filter) ---
             cohort_grades = Grade.objects.filter(
                 academic_year=year, term=term, class_level_snapshot=historical_class
             )
@@ -50,9 +63,14 @@ def build_term_reports(student, level_filter=None):
 
             term_averages = []
             for s_id in cohort_student_ids:
+                # Calculate ranking average only using the locked class subjects
                 avg = Grade.objects.filter(
-                    student_id=s_id, academic_year=year, term=term
+                    student_id=s_id,
+                    academic_year=year,
+                    term=term,
+                    class_level_snapshot=historical_class
                 ).aggregate(avg=Avg('score'))['avg'] or 0
+
                 term_averages.append({'student_id': s_id, 'average': round(avg, 2)})
 
             term_averages.sort(key=lambda x: x['average'], reverse=True)

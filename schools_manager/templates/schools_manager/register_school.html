@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply - EduSphere SaaS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center p-6">
+
+    <div class="max-w-6xl w-full bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+
+        <!-- Left Side: Instructions -->
+        <div class="p-10 md:p-14 bg-gradient-to-br from-indigo-900/40 to-slate-950 border-r border-slate-800 flex flex-col justify-center">
+            <h2 class="text-3xl font-bold mb-4 text-white">Join EduSphere SaaS</h2>
+            <p class="text-slate-400 mb-8 leading-relaxed">
+                Step into the future of school management. Please make your subscription payment using the details below, then upload your receipt on the right.
+            </p>
+
+            <div class="space-y-6">
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                    <h3 class="text-indigo-400 font-bold uppercase tracking-wider text-sm mb-2">Airtel Money</h3>
+                    <p class="text-2xl font-mono text-white">+265 880 325 161</p>
+                    <p class="text-sm text-slate-500 mt-1">Name: EduSphere Tech</p>
+                </div>
+
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                    <h3 class="text-cyan-400 font-bold uppercase tracking-wider text-sm mb-2">TNM Mpamba</h3>
+                    <p class="text-2xl font-mono text-white">+265 990 000 000</p>
+                    <p class="text-sm text-slate-500 mt-1">Name: EduSphere Tech</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: The Form -->
+        <div class="p-10 md:p-14 bg-slate-900 relative">
+            <h3 class="text-2xl font-bold text-white mb-6">Submit Your Application</h3>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl mb-6 font-medium">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-400 mb-1">School Name</label>
+                    <input type="text" name="school_name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-400 mb-1">Desired Subdomain <span class="text-xs font-normal text-slate-500">(e.g., 'cityhigh' becomes cityhigh.edusphere.com)</span></label>
+                    <input type="text" name="subdomain" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                    {% if form.subdomain.errors %}
+                        <p class="text-red-400 text-xs mt-1">{{ form.subdomain.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-400 mb-1">Email Address</label>
+                        <input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-400 mb-1">Phone Number</label>
+                        <input type="text" name="phone_number" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-400 mb-1">Upload Proof of Payment</label>
+                    <input type="file" name="proof_of_payment" accept="image/*" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 transition cursor-pointer">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-900/20 transition mt-4">
+                    Submit Application &rarr;
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
