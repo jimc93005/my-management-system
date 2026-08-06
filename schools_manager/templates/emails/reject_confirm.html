@@ -1,0 +1,21 @@
+{% extends 'schools_manager/base_public.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; padding: 24px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <h2 style="color: #dc2626; margin-top: 0;">Confirm Rejection</h2>
+    <p>Are you sure you want to reject the registration request for <strong>{{ registration.school_name }}</strong> ({{ registration.email }})?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 16px;">
+            <label for="admin_notes" style="display: block; font-weight: bold; margin-bottom: 8px;">Rejection Reason / Notes (Sent to applicant):</label>
+            <textarea id="admin_notes" name="admin_notes" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="e.g., Payment proof could not be verified. Please re-apply with valid receipt." required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <a href="{% url 'tenant_admin_site:schools_manager_schoolregistrationrequest_changelist' %}" style="padding: 10px 16px; background: #6b7280; color: white; border-radius: 4px; text-decoration: none;">Cancel</a>
+            <button type="submit" style="padding: 10px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Reject Application</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

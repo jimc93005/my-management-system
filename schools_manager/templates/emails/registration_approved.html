@@ -1,0 +1,32 @@
+{# schools_manager/templates/emails/registration_approved.html #}
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; background-color: #F6F9FC; padding: 30px; color: #0A2540;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 10px; border-top: 5px solid #008080;">
+
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #008080; margin-bottom: 5px;">Welcome to Three Angels Solutions!</h1>
+            <p style="color: #FF6B35; font-weight: bold; margin-top: 0;">Your application has been approved.</p>
+        </div>
+
+        <p>Hello,</p>
+        <p>We are thrilled to let you know that the server provisioning for <strong>{{ school_name }}</strong> is complete. Your isolated school management environment is now live and ready to use.</p>
+
+        <div style="background-color: #E6F2F2; padding: 20px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #008080;">
+            <h3 style="margin-top: 0; color: #008080;">Your Login Credentials</h3>
+            <p style="margin-bottom: 5px;"><strong>Your Portal URL:</strong> <a href="{{ domain_url }}" style="color: #FF6B35; text-decoration: none;">{{ domain_url }}</a></p>
+            <p style="margin-bottom: 5px;"><strong>Admin Email:</strong> {{ email }}</p>
+            <p style="margin-bottom: 5px;"><strong>Username:</strong> admin_{{ registration.subdomain|lower }}</p>
+            <p style="margin-bottom: 0;"><strong>Temporary Password:</strong> <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 16px;">{% autoescape off %}{{ temp_password }}{% endautoescape %}</code></p>
+        </div>
+
+        <p><em>Security Notice: Please log in using the link above and change your password immediately from the admin dashboard.</em></p>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="{{ domain_url }}" style="background-color: #008080; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Log in to your portal</a>
+        </div>
+
+        <p style="margin-top: 40px; font-size: 14px; color: #666;">Best regards,<br><strong>The Three Angels Solutions Team</strong></p>
+    </div>
+</body>
+</html>

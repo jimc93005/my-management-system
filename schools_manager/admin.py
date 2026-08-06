@@ -2,13 +2,16 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django_tenants.utils import schema_context
-from .models import School, Domain, SchoolRegistrationRequest
 from django.utils import timezone
+from django.utils.html import format_html
+from django.urls import reverse
+
+from .models import School, Domain, SchoolRegistrationRequest
 
 
 # 1. Create a custom Admin Site just for managing tenants
 class TenantAdminSite(admin.AdminSite):
-    site_header = "EduSphere Master Administration"
+    site_header = "Three Angels Solutions Master Administration"
     site_title = "Tenant Manager"
     index_title = "Welcome to the Master Portal"
 
@@ -24,7 +27,8 @@ tenant_admin_site.register(Domain)
 # 4. The Magic Registration Dashboard
 @admin.register(SchoolRegistrationRequest, site=tenant_admin_site)
 class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
-    list_display = ['school_name', 'subdomain', 'email', 'status', 'applied_at']
+    # Added 'admin_actions' column to the list display
+    list_display = ['school_name', 'subdomain', 'email', 'status', 'applied_at', 'admin_actions']
     list_filter = ['status', 'applied_at']
     search_fields = ['school_name', 'email', 'subdomain']
     readonly_fields = ['applied_at', 'reviewed_at']
@@ -41,6 +45,26 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
             'fields': ('status', 'admin_notes', 'reviewed_at', 'applied_at')
         }),
     )
+
+    def admin_actions(self, obj):
+        """
+        Renders custom Approve and Reject buttons directly in the dashboard row.
+        Clicking these routes through views.approve_registration/reject_registration,
+        which provisions the schema and fires the emails automatically!
+        """
+        if obj.status == 'Pending':
+            approve_url = reverse('schools_manager:approve_registration', args=[obj.pk])
+            reject_url = reverse('schools_manager:reject_registration', args=[obj.pk])
+
+            return format_html(
+                '<a class="button" style="background-color: #10b981; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-right: 4px;" href="{}">Approve</a>'
+                '<a class="button" style="background-color: #ef4444; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold;" href="{}">Reject</a>',
+                approve_url, reject_url
+            )
+
+        return f"Processed ({obj.status})"
+
+    admin_actions.short_description = "Actions"
 
     def save_model(self, request, obj, form, change):
         # Check if this is an existing object being edited
@@ -65,6 +89,7 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
         # Set your base domain here. For local testing, use 'localhost'.
         # In production, change this to 'edusphere.com'
         BASE_DOMAIN = 'localhost'
+        PORT = '8000'
 
         try:
             # 1. Create the Isolated Tenant (School)

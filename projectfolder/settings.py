@@ -5,36 +5,46 @@ Configured for Multi-Tenant Production Deployment.
 
 from pathlib import Path
 import os
+from environ import Env
+from pygments.styles import default
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 2. Initialize env
+env = Env()
+
+# 3. Read the .env file
+Env.read_env(BASE_DIR / ".env")
 # ==============================================================================
 # SECURITY & ENVIRONMENT CONFIGURATION
 # ==============================================================================
 
 # 1. SECRET KEY: Read from env, with a dev-only fallback
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-v&vy05gnofd954!t2y4na4wxy+6kit+1a0-3_6jvwnxj@$@*u^'
-)
+# SECRET_KEY = env(
+#     'SECRET_KEY',
+
+# )
 
 # 2. DEBUG MODE: Defaults to False unless explicitly set to 'True' in env
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+# DEBUG = env('DEBUG').lower() == 'true'
 
 # 3. ALLOWED HOSTS & CSRF
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.threeangels.com,localhost,.localhost,127.0.0.1,127.0.0.1:8000').split(',')
+# ALLOWED_HOSTS = env('ALLOWED_HOSTS',).split(',')
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.threeangels.com',
-    'https://threeangels.com',
-    'http://localhost',
-    'http://*.localhost',       # Allows subdomains locally
-    'http://*.localhost:8002',  # Allows your specific local port
-    'http://localhost:8000',
-    'http://127.0.0.1',
-    'http://127.0.0.1:8000',
-]
+# 1. SECRET KEY: Read from env, with a fallback
+SECRET_KEY = env('SECRET_KEY', default='your-super-secret-key-here')
+
+# 2. DEBUG MODE: Safely parse boolean from env
+DEBUG = env.bool('DEBUG', default=True)
+
+# 3. ALLOWED HOSTS & CSRF
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+
+
+
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+
 
 # 4. STRICT PRODUCTION SECURITY SETTINGS
 if not DEBUG:
@@ -47,7 +57,7 @@ if not DEBUG:
 
     # SSL & Proxy Settings
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False
 
     # HTTP Strict Transport Security (HSTS) - Enforces HTTPS for all subdomains
     SECURE_HSTS_SECONDS = 31536000  # 1 Year
@@ -77,6 +87,7 @@ TENANT_APPS = [
     'students_app',
     'users',
     'bootstrap4',
+    'django_bootstrap5'
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -124,15 +135,14 @@ WSGI_APPLICATION = 'projectfolder.wsgi.application'
 # ==============================================================================
 # DATABASE CONFIGURATION
 # ==============================================================================
-
 DATABASES = {
     'default': {
         'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.environ.get('DB_NAME', 'school_tenant_db'),
-        'USER': os.environ.get('DB_USER', 'admin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'supersecretpassword'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '15432'),
+        'NAME': env('POSTGRES_DB'),
+        'USER': env('POSTGRES_USER'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('POSTGRES_HOST'),
+        'PORT': env('POSTGRES_PORT'),
     }
 }
 
@@ -166,6 +176,20 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
+# ==========================================
+# EMAIL SETTINGS
+# ==========================================
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='')
+
 
 # WhiteNoise production storage configuration
 STORAGES = {
