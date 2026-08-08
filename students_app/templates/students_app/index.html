@@ -3,6 +3,7 @@
 {% block content %}
 <div class="container-fluid p-0">
 
+    <!-- HERO SECTION (Unchanged) -->
     <div class="hero-section d-flex align-items-center text-center"
          style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
 
@@ -50,10 +51,10 @@
                 </div>
             </div>
             {% endif %}
-
         </div>
     </div>
 
+    <!-- FEATURE STRIP (Unchanged) -->
     <div class="container feature-strip">
         <div class="row justify-content-center">
             <div class="col-md-4 mb-4">
@@ -77,8 +78,133 @@
         </div>
     </div>
 
+    <!-- ================= NEW CMS SECTIONS ================= -->
+
+    <!-- 1. ANNOUNCEMENTS SECTION -->
+    {% if announcements %}
+    <div class="announcement-section mt-5">
+        <div class="container text-center text-md-left">
+            <h6 class="text-uppercase mb-4 font-weight-bold" style="color: var(--brass-light); letter-spacing: 2px;">
+                <i class="fas fa-bullhorn mr-2"></i> Official Announcements
+            </h6>
+
+            <div id="announcementCarousel" class="carousel slide" data-ride="carousel">
+                <div class="carousel-inner px-md-5 text-center">
+                    {% for announcement in announcements %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <h3 class="feature-title text-white mb-3">{{ announcement.title }}</h3>
+                        <div class="small mb-3" style="color: var(--brass-light);">
+                            <i class="far fa-clock mr-1"></i> {{ announcement.date_posted|date:"F j, Y" }}
+                        </div>
+                        {% if announcement.category %}
+                            <div class="announcement-category text-uppercase">{{ announcement.category }}</div>
+                        {% endif %}
+                        <p class="lead font-italic mx-auto" style="max-width: 800px; color: rgba(247,244,237,0.9);">
+                            "{{ announcement.content|truncatewords:30 }}"
+                        </p>
+
+                        <!-- ADDED: Link to read the full announcement -->
+                        <a href="{% url 'students_app:announcement_detail' announcement.pk %}" class="btn mt-3" style="background-color: transparent; border: 1px solid var(--brass-light); color: var(--brass-light); border-radius: 30px; padding: 8px 24px;">
+                            Read Full Announcement
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a class="carousel-control-prev" href="#announcementCarousel" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="carousel-control-next" href="#announcementCarousel" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 2. RECENT NEWS SECTION -->
+    {% if news_articles %}
+    <div class="container py-5 mt-4">
+        <div class="text-center mb-5">
+            <h2 class="section-heading">Campus News</h2>
+            <div class="heading-underline mx-auto"></div>
+        </div>
+
+        <div class="row">
+            {% for article in news_articles %}
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card h-100 feature-card p-0 border-0 shadow-sm text-left">
+                    {% if article.featured_image %}
+                        <img src="{{ article.featured_image.url }}" class="card-img-top news-img" alt="{{ article.headline }}">
+                    {% else %}
+                        <div class="news-img d-flex align-items-center justify-content-center" style="background: var(--ink-deep); color: var(--brass-light);">
+                            <i class="fas fa-newspaper fa-3x"></i>
+                        </div>
+                    {% endif %}
+
+                    <!-- UPDATED: Flex classes added here to push the button to the bottom -->
+                    <div class="card-body d-flex flex-column">
+                        <div class="small text-muted mb-2">{{ article.publish_date|date:"M d, Y" }}</div>
+
+                        <h5 class="feature-title fs-6 mb-3" style="line-height: 1.4;">
+                            <!-- ADDED: Clickable Title -->
+                            <a href="{% url 'students_app:news_detail' article.pk %}" class="text-decoration-none" style="color: var(--ink);">
+                                {{ article.headline }}
+                            </a>
+                        </h5>
+
+                        <p class="feature-text small flex-grow-1">{{ article.summary|truncatewords:15 }}</p>
+
+                        <!-- ADDED: Read More Button pinned to the bottom -->
+                        <a href="{% url 'students_app:news_detail' article.pk %}" class="btn btn-sm mt-3 w-100" style="background-color: var(--brass-light); color: var(--ink-deep); font-weight: 600;">
+                            Read More <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. LEADERSHIP SECTION (Unchanged) -->
+    {% if leaders %}
+    <div class="py-5" style="background-color: #fcfbf8;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading">School Leadership</h2>
+                <div class="heading-underline mx-auto"></div>
+            </div>
+
+            <div class="row justify-content-center">
+                {% for leader in leaders %}
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden" style="border-radius: 0.625rem;">
+                        <div class="leader-card-header">
+                            {{ leader.role }}
+                        </div>
+                        {% if leader.photo %}
+                            <img src="{{ leader.photo.url }}" class="leader-img" alt="{{ leader.name }}">
+                        {% else %}
+                            <div class="leader-img d-flex align-items-center justify-content-center" style="background: #eee; color: #aaa;">
+                                <i class="fas fa-user-tie fa-4x"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body text-center py-3">
+                            <h5 class="feature-title mb-0" style="font-size: 1.1rem;">{{ leader.name }}</h5>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
+<!-- GALLERY MODAL (Unchanged) -->
 {% if carousel_events %}
 <div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
@@ -120,14 +246,18 @@
 {% endif %}
 
 <style>
-    /* ============ FACULTY REGISTRY THEME (matches base.html / departments) ============ */
-    body, html { margin: 0; padding: 0; }
-
-    .hero-section {
+    /* ============ FACULTY REGISTRY THEME ============ */
+    :root {
         --ink: #16213e;
         --ink-deep: #0e1730;
         --brass: #b8912f;
         --brass-light: #f3e6c4;
+    }
+
+    body, html { margin: 0; padding: 0; }
+
+    /* Hero Styles (Unchanged) */
+    .hero-section {
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -136,174 +266,121 @@
         padding-top: 60px;
         padding-bottom: 60px;
     }
-
     .hero-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: linear-gradient(to bottom, rgba(14, 23, 48, 0.88), rgba(14, 23, 48, 0.78));
         z-index: 1;
     }
-
-    .hero-content {
-        position: relative; z-index: 2;
-    }
-
+    .hero-content { position: relative; z-index: 2; }
     .hero-seal {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 84px;
-        height: 84px;
-        border-radius: 50%;
-        background: #16213e;
-        border: 2px solid #b8912f;
-        color: #f3e6c4;
-        font-size: 2.25rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 84px; height: 84px; border-radius: 50%;
+        background: var(--ink); border: 2px solid var(--brass);
+        color: var(--brass-light); font-size: 2.25rem;
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
     }
-
     .hero-eyebrow {
-        display: inline-block;
-        font-family: 'IBM Plex Mono', 'Courier New', monospace;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: #d4b45f;
-        margin-bottom: 0.75rem;
+        display: inline-block; font-family: 'IBM Plex Mono', 'Courier New', monospace;
+        font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em;
+        text-transform: uppercase; color: #d4b45f; margin-bottom: 0.75rem;
     }
-
     .hero-title {
         font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-        font-weight: 600;
-        font-size: 3rem;
-        letter-spacing: -0.01em;
+        font-weight: 600; font-size: 3rem; letter-spacing: -0.01em;
         text-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
-
     .hero-subtitle {
-        font-weight: 400;
-        font-size: 1.15rem;
-        max-width: 700px;
+        font-weight: 400; font-size: 1.15rem; max-width: 700px;
         color: rgba(247,244,237,0.88);
     }
-
     .btn-hero {
-        background: #b8912f;
-        color: #0e1730;
-        font-weight: 700;
-        border: none;
-        border-radius: 50px;
-        box-shadow: 0 12px 28px rgba(184,145,47,0.4);
+        background: var(--brass); color: var(--ink-deep); font-weight: 700;
+        border: none; border-radius: 50px; box-shadow: 0 12px 28px rgba(184,145,47,0.4);
         transition: all 0.25s ease;
     }
-
     .btn-hero:hover {
-        transform: translateY(-2px);
-        background: #cba53d;
-        box-shadow: 0 16px 34px rgba(184,145,47,0.45);
-        color: #0e1730;
+        transform: translateY(-2px); background: #cba53d;
+        box-shadow: 0 16px 34px rgba(184,145,47,0.45); color: var(--ink-deep);
     }
-
-    /* Small subtle scale effect when hovering over the preview slider */
-    .preview-slider-container:hover {
-        transform: scale(1.02);
-        transition: transform 0.3s ease;
-    }
-
-    .preview-slider-label {
-        color: #d4b45f;
-        letter-spacing: 0.06em;
-    }
-
+    .preview-slider-container:hover { transform: scale(1.02); transition: transform 0.3s ease; }
+    .preview-slider-label { color: #d4b45f; letter-spacing: 0.06em; }
     .preview-slider {
-        border-radius: 0.625rem;
-        border: 2px solid rgba(184,145,47,0.55);
+        border-radius: 0.625rem; border: 2px solid rgba(184,145,47,0.55);
         box-shadow: 0 14px 34px rgba(0,0,0,0.3);
     }
-
-    .preview-slider-caption {
-        background: rgba(14, 23, 48, 0.75);
-        bottom: 0; left: 0; right: 0;
-    }
-
+    .preview-slider-caption { background: rgba(14, 23, 48, 0.75); bottom: 0; left: 0; right: 0; }
     .modal-caption {
-        background: rgba(14, 23, 48, 0.92);
-        padding: 20px 30px;
-        bottom: 30px;
-        border-top: 3px solid #b8912f;
-        max-width: 80%;
-        margin: 0 auto;
+        background: rgba(14, 23, 48, 0.92); padding: 20px 30px; bottom: 30px;
+        border-top: 3px solid var(--brass); max-width: 80%; margin: 0 auto;
     }
 
-    /* ============ FEATURE STRIP ============ */
-    .feature-strip {
-        margin-top: 50px;
-        position: relative;
-        z-index: 10;
-    }
-
+    /* Feature Strip Styles (Unchanged) */
+    .feature-strip { margin-top: 50px; position: relative; z-index: 10; }
     .feature-card {
-        background: #fffdf8;
-        border: 1px solid #e4ddc9;
-        border-radius: 0.625rem;
-        box-shadow: 0 2px 10px rgba(22,33,62,0.08);
-        text-align: center;
-        padding: 2rem 1.75rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
+        background: #fffdf8; border: 1px solid #e4ddc9; border-radius: 0.625rem;
+        box-shadow: 0 2px 10px rgba(22,33,62,0.08); text-align: center;
+        padding: 2rem 1.75rem; transition: all 0.3s ease; position: relative; overflow: hidden;
     }
-
     .feature-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: #b8912f;
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.3s ease;
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: var(--brass); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease;
     }
-
-    .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 18px 40px rgba(22,33,62,0.14);
-    }
-
-    .feature-card:hover::before {
-        transform: scaleX(1);
-    }
-
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(22,33,62,0.14); }
+    .feature-card:hover::before { transform: scaleX(1); }
     .feature-icon {
-        width: 56px;
-        height: 56px;
-        margin: 0 auto 1rem;
-        border-radius: 50%;
-        background: #f3e6c4;
-        color: #b8912f;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.375rem;
+        width: 56px; height: 56px; margin: 0 auto 1rem; border-radius: 50%;
+        background: var(--brass-light); color: var(--brass); display: flex;
+        align-items: center; justify-content: center; font-size: 1.375rem;
     }
-
     .feature-title {
         font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-        font-weight: 600;
-        color: #16213e;
-        margin-bottom: 0.5rem;
+        font-weight: 600; color: var(--ink); margin-bottom: 0.5rem;
+    }
+    .feature-text { color: #5b6472; font-size: 0.9rem; line-height: 1.6; margin-bottom: 0; }
+
+    /* ============ NEW CMS STYLES ============ */
+    .section-heading {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-weight: 600; color: var(--ink); font-size: 2.5rem;
+    }
+    .heading-underline {
+        height: 3px; width: 60px; background-color: var(--brass); margin-top: 15px;
     }
 
-    .feature-text {
-        color: #5b6472;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        margin-bottom: 0;
+    /* Announcements */
+    .announcement-section {
+        background: linear-gradient(135deg, var(--ink) 0%, var(--ink-deep) 100%);
+        color: white; padding: 60px 0;
+        box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .announcement-category {
+        background-color: rgba(184, 145, 47, 0.2); border: 1px solid var(--brass);
+        color: var(--brass-light); padding: 4px 12px; font-size: 0.75rem;
+        display: inline-block; margin-bottom: 15px; border-radius: 20px;
+    }
+
+    /* News */
+    .news-img {
+        height: 220px; object-fit: cover; width: 100%; border-radius: 0.625rem 0.625rem 0 0;
+    }
+
+    /* Leadership */
+    .leader-card-header {
+        background-color: var(--brass); color: var(--ink-deep);
+        font-family: 'IBM Plex Mono', 'Courier New', monospace; font-weight: 700;
+        min-height: 60px; display: flex; align-items: center; justify-content: center;
+        text-align: center; padding: 10px; font-size: 0.85rem; text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .leader-img {
+        height: 300px; object-fit: cover; width: 100%;
+        border-bottom: 3px solid var(--brass-light);
     }
 
     @media (max-width: 767px) {
         .hero-title { font-size: 2rem; }
         .hero-section { padding-top: 40px; padding-bottom: 40px; }
+        .section-heading { font-size: 2rem; }
     }
 </style>
 

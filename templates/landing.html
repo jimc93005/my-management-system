@@ -19,6 +19,27 @@
         .animate-marquee:hover {
             animation-play-state: paused;
         }
+        .btn-price-glow {
+  background: linear-gradient(135deg, #00C4CC 0%, #0072FF 100%);
+  color: white !important;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 50px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+  transition: all 0.3s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-price-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 196, 204, 0.6);
+  background: linear-gradient(135deg, #0072FF 0%, #00C4CC 100%);
+}
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -30,9 +51,14 @@
         </div>
         <div class="flex items-center space-x-6">
             <!-- NEW: Link to Registration Form in Navbar -->
+             <a href="{% url 'schools_manager:pricing' %}" class="btn-price-glow text-decoration-none">
+                 <i class="bi bi-tags-fill"></i> <!-- Optional Bootstrap Icon -->
+                        Choose Pricing
+             </a>
             <a href="{% url 'register_school' %}" class="text-sm font-semibold text-slate-300 hover:text-indigo-400 transition duration-200">
                 Apply Now
             </a>
+
 
             <a href="/admin_tenants/" class="text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition duration-200 shadow-lg shadow-slate-950/50">
                 Landlord Control Panel &rarr;

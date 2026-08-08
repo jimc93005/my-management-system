@@ -1,0 +1,30 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <a href="{% url 'students_app:index' %}" class="btn btn-sm mb-4" style="color: #b8912f; border: 1px solid #b8912f;">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Home
+            </a>
+
+            <div class="card border-0 shadow-lg" style="border-top: 4px solid #b8912f !important; border-radius: 10px;">
+                <div class="card-body p-5">
+                    {% if announcement.category %}
+                        <span class="badge mb-3 px-3 py-2 text-uppercase" style="background-color: #f3e6c4; color: #b8912f;">{{ announcement.category }}</span>
+                    {% endif %}
+
+                    <h1 class="mb-3" style="font-family: 'Fraunces', serif; color: #16213e;">{{ announcement.title }}</h1>
+                    <p class="text-muted mb-4"><i class="far fa-clock mr-2"></i> Posted on {{ announcement.date_posted|date:"F j, Y, g:i a" }}</p>
+
+                    <hr class="mb-4">
+
+                    <div style="font-size: 1.15rem; line-height: 1.7; color: #333;">
+                        {{ announcement.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

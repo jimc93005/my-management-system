@@ -620,5 +620,69 @@ class CarouselEvent(models.Model):
 
 
 
+from django.db import models
+from django.db import connection
+from django.utils import timezone
+
+# --- DYNAMIC UPLOAD PATHS ---
+
+def news_image_path(instance, filename):
+    """Saves news images to media/school_media/schema_name/news/"""
+    tenant_name = connection.schema_name
+    return f'school_media/{tenant_name}/news/{filename}'
+
+def leadership_photo_path(instance, filename):
+    """Saves leadership photos to media/school_media/schema_name/leadership/"""
+    tenant_name = connection.schema_name
+    return f'school_media/{tenant_name}/leadership/{filename}'
+
+
+# --- THE CMS MODELS ---
+
+class Announcement(models.Model):
+    title = models.CharField(max_length=200, help_text="e.g., Shortlisted Candidates for 2026/2027")
+    category = models.CharField(max_length=100, blank=True, help_text="e.g., General, Admissions, Alert")
+    content = models.TextField(help_text="The full text of the announcement.")
+    date_posted = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True, help_text="Uncheck to hide this from the homepage.")
+
+    class Meta:
+        ordering = ['-date_posted']
+
+    def __str__(self):
+        return self.title
+
+
+class NewsArticle(models.Model):
+    headline = models.CharField(max_length=255)
+    featured_image = models.ImageField(upload_to=news_image_path, help_text="Upload an image for the news card.")
+    summary = models.TextField(max_length=300, help_text="A short 2-3 line excerpt for the homepage.")
+    body = models.TextField(help_text="The full news article content.")
+    publish_date = models.DateField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-publish_date']
+        verbose_name_plural = "News Articles"
+
+    def __str__(self):
+        return self.headline
+
+
+class LeadershipProfile(models.Model):
+    name = models.CharField(max_length=150, help_text="e.g., Dr. John Doe")
+    role = models.CharField(max_length=150, help_text="e.g., Executive Dean: School of Education")
+    photo = models.ImageField(upload_to=leadership_photo_path)
+    display_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Controls the order they appear on the site (1 comes first, then 2, etc.)"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['display_order']
+
+    def __str__(self):
+        return f"{self.name} - {self.role}"
 
 

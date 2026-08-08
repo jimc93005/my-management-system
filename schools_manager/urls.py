@@ -15,4 +15,5 @@ urlpatterns = [
     # Admin Action URLs (These will be triggered from your admin dashboard)
     path('admin/approve/<int:pk>/', views.approve_registration, name='approve_registration'),
     path('admin/reject/<int:pk>/', views.reject_registration, name='reject_registration'),
+    path('pricing/', views.pricing_view, name='pricing')
 ]

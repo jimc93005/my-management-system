@@ -52,3 +52,26 @@ class DocumentAdmin(admin.ModelAdmin):
     list_display = ('title', 'folder', 'uploaded_at')
     list_filter = ('folder',)
     search_fields = ('title',)
+
+
+
+from django.contrib import admin
+from .models import Announcement, NewsArticle, LeadershipProfile
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'date_posted', 'is_active')
+    list_filter = ('is_active', 'category')
+    search_fields = ('title', 'content')
+
+@admin.register(NewsArticle)
+class NewsArticleAdmin(admin.ModelAdmin):
+    list_display = ('headline', 'publish_date', 'is_active')
+    list_filter = ('is_active', 'publish_date')
+    search_fields = ('headline', 'summary')
+
+@admin.register(LeadershipProfile)
+class LeadershipProfileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'role', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active') # Allows them to re-order directly from the list view!
+    ordering = ('display_order',)

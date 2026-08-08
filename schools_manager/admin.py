@@ -1,3 +1,5 @@
+import secrets
+import string
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -7,6 +9,9 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from .models import School, Domain, SchoolRegistrationRequest
+from .models import SubscriptionPlan, PlanFeature
+
+
 
 
 # 1. Create a custom Admin Site just for managing tenants
@@ -66,42 +71,28 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
 
     admin_actions.short_description = "Actions"
 
-    def save_model(self, request, obj, form, change):
-        # Check if this is an existing object being edited
-        if change:
-            old_obj = SchoolRegistrationRequest.objects.get(pk=obj.pk)
 
-            # TRIGGER PHASE 4: If status changes from Pending -> Approved
-            if old_obj.status == 'Pending' and obj.status == 'Approved':
-                obj.reviewed_at = timezone.now()
-                success = self.provision_new_tenant(request, obj)
 
-                # If provisioning failed, revert the status back to Pending
-                if not success:
-                    obj.status = 'Pending'
-
-        super().save_model(request, obj, form, change)
+    # ... inside your ModelAdmin class ...
 
     def provision_new_tenant(self, request, obj):
         """
         The Magic Automation: Creates Schema, Domain, and Admin User
         """
         # Set your base domain here. For local testing, use 'localhost'.
-        # In production, change this to 'edusphere.com'
         BASE_DOMAIN = 'localhost'
         PORT = '8000'
 
         try:
             # 1. Create the Isolated Tenant (School)
-            # Because your model has auto_create_schema=True, saving this creates the PostgreSQL schema instantly.
             tenant = School(
-                schema_name=obj.subdomain,
+                schema_name=obj.subdomain.lower(),
                 name=obj.school_name,
             )
             tenant.save()
 
             # 2. Link the Subdomain
-            domain_url = f"{obj.subdomain}.{BASE_DOMAIN}"
+            domain_url = f"{obj.subdomain.lower()}.{BASE_DOMAIN}"
             domain = Domain(
                 domain=domain_url,
                 tenant=tenant,
@@ -109,17 +100,18 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
             )
             domain.save()
 
-            # 3. Create the Admin User INSIDE the new isolated schema
-            # We use schema_context to ensure the user isn't saved to the public schema
+            # 3. Generate a secure temporary password (matching the view function)
+            safe_symbols = "!@#$%^*_+-"
+            alphabet = string.ascii_letters + string.digits + safe_symbols
+            temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+
+            # 4. Create the Admin User INSIDE the new isolated schema
             with schema_context(tenant.schema_name):
                 User = get_user_model()
 
-                # Generate a default password
-                temp_password = f"{obj.subdomain.capitalize()}2026!"
-
                 # Create the superuser for this specific school
                 User.objects.create_superuser(
-                    username=f"admin_{obj.subdomain}",
+                    username=f"admin_{obj.subdomain.lower()}",
                     email=obj.email,
                     password=temp_password,
                 )
@@ -128,11 +120,26 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
             messages.success(
                 request,
                 f"✅ MAGIC SUCCESS: Tenant '{obj.school_name}' created at {domain_url}. "
-                f"Admin account created (Username: admin_{obj.subdomain} | Password: {temp_password})."
+                f"Admin account created (Username: admin_{obj.subdomain.lower()} | Password: {temp_password})."
             )
             return True
 
         except Exception as e:
-            # If anything fails (e.g., subdomain already exists), catch the error safely
             messages.error(request, f"❌ FAILED to create tenant: {str(e)}")
             return False
+
+
+
+
+
+
+class PlanFeatureInline(admin.TabularInline):
+    model = PlanFeature
+    extra = 3  # Gives you 3 empty rows to add features quickly
+
+
+@admin.register(SubscriptionPlan, site=tenant_admin_site)
+class SubscriptionPlanAdmin(admin.ModelAdmin):
+    list_display = ('name', 'monthly_price', 'annual_price', 'is_active', 'is_highlighted')
+    prepopulated_fields = {'slug': ('name',)}
+    inlines = [PlanFeatureInline]

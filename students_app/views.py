@@ -65,6 +65,10 @@ from .forms import DepartmentEventForm
 # Make sure these are imported at the top of your views.py!
 from .models import SchoolCoverPhoto, CarouselEvent
 
+from django.shortcuts import render
+# Make sure to import the new models alongside your existing ones!
+from .models import SchoolCoverPhoto, CarouselEvent, Announcement, NewsArticle, LeadershipProfile
+
 
 def index(request):
     # 1. Grab the school's profile (for the cover photo)
@@ -73,11 +77,26 @@ def index(request):
     # 2. Grab all the sliding event photos
     carousel_events = CarouselEvent.objects.all()
 
-    # 3. Pack them into the context dictionary
+    # --- NEW CMS DATA ---
+    # 3. Fetch the 5 most recent active announcements
+    announcements = Announcement.objects.filter(is_active=True).order_by('-date_posted')[:5]
+
+    # 4. Fetch the 4 most recent news articles (fits perfectly in your 4-column grid)
+    news_articles = NewsArticle.objects.filter(is_active=True).order_by('-publish_date')[:4]
+
+    # 5. Fetch leadership ordered by their assigned display order
+    leaders = LeadershipProfile.objects.filter(is_active=True).order_by('display_order')
+
+    # 6. Pack them into the context dictionary
     context = {
         'school_profile': school_profile,
         'carousel_events': carousel_events,
+        'announcements': announcements,
+        'news_articles': news_articles,
+        'leaders': leaders,
     }
+
+    return render(request, 'students_app/index.html', context)
 
     return render(request, 'students_app/index.html', context)
 
@@ -3074,10 +3093,18 @@ def export_subject_ranked_pdf(request, subject_id):
 
 
 
+# DETAILS OF THE ANNOUCEMENTS AND NEWS ARTICLES
 
 
+def news_detail(request, pk):
+    # Fetch the specific active article using its primary key (pk)
+    article = get_object_or_404(NewsArticle, pk=pk, is_active=True)
+    return render(request, 'students_app/news_detail.html', {'article': article})
 
-
+def announcement_detail(request, pk):
+    # Fetch the specific active announcement
+    announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
+    return render(request, 'students_app/announcement_detail.html', {'announcement': announcement})
 
 
 

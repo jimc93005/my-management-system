@@ -1,0 +1,104 @@
+{% extends 'schools_manager/base_public.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">Simple, Transparent Pricing</h1>
+        <p class="lead text-muted">Choose the perfect plan for your school. Upgrade or downgrade anytime.</p>
+
+        <!-- Billing Cycle Toggle -->
+        <div class="d-flex justify-content-center align-items-center gap-3 mt-4">
+            <span class="fw-semibold text-dark" id="monthlyLabel">Monthly Billing</span>
+            <div class="form-check form-switch fs-4 mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="billingToggle" onchange="toggleBillingCycle()">
+            </div>
+            <span class="fw-semibold text-muted" id="annualLabel">
+                Annual Billing <span class="badge bg-success-subtle text-success fs-6">Save ~20%</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Pricing Cards Grid -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 justify-content-center">
+        {% for plan in plans %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-2 {% if plan.is_highlighted %}border-primary shadow{% else %}border-light-subtle{% endif %}">
+                {% if plan.is_highlighted %}
+                <div class="card-header bg-primary text-white text-center fw-bold py-2">
+                    MOST POPULAR
+                </div>
+                {% endif %}
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <h3 class="card-title fw-bold text-center">{{ plan.name }}</h3>
+                    <p class="text-muted text-center small mb-4">{{ plan.description }}</p>
+
+                    <!-- Price Display -->
+                    <div class="text-center mb-4">
+                        <span class="display-5 fw-bold price-amount"
+                              data-monthly="{{ plan.monthly_price }}"
+                              data-annual="{{ plan.annual_price }}">
+                            ${{ plan.monthly_price }}
+                        </span>
+                        <span class="text-muted fs-6 billing-text">/ month</span>
+                    </div>
+
+                    <!-- Feature Bullet Points -->
+                    <ul class="list-unstyled mb-4 flex-grow-1">
+                        {% for feature in plan.features.all %}
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <span>{{ feature.feature_text }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="text-muted small">Standard features included.</li>
+                        {% endfor %}
+                    </ul>
+
+                    <!-- Get Started Button -->
+                    <div class="mt-auto">
+                        <a href="{% url 'schools_manager:register' %}?plan={{ plan.slug }}&cycle=monthly"
+                           class="btn get-started-btn w-100 py-2 fw-semibold {% if plan.is_highlighted %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                           data-slug="{{ plan.slug }}">
+                            Select {{ plan.name }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- JavaScript for Live Toggle -->
+<script>
+function toggleBillingCycle() {
+    const isAnnual = document.getElementById('billingToggle').checked;
+    const priceAmounts = document.querySelectorAll('.price-amount');
+    const billingTexts = document.querySelectorAll('.billing-text');
+    const ctaButtons = document.querySelectorAll('.get-started-btn');
+    const registerUrlBase = "{% url 'schools_manager:register' %}";
+
+    // Toggle label colors
+    document.getElementById('monthlyLabel').className = isAnnual ? 'fw-semibold text-muted' : 'fw-semibold text-dark';
+    document.getElementById('annualLabel').className = isAnnual ? 'fw-semibold text-dark' : 'fw-semibold text-muted';
+
+    priceAmounts.forEach((el, index) => {
+        const monthly = el.getAttribute('data-monthly');
+        const annual = el.getAttribute('data-annual');
+        const btn = ctaButtons[index];
+        const slug = btn.getAttribute('data-slug');
+
+        if (isAnnual) {
+            el.textContent = '$' + annual;
+            billingTexts[index].textContent = '/ year';
+            btn.href = `${registerUrlBase}?plan=${slug}&cycle=annual`;
+        } else {
+            el.textContent = '$' + monthly;
+            billingTexts[index].textContent = '/ month';
+            btn.href = `${registerUrlBase}?plan=${slug}&cycle=monthly`;
+        }
+    });
+}
+</script>
+{% endblock %}

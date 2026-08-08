@@ -1,0 +1,31 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <a href="{% url 'students_app:index' %}" class="btn btn-sm btn-outline-secondary mb-4">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Home
+            </a>
+
+            <!-- Article Header -->
+            <div class="mb-4">
+                <span class="text-muted"><i class="far fa-calendar-alt mr-2"></i>{{ article.publish_date|date:"F j, Y" }}</span>
+                <h1 class="mt-2" style="font-family: 'Fraunces', serif; color: #16213e; font-weight: 700;">{{ article.headline }}</h1>
+            </div>
+
+            <!-- Featured Image -->
+            {% if article.featured_image %}
+                <img src="{{ article.featured_image.url }}" class="img-fluid rounded shadow-sm mb-5 w-100" alt="{{ article.headline }}" style="max-height: 500px; object-fit: cover;">
+            {% endif %}
+
+            <!-- Article Body -->
+            <div class="article-content" style="font-size: 1.1rem; line-height: 1.8; color: #4a4a4a;">
+                <!-- We use linebreaks to respect the enter keys pressed in the admin area -->
+                {{ article.body|linebreaks }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

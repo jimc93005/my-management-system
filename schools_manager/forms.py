@@ -6,7 +6,7 @@ import re
 class SchoolRegistrationForm(forms.ModelForm):
     class Meta:
         model = SchoolRegistrationRequest
-        fields = ['school_name', 'subdomain', 'email', 'phone_number', 'proof_of_payment']
+        fields = ['school_name', 'subdomain', 'email', 'phone_number', 'proof_of_payment', 'selected_plan', 'billing_cycle',]
 
         widgets = {
             'school_name': forms.TextInput(attrs={

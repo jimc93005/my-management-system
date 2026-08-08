@@ -63,15 +63,20 @@
             <div class="form-card">
 
                 <!-- Simple & Clear Instructions -->
-                <h3 class="mb-2">Tell us about your school</h3>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3 class="m-0">Tell us about your school</h3>
+                    <a href="{% url 'schools_manager:pricing' %}" class="text-decoration-none fw-bold" style="color: var(--primary-teal);">
+                        &larr; Back to Pricing
+                    </a>
+                </div>
                 <p class="text-muted mb-4">Complete the form below. Once submitted, our team will review your application and provision your secure school dashboard.</p>
 
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
                     <!--
-                       This one line looks magical because our forms.py handles
-                       all the Bootstrap classes (form-control), help text, and placeholders!
+                        This one line looks magical because our forms.py handles
+                        all the Bootstrap classes (form-control), help text, and placeholders!
                     -->
                     {% for field in form %}
                         <div class="mb-3">

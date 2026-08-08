@@ -150,6 +150,10 @@ urlpatterns = [
     path('subject/<int:subject_id>/gradebook/fetch/', views.fetch_subject_grades, name='fetch_subject_grades'),
     path('subject/<int:subject_id>/gradebook/pdf/', views.export_subject_ranked_pdf, name='export_subject_ranked_pdf'),
 
+    # DETAILS OF NEWS ARTICLES AND ANNOUNCENTS
+
+    path('news/<int:pk>/', views.news_detail, name='news_detail'),
+    path('announcement/<int:pk>/', views.announcement_detail, name='announcement_detail'),
 
 
 
