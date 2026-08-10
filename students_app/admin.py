@@ -16,6 +16,7 @@ from .models import Attendance
 from .models import AttendanceWarning
 from .models import GradeBoundary
 from .models import GradingSystem
+from .models import CalendarEvent
 
 
 
@@ -35,6 +36,7 @@ admin.site.register(Attendance)
 admin.site.register(AttendanceWarning)
 admin.site.register(GradeBoundary)
 admin.site.register(GradingSystem)
+admin.site.register(CalendarEvent)
 
 # users/admin.py
 

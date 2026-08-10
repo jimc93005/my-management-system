@@ -83,7 +83,7 @@ urlpatterns = [
     path('statistics/', views.academic_statistics, name='academic_statistics'),
 
     # CALENDER URLS
-    path('calendar/', views.calendar_of_events, name='calendar'),
+    path('calendar/', views.calendar_of_events, name='calendar_of_events'),
     # BULK PROMOTIONS
     path('bulk-promote/', views.promote_students, name='promote_students'),
     # GETTING EXISTING GRADES URLS
@@ -154,6 +154,8 @@ urlpatterns = [
 
     path('news/<int:pk>/', views.news_detail, name='news_detail'),
     path('announcement/<int:pk>/', views.announcement_detail, name='announcement_detail'),
+
+   path('calendar/delete/<int:event_id>/', views.delete_calendar_event, name='delete_calendar_event'),
 
 
 

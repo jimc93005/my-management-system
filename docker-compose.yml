@@ -27,8 +27,8 @@ services:
       - DB_NAME=school_tenant_db
       - DB_USER=admin
       - DB_PASSWORD=supersecretpassword
-      - DB_HOST=db  # This tells Django to look for the database service named 'db' above
-      - DB_PORT=5432
+      - POSTGRES_HOST=db      # Overrides .env inside Docker
+      - POSTGRES_PORT=5432    # Overrides .env inside Docker
       - DEBUG=True
     depends_on:
       - db

@@ -686,3 +686,21 @@ class LeadershipProfile(models.Model):
         return f"{self.name} - {self.role}"
 
 
+
+
+
+
+
+
+# CALENDER OF EVENTS MODELS
+class CalendarEvent(models.Model):
+    date_text = models.CharField(max_length=100, help_text="e.g., 14th Sept 2026 or Week 1")
+    activity = models.CharField(max_length=255, help_text="e.g., School Opens for Term 1")
+    display_order = models.PositiveIntegerField(default=0, help_text="Used to keep events in chronological order")
+
+    class Meta:
+        ordering = ['display_order']
+
+    def __str__(self):
+        return f"{self.date_text} - {self.activity}"
+

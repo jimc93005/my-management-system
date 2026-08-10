@@ -25,6 +25,7 @@ from django.contrib.auth import get_user_model
 from .models import GradingSystem, GradeBoundary, ClassLevel
 from .forms import GradingSystemForm, GradeBoundaryForm, ClassLevelForm
 from .models import SubjectDepartment
+from .models import CalendarEvent
 from .forms import SubjectDepartmentForm
 
 
@@ -1976,13 +1977,49 @@ def academic_statistics(request):
 
 login_required()
 def calendar_of_events(request):
+    # 1. Permission Check
     if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(request,
+                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
-    # This simply loads the blank template for them to type over!
-    return render(request, 'students_app/calendar.html')
+
+    # 2. Handle adding a new event via POST
+    if request.method == 'POST':
+        date_text = request.POST.get('date_text')
+        activity = request.POST.get('activity')
+        display_order = request.POST.get('display_order', 0)
+
+        if date_text and activity:
+            CalendarEvent.objects.create(
+                date_text=date_text,
+                activity=activity,
+                display_order=display_order
+            )
+            messages.success(request, "Event added to the calendar successfully!")
+            return redirect('students_app:calendar_of_events')
+
+    # 3. Fetch all saved events to display on the template
+    events = CalendarEvent.objects.all()
+
+    context = {
+        'events': events
+    }
+
+    # Now it loads a template with data, not just a blank one!
+    return render(request, 'students_app/calendar.html', context)
+
+
+def delete_calendar_event(request, event_id):
+    if not request.user.has_perm('students_app.change_students'):
+        messages.error(request, "Permission denied.")
+        return redirect('students_app:dashboard')
+
+    if request.method == 'POST':
+        event = get_object_or_404(CalendarEvent, id=event_id)
+        event.delete()
+        messages.success(request, "Event removed successfully.")
+
+    return redirect('students_app:calendar_of_events')
 
 # VIEWS FOR BULKY PROMOTIONS
 from django.shortcuts import render, redirect, get_object_or_404
