@@ -704,3 +704,44 @@ class CalendarEvent(models.Model):
     def __str__(self):
         return f"{self.date_text} - {self.activity}"
 
+
+
+
+# FOOTER MODELS
+from django.core.validators import FileExtensionValidator
+
+
+class Footer(models.Model):
+    """Stores single-instance configuration info for a tenant's footer and contact pages."""
+    motto = models.CharField(max_length=255, blank=True, help_text="e.g. Excellence in Character and Learning")
+    vision_statement = models.TextField(blank=True)
+
+    # Contact Information
+    contact_email = models.EmailField(blank=True)
+    contact_phone = models.CharField(max_length=50, blank=True)
+    postal_address = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "School Profile & Settings"
+        verbose_name_plural = "School Profile & Settings"
+
+    def __str__(self):
+        return "School Footer Profile Settings"
+
+
+class FooterDocument(models.Model):
+    """Stores official public certificates/accreditations for visitors to view."""
+    footer = models.ForeignKey(
+        Footer,
+        related_name="documents",
+        on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=150, help_text="e.g., Ministry Registration Certificate")
+    document_file = models.FileField(
+        upload_to="legal_docs/",
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'png', 'jpg', 'jpeg'])]
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

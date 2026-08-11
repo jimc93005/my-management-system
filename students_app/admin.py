@@ -17,6 +17,7 @@ from .models import AttendanceWarning
 from .models import GradeBoundary
 from .models import GradingSystem
 from .models import CalendarEvent
+from .models import Footer, FooterDocument
 
 
 
@@ -77,3 +78,20 @@ class LeadershipProfileAdmin(admin.ModelAdmin):
     list_display = ('name', 'role', 'display_order', 'is_active')
     list_editable = ('display_order', 'is_active') # Allows them to re-order directly from the list view!
     ordering = ('display_order',)
+
+
+
+
+class SchoolDocumentInline(admin.TabularInline):
+    model = FooterDocument
+    extra = 1  # Provides 1 empty row ready for upload
+
+@admin.register(Footer)
+class SchoolProfileAdmin(admin.ModelAdmin):
+    inlines = [SchoolDocumentInline]
+
+    # Singleton pattern: Prevents adding a 2nd profile if one already exists
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)

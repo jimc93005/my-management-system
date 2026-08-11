@@ -125,6 +125,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'students_app.context_processors.school_footer_context'
             ],
         },
     },
@@ -194,13 +195,13 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='')
 # WhiteNoise production storage configuration
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "django_tenants.files.storage.TenantFileSystemStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-
+MULTITENANT_RELATIVE_MEDIA_ROOT = "%s"
 # ==============================================================================
 # AUTHENTICATION & REDIRECTS
 # ==============================================================================

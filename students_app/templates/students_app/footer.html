@@ -1,0 +1,179 @@
+{% load static %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<style>
+    .site-footer {
+        background: #0d1b2a;
+        color: #cbd5e1;
+        font-family: 'Inter', sans-serif;
+        position: relative;
+    }
+    .site-footer::before {
+        content: "";
+        display: block;
+        height: 3px;
+        background: linear-gradient(90deg, #c9a44c 0%, #e8cb85 50%, #c9a44c 100%);
+    }
+    .footer-heading {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #e8cb85;
+        margin-bottom: 1.1rem;
+        position: relative;
+        padding-bottom: 0.6rem;
+    }
+    .footer-heading::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 32px;
+        height: 2px;
+        background: #c9a44c;
+    }
+    .text-md-start .footer-heading::after { left: 0; }
+    .footer-motto {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        font-size: 1.05rem;
+        line-height: 1.5;
+        color: #f1f5f9;
+        border-left: 2px solid #c9a44c;
+        padding-left: 0.9rem;
+    }
+    .footer-vision {
+        font-size: 0.92rem;
+        line-height: 1.6;
+        color: #94a3b8;
+    }
+    .footer-doc-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #cbd5e1;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 0.35rem 0;
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+    .footer-doc-link:hover {
+        color: #e8cb85;
+        transform: translateX(3px);
+    }
+    .footer-doc-link i { color: #c9a44c; font-size: 1rem; }
+    .footer-contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+        margin-bottom: 0.65rem;
+    }
+    .footer-contact-item i {
+        color: #c9a44c;
+        font-size: 1rem;
+        margin-top: 0.15rem;
+        flex-shrink: 0;
+    }
+    .footer-muted {
+        font-size: 0.85rem;
+        color: #64748b;
+        font-style: italic;
+    }
+    .footer-bottom {
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .footer-bottom p {
+        font-size: 0.82rem;
+        color: #64748b;
+        letter-spacing: 0.02em;
+    }
+</style>
+
+<footer class="site-footer pt-5 pb-4 mt-auto">
+    <div class="container">
+        <div class="row text-center text-md-start gy-5">
+
+            <!-- Column 1: School Motto -->
+            <div class="col-md-3 mx-auto">
+                <h5 class="footer-heading">Our Motto</h5>
+                {% if school_profile_data and school_profile_data.motto %}
+                    <p class="footer-motto">"{{ school_profile_data.motto }}"</p>
+                {% else %}
+                    <p class="footer-muted small">Motto not configured yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Column 2: Vision Statement -->
+            <div class="col-md-3 mx-auto">
+                <h5 class="footer-heading">Our vision</h5>
+                {% if school_profile_data and school_profile_data.vision_statement %}
+                    <p class="footer-vision">{{ school_profile_data.vision_statement }}</p>
+                {% else %}
+                    <p class="footer-muted small">Vision statement not configured yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Column 3: Legal & Accreditation Documents -->
+            <div class="col-md-3 mx-auto">
+                <h5 class="footer-heading">Accreditation</h5>
+                {% if school_profile_data and school_profile_data.documents.all %}
+                    <ul class="list-unstyled mb-0">
+                        {% for doc in school_profile_data.documents.all %}
+                            <li>
+                                <a href="{{ doc.document_file.url }}" target="_blank" rel="noopener" class="footer-doc-link justify-content-center justify-content-md-start">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    <span>{{ doc.title }}</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="footer-muted small">No public documents uploaded.</p>
+                {% endif %}
+            </div>
+
+            <!-- Column 4: Contact Us -->
+            <div class="col-md-3 mx-auto">
+                <h5 class="footer-heading">Contact us</h5>
+                {% if school_profile_data %}
+                    {% if school_profile_data.contact_email %}
+                        <div class="footer-contact-item justify-content-center justify-content-md-start">
+                            <i class="bi bi-envelope"></i>
+                            <span>{{ school_profile_data.contact_email }}</span>
+                        </div>
+                    {% endif %}
+                    {% if school_profile_data.contact_phone %}
+                        <div class="footer-contact-item justify-content-center justify-content-md-start">
+                            <i class="bi bi-telephone"></i>
+                            <span>{{ school_profile_data.contact_phone }}</span>
+                        </div>
+                    {% endif %}
+                    {% if school_profile_data.postal_address %}
+                        <div class="footer-contact-item justify-content-center justify-content-md-start">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>{{ school_profile_data.postal_address|linebreaksbr }}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="footer-muted small">Contact details not configured yet.</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="footer-bottom mt-5 pt-3">
+            <div class="row align-items-center">
+                <div class="col-12 text-center">
+                    <p class="mb-0">&copy; {% now "Y" %} All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

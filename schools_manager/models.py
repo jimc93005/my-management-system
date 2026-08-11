@@ -2,6 +2,13 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 
+import os
+import shutil
+from django.conf import settings
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+
 # 1. THE TENANT MODEL
 class School(TenantMixin):
     name = models.CharField(max_length=100)
@@ -10,6 +17,22 @@ class School(TenantMixin):
     # default true, schema will be automatically created and synced when it is saved
     auto_create_schema = True
     auto_drop_schema = True # Be careful with this in production!
+
+    def delete(self, force_drop=False, *args, **kwargs):
+        """
+        Overrides the default delete method to ensure media files
+        are wiped when the tenant is deleted.
+        """
+        # 1. Grab the exact folder path BEFORE the database record is gone
+        tenant_media_path = os.path.join(settings.MEDIA_ROOT, self.schema_name)
+
+        # 2. Delete the tenant from the database (this drops the schema in django-tenants)
+        super().delete(force_drop=force_drop, *args, **kwargs)
+
+        # 3. Wipe the folder from the hard drive
+        if os.path.exists(tenant_media_path) and os.path.isdir(tenant_media_path):
+            shutil.rmtree(tenant_media_path)
+            print(f"🗑️ SUCCESS: Wiped media folder for {self.schema_name}")
 
     def __str__(self):
         return self.name
@@ -100,3 +123,5 @@ class PlanFeature(models.Model):
 
     def __str__(self):
         return f"{self.plan.name} - {self.feature_text}"
+
+
