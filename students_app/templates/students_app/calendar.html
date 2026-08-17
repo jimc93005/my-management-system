@@ -327,8 +327,9 @@
                 <tr class="event-row">
                     <td class="font-weight-bold">{{ event.date_text|linebreaksbr }}</td>
 
-                    <td>{{ event.activity }}</td>
-                    <td class="editable-cell text-center text-muted" contenteditable="true">Click to assign</td>
+                    <!-- UPDATED CELLS -->
+                    <td class="editable-cell" contenteditable="true" onkeydown="allowNewlines(event)" style="white-space: pre-wrap;">{{ event.activity }}</td>
+                    <td class="editable-cell text-center text-muted" contenteditable="true" onkeydown="allowNewlines(event)" style="white-space: pre-wrap;">Click to assign</td>
 
                     <td class="delete-btn-container">
                         <form method="POST" action="{% url 'students_app:delete_calendar_event' event.id %}" onsubmit="return confirm('Remove this event from the calendar?');">
@@ -369,6 +370,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // NEW JAVASCRIPT FUNCTION FOR HANDLING ENTER KEY
+        function allowNewlines(event) {
+            if (event.key === 'Enter') {
+                event.stopPropagation();
+                event.preventDefault();
+                document.execCommand('insertLineBreak');
+            }
+        }
+
         $(document).ready(function(){
             if (!sessionStorage.getItem('calendarSetupDone')) {
                 $('#setupModal').modal('show');

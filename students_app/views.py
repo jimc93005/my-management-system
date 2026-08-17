@@ -1,8 +1,6 @@
 
-from django.contrib.auth.decorators import login_required, permission_required
 import json
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import Http404
+
 
 from django.views.decorators.http import require_POST
 from django.db.models import Q
@@ -144,7 +142,7 @@ def student_list(request):
 @login_required(login_url='login')
 def add_student(request):
     if not request.user.has_perm('students_app.add_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to access the adding of students."
+        messages.warning(request, "🔒 Oops! You don't have permission to add students."
                                   " Please contact the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
         # Bounce them back to the safe dashboard (change this URL if your dashboard has a different name)
@@ -287,9 +285,9 @@ def subjects_list(request):
 # adding_subjects
 @login_required(login_url='login')
 def add_subject(request):
-    if not request.user.has_perm('students_app.change_students'):
+    if not request.user.has_perm('students_app.add_subject'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access the adding of students . Please contact"
+                                  " access the adding of subjects . Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     if request.method == 'POST':
@@ -307,7 +305,7 @@ def add_subject(request):
 
 @login_required(login_url='login')
 def edit_subject(request, subject_id):
-    if not request.user.has_perm('students_app.change_students'):
+    if not request.user.has_perm('students_app.change_subject'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " access the edit of subjects. Please contact"
                                   " the Headteacher if you need this feature.")
@@ -333,7 +331,7 @@ def edit_subject(request, subject_id):
 def delete_subject(request, subject_id):
     if not request.user.has_perm('students_app.change_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
+                                  " delete subject. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     subject = get_object_or_404(Subject, pk=subject_id)
@@ -362,20 +360,14 @@ def class_list(request):
     classes = [(c.class_level, c.class_level) for c in class_objects]
 
     return render(request, 'students_app/class_list.html', {'classes': classes})
-# PLACING THE STUDENTS IN THEIR RESPECTIVE CLASSES
 
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
-from django.db.models import Q
-from .models import Students, ClassLevel, SchoolProfile  # Make sure SchoolProfile is imported!
+
+# PLACING THE STUDENTS IN THEIR RESPECTIVE CLASSES
 
 import datetime
 from django.db.models import Q, Count  # <-- Ensure Count is imported!
 from django.core.paginator import Paginator
-from django.shortcuts import render, redirect
-from django.contrib import messages
+
 from .models import Students, ClassLevel, Grade
 
 
@@ -641,7 +633,7 @@ def edit_grade(request, grade_id):
 def delete_grade(request, grade_id):
     if not request.user.has_perm('students_app.change_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
+                                  " delete grade. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     grade = get_object_or_404(Grade, id=grade_id)
@@ -657,9 +649,9 @@ def delete_grade(request, grade_id):
 @require_POST
 @login_required(login_url='login')
 def delete_term_grades(request, student_id, year, term):
-    if not request.user.has_perm('students_app.change_students'):
+    if not request.user.has_perm('students_app.delete_grade'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
+                                  " to delete term grades. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
@@ -682,7 +674,7 @@ def delete_term_grades(request, student_id, year, term):
 def delete_year_grades(request, student_id, year):
     if not request.user.has_perm('students_app.change_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
+                                  " delete year grade. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
@@ -1834,7 +1826,7 @@ def student_attendance_history(request, student_id):
 
 
 # STATISTICS VIEW
-@login_required()
+@login_required(login_url='login')
 def academic_statistics(request):
     if not request.user.has_perm('students_app.view_subject'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -1974,17 +1966,21 @@ def academic_statistics(request):
 
     return render(request, 'students_app/statistics.html', context)
 
-
-login_required()
+@login_required(login_url='login')
 def calendar_of_events(request):
-    # 1. Permission Check
-    if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request,
-                         "🔒 Oops! You don't have permission to access this operation. Please contact the Headteacher if you need this feature.")
+    if not request.user.has_perm('students_app.view_calendarevent'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view calender of events. Please contact"
+                                  " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
-
+    # 1. Permission Check
     # 2. Handle adding a new event via POST
     if request.method == 'POST':
+        if not request.user.has_perm('students_app.add_calendarevent'):
+            messages.warning(request, "🔒 Oops! You don't have permission to"
+                                      " creat calendar of events. Please contact"
+                                      " the Headteacher if you need this feature.")
+            return redirect('students_app:dashboard')
         date_text = request.POST.get('date_text')
         activity = request.POST.get('activity')
         display_order = request.POST.get('display_order', 0)
@@ -2007,13 +2003,13 @@ def calendar_of_events(request):
 
     # Now it loads a template with data, not just a blank one!
     return render(request, 'students_app/calendar.html', context)
-
-
+@login_required(login_url='login')
 def delete_calendar_event(request, event_id):
-    if not request.user.has_perm('students_app.change_students'):
-        messages.error(request, "Permission denied.")
+    if not request.user.has_perm('students_app.view_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " to delete the calendar of events. Please contact"
+                                  " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
-
     if request.method == 'POST':
         event = get_object_or_404(CalendarEvent, id=event_id)
         event.delete()
@@ -2022,15 +2018,6 @@ def delete_calendar_event(request, event_id):
     return redirect('students_app:calendar_of_events')
 
 # VIEWS FOR BULKY PROMOTIONS
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-
-
-# Ensure Students and ClassLevel are imported at the top!
-@login_required(login_url='login')
-# Ensure you have this at the top of your file:
-# from .models import Students, ClassLevel, Subject
-
 @login_required(login_url='login')
 def promote_students(request):
     if not request.user.has_perm('students_app.change_students'):
@@ -2478,41 +2465,57 @@ from django.contrib import messages
 from .models import Folder, Document
 from .forms import FolderForm, DocumentForm
 
-@login_required()
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+
+# Make sure to import your models and forms here
+
+@login_required(login_url='login')
 def document_manager(request):
+    # BASE PERMISSION: Can they view the page at all?
+    if not request.user.has_perm('students_app.view_folder'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view folders. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+
     folders = Folder.objects.all().prefetch_related('documents')
 
     if request.method == 'POST':
+
         # 1. CREATE FOLDER
         if 'create_folder' in request.POST:
+            if not request.user.has_perm('students_app.add_folder'):
+                messages.error(request, "⛔ You do not have permission to create folders.")
+                return redirect('students_app:document_manager')
+
             folder_form = FolderForm(request.POST)
             if folder_form.is_valid():
                 folder_form.save()
                 messages.success(request, "Folder created successfully!")
                 return redirect('students_app:document_manager')
 
-        # 👇 UPDATED: 2. BULK UPLOAD DOCUMENTS 👇
+        # 2. BULK UPLOAD DOCUMENTS
         elif 'upload_document' in request.POST:
-            # Grab the folder ID and title from either the left panel form or the quick-upload form
+            if not request.user.has_perm('students_app.add_document'):
+                messages.error(request, "⛔ You do not have permission to upload documents.")
+                return redirect('students_app:document_manager')
+
             folder_id = request.POST.get('folder')
             title_input = request.POST.get('title', '').strip()
-
-            # getlist() captures EVERY file if they highlighted multiple PDFs
             files = request.FILES.getlist('file')
 
             if folder_id and files:
                 folder_instance = Folder.objects.filter(id=folder_id).first()
                 if folder_instance:
                     for uploaded_file in files:
-                        # Smart Naming Logic
                         if title_input and len(files) == 1:
-                            # 1 file + custom title = Use custom title
                             final_title = title_input
                         elif title_input and len(files) > 1:
-                            # Multiple files + custom title = Append filename to avoid exact duplicates
                             final_title = f"{title_input} - {uploaded_file.name}"
                         else:
-                            # No custom title = Just use the file's original name
                             final_title = uploaded_file.name
 
                         Document.objects.create(
@@ -2530,30 +2533,34 @@ def document_manager(request):
 
         # 3. DELETE SPECIFIC DOCUMENT
         elif 'delete_document' in request.POST:
+            if not request.user.has_perm('students_app.delete_document'):
+                messages.error(request, "⛔ You do not have permission to delete documents.")
+                return redirect('students_app:document_manager')
+
             doc_id = request.POST.get('doc_id')
             doc = Document.objects.filter(id=doc_id).first()
             if doc:
-                # Delete the physical file from the hard drive first
                 doc.file.delete(save=False)
-                # Then delete the record from the database
                 doc.delete()
                 messages.warning(request, f"File '{doc.title}' was permanently deleted.")
             return redirect('students_app:document_manager')
 
         # 4. DELETE ENTIRE FOLDER
         elif 'delete_folder' in request.POST:
+            if not request.user.has_perm('students_app.delete_folder'):
+                messages.error(request, "⛔ You do not have permission to delete folders.")
+                return redirect('students_app:document_manager')
+
             folder_id = request.POST.get('folder_id')
             folder = Folder.objects.filter(id=folder_id).first()
             if folder:
-                # Delete all physical files inside this folder first to save hard drive space
                 for doc in folder.documents.all():
                     doc.file.delete(save=False)
-                # Then delete the folder (which cascades and deletes the doc database rows)
                 folder.delete()
                 messages.error(request, f"Folder '{folder.name}' and all its contents were destroyed.")
             return redirect('students_app:document_manager')
 
-    # If it's a normal page load (GET request)
+    # GET REQUEST LOAD
     folder_form = FolderForm()
     document_form = DocumentForm()
 
@@ -2565,11 +2572,17 @@ def document_manager(request):
     return render(request, 'students_app/document_manager.html', context)
 
 
+
 from .models import SchoolCoverPhoto, CarouselEvent
 from .forms import SchoolCoverPhotoForm, CarouselEventForm
 
-
+@login_required(login_url='login')
 def edit_school_photos(request):
+    if not request.user.has_perm('students_app.view_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view departments. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Get the school's profile, or create an empty one if they are brand new
     profile, created = SchoolCoverPhoto.objects.get_or_create(pk=1)
     events = CarouselEvent.objects.all()
@@ -2777,14 +2790,24 @@ def edit_grade_boundary(request, boundary_id):
     )
 
 
-@login_required()
+@login_required(login_url='login')
 def subject_department_list(request):
+    if not request.user.has_perm('students_app.view_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view departments. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     """The dashboard view showing all created departments."""
     departments = SubjectDepartment.objects.all()
     return render(request, 'students_app/subject_department_list.html', {'departments': departments})
 
-
+@login_required(login_url='login')
 def add_subject_department(request):
+    if not request.user.has_perm('students_app.add_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     """Handles displaying and saving the department creation form."""
     if request.method == "POST":
         form = SubjectDepartmentForm(request.POST)
@@ -2806,6 +2829,11 @@ def add_subject_department(request):
 
 @login_required(login_url='users:login')
 def edit_subject_department(request, dept_id):
+    if not request.user.has_perm('students_app.change_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Fetch the specific class they clicked on
     dept_obj = get_object_or_404(SubjectDepartment, id=dept_id)
 
@@ -2828,8 +2856,13 @@ def edit_subject_department(request, dept_id):
     # We reuse our magical generic form!
     return render(request, 'students_app/settings/generic_form.html', context)
 
-
+@login_required(login_url='login')
 def delete_subject_department(request, dept_id):
+    if not request.user.has_perm('students_app.delete_subjectdepartment'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " access this operation. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Security check: Only allow deletion via POST request
     if request.method == 'POST':
         # Grab the department or return a 404 if it doesn't exist
@@ -2859,7 +2892,7 @@ import datetime
 @login_required(login_url='users:login')
 def download_class_reports(request, class_id, academic_year, term):
     # 1. SECURITY CHECK
-    if not request.user.has_perm('students_app.change_students'):
+    if not request.user.has_perm('students_app.change_attendance'):
         messages.warning(request, "🔒 Oops! You don't have permission to access to download the zip reports.")
         return redirect( request.META.get('HTTP_REFERER', 'students_app:dashboard'))
 
@@ -3132,12 +3165,14 @@ def export_subject_ranked_pdf(request, subject_id):
 
 # DETAILS OF THE ANNOUCEMENTS AND NEWS ARTICLES
 
-
+@login_required(login_url='login')
 def news_detail(request, pk):
     # Fetch the specific active article using its primary key (pk)
     article = get_object_or_404(NewsArticle, pk=pk, is_active=True)
     return render(request, 'students_app/news_detail.html', {'article': article})
 
+
+@login_required(login_url='login')
 def announcement_detail(request, pk):
     # Fetch the specific active announcement
     announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
