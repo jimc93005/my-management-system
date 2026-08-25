@@ -1344,92 +1344,109 @@ def dashboard(request):
     # -----------------------------------------------------
     # 3. FORM TEACHER DATA
     # -----------------------------------------------------
-    if is_form_teacher:
-        my_class = user.my_form_class.first()
-        my_class_name_str = str(my_class.class_level)  # Get the exact string for snapshot matching
+        # -----------------------------------------------------
+        # 3. FORM TEACHER DATA
+        # -----------------------------------------------------
+        if is_form_teacher:
+            my_class = user.my_form_class.first()
+            my_class_name_str = str(my_class.class_level)  # Get the exact string for snapshot matching
 
-        class_students = Students.objects.filter(class_level=my_class, status='Active')
-        class_grades = Grade.objects.filter(student__in=class_students)
+            class_students = Students.objects.filter(class_level=my_class, status='Active')
 
-        context['my_class'] = my_class
-        context['class_students'] = class_students[:5]
-        context['class_subjects'] = Subject.objects.filter(target_class=my_class).select_related('teacher_subject')
+            # =========================================================
+            # 1. AUTO-DETECT CURRENT YEAR & TERM FIRST
+            # =========================================================
+            latest_class_grade = Grade.objects.filter(
+                student__in=class_students,
+                class_level_snapshot=my_class_name_str
+            ).order_by('-academic_year', '-term').first()
 
-        t_grades = class_grades.count()
-        p_grades = class_grades.filter(score__gte=50).count()
-        b_grades = class_grades.filter(student__gender='Male')
-        g_grades = class_grades.filter(student__gender='Female')
+            if latest_class_grade:
+                track_year = latest_class_grade.academic_year
+                track_term = latest_class_grade.term
+            else:
+                track_year = str(date.today().year)
+                track_term = '1'
 
-        context['stats'] = {
-            'total': class_students.count(),
-            'boys': class_students.filter(gender='Male').count(),
-            'girls': class_students.filter(gender='Female').count(),
-            'pass_rate': round((p_grades / t_grades * 100), 1) if t_grades > 0 else 0,
-            'boys_pass': round((b_grades.filter(score__gte=50).count() / b_grades.count() * 100),
-                               1) if b_grades.count() > 0 else 0,
-            'girls_pass': round((g_grades.filter(score__gte=50).count() / g_grades.count() * 100),
-                                1) if g_grades.count() > 0 else 0,
-        }
+            # =========================================================
+            # 2. FILTER GRADES STRICTLY BY CURRENT CLASS & TERM
+            # =========================================================
+            class_grades = Grade.objects.filter(
+                student__in=class_students,
+                academic_year=track_year,
+                term=track_term,
+                class_level_snapshot=my_class_name_str
+            )
 
-        # --- SMART ATTENDANCE DASHBOARD LOGIC ---
-        today = date.today()
-        todays_attendance = Attendance.objects.filter(student__in=class_students, date=today)
+            context['my_class'] = my_class
+            context['class_students'] = class_students[:5]
+            context['class_subjects'] = Subject.objects.filter(target_class=my_class).select_related('teacher_subject')
 
-        context['attendance_stats'] = {
-            'present': todays_attendance.filter(status='Present').count(),
-            'absent': todays_attendance.filter(status='Absent').count(),
-            'late': todays_attendance.filter(status='Late').count(),
-            'not_recorded': class_students.count() - todays_attendance.count()
-        }
+            t_grades = class_grades.count()
+            p_grades = class_grades.filter(score__gte=50).count()
 
-        context['active_warnings'] = AttendanceWarning.objects.filter(
-            student__in=class_students,
-            is_resolved=False
-        ).select_related('student').order_by('-date_flagged')
+            # Gender pass rates
+            b_grades = class_grades.filter(student__gender='Male')
+            g_grades = class_grades.filter(student__gender='Female')
 
-        # =========================================================
-        # 👇 MASTER CLASS GRADING PROGRESS LOGIC (FILTERED BY SNAPSHOT) 👇
-        # =========================================================
+            context['stats'] = {
+                'total': class_students.count(),
+                'boys': class_students.filter(gender='Male').count(),
+                'girls': class_students.filter(gender='Female').count(),
+                'pass_rate': round((p_grades / t_grades * 100), 1) if t_grades > 0 else 0,
+                'boys_pass': round((b_grades.filter(score__gte=50).count() / b_grades.count() * 100),
+                                   1) if b_grades.count() > 0 else 0,
+                'girls_pass': round((g_grades.filter(score__gte=50).count() / g_grades.count() * 100),
+                                    1) if g_grades.count() > 0 else 0,
+            }
 
-        expected_result = class_students.annotate(
-            sub_count=Count('subject')
-        ).aggregate(total=Sum('sub_count'))
+            # --- SMART ATTENDANCE DASHBOARD LOGIC ---
+            today = date.today()
 
-        total_expected = expected_result['total'] or 0
+            # If students were promoted today, their morning attendance from the old class will carry over
+            # unless filtered. If your Attendance model has a 'term' or 'class_level' field, add it here.
+            todays_attendance = Attendance.objects.filter(
+                student__in=class_students,
+                date=today
+                # class_level=my_class  <-- UNCOMMENT if your model tracks the class the attendance was taken in
+            )
 
-        # Auto-Detect Current Year & Term (NOW FILTERED BY SNAPSHOT)
-        latest_class_grade = Grade.objects.filter(
-            student__in=class_students,
-            class_level_snapshot=my_class_name_str  # <--- THE FIX
-        ).order_by('-academic_year', '-term').first()
+            context['attendance_stats'] = {
+                'present': todays_attendance.filter(status='Present').count(),
+                'absent': todays_attendance.filter(status='Absent').count(),
+                'late': todays_attendance.filter(status='Late').count(),
+                'not_recorded': class_students.count() - todays_attendance.count()
+            }
 
-        if latest_class_grade:
-            track_year = latest_class_grade.academic_year
-            track_term = latest_class_grade.term
-        else:
-            track_year = str(datetime.date.today().year)
-            track_term = '1'
+            # Ensure old warnings from previous classes don't show up in the new class
+            context['active_warnings'] = AttendanceWarning.objects.filter(
+                student__in=class_students,
+                is_resolved=False,
+                date_flagged__year=int(track_year)  # Prevents previous years' warnings from showing
+            ).select_related('student').order_by('-date_flagged')
 
-        # Calculate TOTAL ENTERED GRADES for this term (NOW FILTERED BY SNAPSHOT)
-        total_entered = Grade.objects.filter(
-            student__in=class_students,
-            academic_year=track_year,
-            term=track_term,
-            class_level_snapshot=my_class_name_str  # <--- THE FIX
-        ).count()
+            # =========================================================
+            # 3. MASTER CLASS GRADING PROGRESS LOGIC
+            # =========================================================
+            expected_result = class_students.annotate(
+                sub_count=Count('subject')
+            ).aggregate(total=Sum('sub_count'))
 
-        if total_expected > 0:
-            class_grading_progress = int((total_entered / total_expected) * 100)
-        else:
-            class_grading_progress = 0
+            total_expected = expected_result['total'] or 0
+            total_entered = class_grades.count()  # Reusing our strictly filtered query from above
 
-        context.update({
-            'track_year': track_year,
-            'track_term': track_term,
-            'total_expected': total_expected,
-            'total_entered': total_entered,
-            'class_grading_progress': class_grading_progress,
-        })
+            if total_expected > 0:
+                class_grading_progress = int((total_entered / total_expected) * 100)
+            else:
+                class_grading_progress = 0
+
+            context.update({
+                'track_year': track_year,
+                'track_term': track_term,
+                'total_expected': total_expected,
+                'total_entered': total_entered,
+                'class_grading_progress': class_grading_progress,
+            })
         # 👆 END PROGRESS LOGIC 👆
 
     # -----------------------------------------------------
@@ -2472,6 +2489,8 @@ from django.contrib import messages
 
 # Make sure to import your models and forms here
 
+
+from django.core.exceptions import ValidationError
 @login_required(login_url='login')
 def document_manager(request):
     # BASE PERMISSION: Can they view the page at all?
@@ -2510,6 +2529,7 @@ def document_manager(request):
             if folder_id and files:
                 folder_instance = Folder.objects.filter(id=folder_id).first()
                 if folder_instance:
+                    uploaded_count = 0
                     for uploaded_file in files:
                         if title_input and len(files) == 1:
                             final_title = title_input
@@ -2518,12 +2538,26 @@ def document_manager(request):
                         else:
                             final_title = uploaded_file.name
 
-                        Document.objects.create(
+                        doc = Document(
                             title=final_title,
                             folder=folder_instance,
                             file=uploaded_file
                         )
-                    messages.success(request, f"Successfully uploaded {len(files)} document(s)!")
+                        try:
+                            doc.save()
+                            uploaded_count += 1
+                        except ValidationError as e:
+                            # Quota exceeded (or other validation failure) —
+                            # stop here rather than silently skipping the
+                            # rest of the batch, and report what happened.
+                            messages.error(
+                                request,
+                                f"⛔ Upload stopped at '{uploaded_file.name}': {'; '.join(e.messages)}"
+                            )
+                            break
+
+                    if uploaded_count:
+                        messages.success(request, f"Successfully uploaded {uploaded_count} document(s)!")
                 else:
                     messages.error(request, "The selected folder does not exist.")
             else:
@@ -2540,9 +2574,10 @@ def document_manager(request):
             doc_id = request.POST.get('doc_id')
             doc = Document.objects.filter(id=doc_id).first()
             if doc:
+                title = doc.title
                 doc.file.delete(save=False)
-                doc.delete()
-                messages.warning(request, f"File '{doc.title}' was permanently deleted.")
+                doc.delete()  # runs our overridden delete() -> decrements used_storage_mb
+                messages.warning(request, f"File '{title}' was permanently deleted.")
             return redirect('students_app:document_manager')
 
         # 4. DELETE ENTIRE FOLDER
@@ -2554,22 +2589,54 @@ def document_manager(request):
             folder_id = request.POST.get('folder_id')
             folder = Folder.objects.filter(id=folder_id).first()
             if folder:
-                for doc in folder.documents.all():
-                    doc.file.delete(save=False)
-                folder.delete()
-                messages.error(request, f"Folder '{folder.name}' and all its contents were destroyed.")
-            return redirect('students_app:document_manager')
+                folder_name = folder.name
 
+                # Iterating through documents calling doc.delete() triggers our overridden
+                # Document.delete() method for every file inside the folder:
+                # 1. Permanently removes physical file from disk
+                # 2. Subtracts file size from tenant.used_storage_mb
+                # 3. Removes Document record from database
+                for doc in folder.documents.all():
+                    doc.delete()
+
+                # Permanently delete the Folder record from the database
+                folder.delete()
+
+                messages.error(request, f"Folder '{folder_name}' and all its contents were permanently destroyed.")
+            else:
+                messages.error(request, "The requested folder could not be found.")
+
+            return redirect('students_app:document_manager')
     # GET REQUEST LOAD
     folder_form = FolderForm()
     document_form = DocumentForm()
 
+    # 1. Grab the current tenant (school)
+    tenant = request.tenant
+
+    # 2. Calculate storage metrics
+    used = tenant.used_storage_mb or 0.0
+    allocated = tenant.allocated_storage_mb or 1.0  # Prevent division by zero if not set
+    percentage = (used / allocated) * 100
+
+    # 3. Cap values so the UI doesn't break (e.g., progress bar going over 100%)
+    storage_percentage = min(percentage, 100)
+    remaining_storage = max(allocated - used, 0.0)
+
+    # 4. Update your context dictionary
     context = {
         'folders': folders,
         'folder_form': folder_form,
         'document_form': document_form,
+
+        # 👇 NEW STORAGE VARIABLES 👇
+        'storage_percentage': storage_percentage,
+        'remaining_storage': remaining_storage,
     }
     return render(request, 'students_app/document_manager.html', context)
+
+
+
 
 
 
@@ -2616,6 +2683,7 @@ def edit_school_photos(request):
 
     profile_form = SchoolCoverPhotoForm(instance=profile)
     event_form = CarouselEventForm()
+
 
     context = {
         'profile_form': profile_form,
@@ -2936,9 +3004,6 @@ def download_class_reports(request, class_id, academic_year, term):
         for student in students:
             term_reports, total_students = build_term_reports(student)
 
-            print(f"\n--- DIAGNOSTICS FOR: {student.first_name} {student.surname} ---")
-            print(f"URL Year Passed: '{clean_academic_year}' | URL Term Passed: '{target_term_str}'")
-            print(f"Raw Keys found in DB for this student: {list(term_reports.keys())}")
 
             # 👇 BULLETPROOF SEARCH 👇
             year_data = {}
@@ -2953,22 +3018,19 @@ def download_class_reports(request, class_id, academic_year, term):
                 if db_year_str in possible_years:
                     year_data = terms_dict
                     actual_year_used = db_year_str
-                    print(f"✅ SUCCESS: Matched Year -> '{db_year_str}'")
 
-                    # Now aggressively match the term
-                    print(f"Raw Term Keys found in DB for {db_year_str}: {list(year_data.keys())}")
                     for db_term, data in year_data.items():
                         # Compare "1" to "1", handling if DB saved it as "Term 1"
                         db_term_str = str(db_term).strip().lower()
                         if db_term_str == target_term_str or target_term_str in db_term_str:
                             report_data = data
-                            print(f"✅ SUCCESS: Matched Term -> '{db_term_str}'")
+
                             break
                     break  # Stop looking for years, we found it
 
             # Skip students who don't have generated data for this term
             if not report_data :
-                print(f"❌ SKIPPED: Could not find matching Year/Term combo in dictionary.")
+
                 continue
 
             # Safely get Teacher Signature
@@ -3177,14 +3239,6 @@ def announcement_detail(request, pk):
     # Fetch the specific active announcement
     announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
     return render(request, 'students_app/announcement_detail.html', {'announcement': announcement})
-
-
-
-
-
-
-
-
 
 
 

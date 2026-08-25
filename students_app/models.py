@@ -3,6 +3,7 @@ import datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
+from schools_manager.models import School
 
 # 1. THE MASTER TEMPLATE
 class GradingSystem(models.Model):
@@ -559,24 +560,84 @@ class Folder(models.Model):
         ordering = ['-created_at']
 
 
-# 3. The Document Model
+from django.db import models, connection, transaction
+from django.db.models.functions import Greatest
+from django.core.exceptions import ValidationError
+
+
 class Document(models.Model):
     title = models.CharField(max_length=200, null=True, blank=True)
     folder = models.ForeignKey(Folder, related_name='documents', on_delete=models.CASCADE)
-
-    # Notice we pass our security guard function to 'upload_to'
     file = models.FileField(upload_to=tenant_directory_path)
+
+    # Track file size for fast quota calculations
+    file_size_mb = models.FloatField(default=0.0, editable=False)
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
-    # Optional: Track who uploaded it if you have your users set up!
-    # uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    def clean(self):
+        super().clean()
+        # Quota enforcement lives solely in save() now, where it runs under
+        # a row lock against a freshly-read School row. Checking it here too
+        # was redundant and could disagree with save()'s check if
+        # connection.tenant was stale (e.g. after an earlier save in the
+        # same request already changed used_storage_mb).
+        # Keep this method for any other field-level validation you add later.
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            self.file_size_mb = self.file.size / (1024 * 1024)
+
+        self.full_clean()
+
+        with transaction.atomic():
+            # Lock the tenant row for the duration of this check+update to
+            # prevent concurrent uploads from both passing the quota check
+            school = School.objects.select_for_update().get(pk=connection.tenant.pk)
+
+            old_size_mb = 0.0
+            if self.pk:
+                old_size_mb = Document.objects.filter(pk=self.pk).values_list(
+                    'file_size_mb', flat=True
+                ).first() or 0.0
+
+            delta = self.file_size_mb - old_size_mb
+            current_used = school.used_storage_mb or 0.0
+
+            if current_used + delta > school.allocated_storage_mb:
+                raise ValidationError(
+                    f"Storage limit reached. You have used "
+                    f"{round(current_used, 2)} MB "
+                    f"of your {school.used_storage_mb} MB limit. "
+                    f"Please upgrade your plan."
+                )
+
+            school.used_storage_mb = models.F('used_storage_mb') + delta
+            school.save(update_fields=['used_storage_mb'])
+
+            super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            school = School.objects.select_for_update().get(pk=connection.tenant.pk)
+            # Floor at 0 so drift (e.g. from a bulk operation that bypassed
+            # this method) can't push the counter negative.
+            school.used_storage_mb = Greatest(
+                models.F('used_storage_mb') - self.file_size_mb, 0.0
+            )
+            school.save(update_fields=['used_storage_mb'])
+            if self.file:
+                self.file.delete(save=False)
+            super().delete(*args, **kwargs)
 
     def __str__(self):
-        return self.title
+        return self.title or f"Document {self.pk}"
 
     class Meta:
         ordering = ['-uploaded_at']
+
+
+
 
 
 
@@ -703,7 +764,6 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return f"{self.date_text} - {self.activity}"
-
 
 
 

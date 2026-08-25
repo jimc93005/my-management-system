@@ -6,7 +6,7 @@ Configured for Multi-Tenant Production Deployment.
 from pathlib import Path
 import os
 from environ import Env
-from pygments.styles import default
+# from pygments.styles import default
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,7 +14,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = Env()
 
 # 3. Read the .env file
-Env.read_env(BASE_DIR / ".env")
+# Env.read_env(BASE_DIR / ".env")
+
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    Env.read_env(env_file)
 # ==============================================================================
 # SECURITY & ENVIRONMENT CONFIGURATION
 # ==============================================================================
@@ -32,10 +36,10 @@ Env.read_env(BASE_DIR / ".env")
 # ALLOWED_HOSTS = env('ALLOWED_HOSTS',).split(',')
 
 # 1. SECRET KEY: Read from env, with a fallback
-SECRET_KEY = env('SECRET_KEY', default='your-super-secret-key-here')
+SECRET_KEY = env('SECRET_KEY')
 
 # 2. DEBUG MODE: Safely parse boolean from env
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = env.bool('DEBUG', default=False)
 
 # 3. ALLOWED HOSTS & CSRF
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])

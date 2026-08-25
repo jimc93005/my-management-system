@@ -1,38 +1,55 @@
-
+version: '3.8'
 
 services:
   # 1. The Database Service
   db:
     image: postgres:15-alpine
     container_name: school-db
-    environment:
-      POSTGRES_DB: school_tenant_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: supersecretpassword
-    ports:
-      - "15432:5432"
+    restart: always
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal_network
 
   # 2. Your Django App Service
   web:
     build: .
     container_name: school-portal-container
-    command: python manage.py runserver 0.0.0.0:8000
+    restart: always
+    # Replace 'your_project' with your actual Django project directory name
+    command: gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      - .:/app  # This syncs your local code so you don't have to rebuild the image for every small code change!
-    ports:
-      - "8002:8000"
-    environment:
-      - DB_NAME=school_tenant_db
-      - DB_USER=admin
-      - DB_PASSWORD=supersecretpassword
-      - POSTGRES_HOST=db      # Overrides .env inside Docker
-      - POSTGRES_PORT=5432    # Overrides .env inside Docker
-      - DEBUG=True
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    env_file:
+      - .env
     depends_on:
       - db
+    networks:
+      - internal_network
+      - dokploy-network
+    labels:
 
-# 3. This ensures your database data isn't deleted if you restart your computer
+        - "traefik.enable=true"
+        - "traefik.http.routers.school-app.rule=Host(`${DOMAIN}`) || HostRegexp(`{subdomain:[a-z0-9-]+}.${DOMAIN}`)"
+        - "traefik.http.routers.school-app.entrypoints=websecure"
+        - "traefik.http.routers.school-app.tls.certresolver=letsencrypt"
+        - "traefik.http.services.school-app.loadbalancer.server.port=8000"
+        - "traefik.http.routers.school-app-http.rule=Host(`${DOMAIN}`) || HostRegexp(`{subdomain:[a-z0-9-]+}.${DOMAIN}`)"
+        - "traefik.http.routers.school-app-http.entrypoints=web"
+        - "traefik.http.routers.school-app-http.middlewares=redirect-to-https"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+# 3. Networks (Isolates DB internally while linking Django to Dokploy's Traefik proxy)
+networks:
+  internal_network:
+    driver: bridge
+  dokploy-network:
+    external: true
+
+# 4. Persistent Storage (Prevents data loss on restart)
 volumes:
   postgres_data:
+  static_data:
+  media_data:

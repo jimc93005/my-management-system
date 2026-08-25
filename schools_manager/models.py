@@ -12,6 +12,11 @@ from django.dispatch import receiver
 # 1. THE TENANT MODEL
 class School(TenantMixin):
     name = models.CharField(max_length=100)
+    allocated_storage_mb = models.FloatField(
+        default=500.0,
+        help_text="Maximum storage allowed in Megabytes"
+    )
+    used_storage_mb = models.FloatField(default=0.0)
     created_on = models.DateField(auto_now_add=True)
 
     # default true, schema will be automatically created and synced when it is saved

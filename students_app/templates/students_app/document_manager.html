@@ -29,19 +29,59 @@
         </a>
     </div>
 
+    <!-- Auto-Dismissing Alerts Area -->
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show shadow-sm" role="alert">
-                <i class="fas fa-info-circle mr-2"></i> {{ message }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        {% endfor %}
+        <div id="toast-container">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas {% if message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
     <div class="row">
         <div class="col-lg-4 mb-4">
+
+            <!-- 👇 NEW STORAGE TRACKER WIDGET 👇 -->
+            <div class="card shadow-sm mb-4 border-0" style="border-top: 4px solid #17a2b8 !important;">
+                <div class="card-body">
+                    <h6 class="font-weight-bold text-muted mb-3">
+                        <i class="fas fa-database text-info mr-2"></i>Storage Usage
+                    </h6>
+
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="font-weight-bold text-dark">{{ request.tenant.used_storage_mb|floatformat:1 }} MB Used</span>
+                        <span class="text-muted">{{ request.tenant.allocated_storage_mb|floatformat:1 }} MB Total</span>
+                    </div>
+
+                    <div class="progress mb-2 bg-light" style="height: 12px; border-radius: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated
+                            {% if storage_percentage > 90 %}bg-danger
+                            {% elif storage_percentage > 70 %}bg-warning
+                            {% else %}bg-success{% endif %}"
+                            role="progressbar"
+                            style="width: {{ storage_percentage|floatformat:0 }}%;"
+                            aria-valuenow="{{ storage_percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        {% if storage_percentage > 90 %}
+                            <small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i> Almost Full</small>
+                            <a href="#" class="btn btn-sm btn-outline-danger py-0 px-2">Upgrade</a>
+                        {% else %}
+                            <small class="text-muted">{{ remaining_storage|floatformat:1 }} MB available</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- 👆 END STORAGE TRACKER 👆 -->
+
             <div class="card shadow-sm mb-4 border-0" style="border-top: 4px solid #007bff !important;">
                 <div class="card-header bg-white font-weight-bold border-0 pt-3">
                     <i class="fas fa-folder-plus text-primary mr-1"></i> Create New Folder
@@ -65,7 +105,10 @@
                         {% csrf_token %}
                         <input type="hidden" name="upload_document" value="1">
                         {% bootstrap_form document_form %}
-                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm">Secure Upload</button>
+                        <!-- Disable upload button if storage is 100% -->
+                        <button type="submit" class="btn btn-success btn-block font-weight-bold shadow-sm" {% if storage_percentage >= 100 %}disabled{% endif %}>
+                            {% if storage_percentage >= 100 %}Storage Full{% else %}Secure Upload{% endif %}
+                        </button>
                     </form>
                 </div>
             </div>
@@ -118,7 +161,11 @@
                                             <i class="far fa-file-pdf text-danger mr-3" style="font-size: 1.5rem;"></i>
                                             <div>
                                                 <span class="d-block text-dark font-weight-bold text-truncate file-title" style="max-width: 170px; font-size: 0.9rem;">{{ doc.title }}</span>
-                                                <small class="text-muted d-block" style="font-size: 0.75rem;">{{ doc.uploaded_at|date:"M d, Y" }}</small>
+                                                <small class="text-muted d-block" style="font-size: 0.75rem;">
+                                                    {{ doc.uploaded_at|date:"M d, Y" }} &bull;
+                                                    <!-- Display individual file size -->
+                                                    <span class="font-weight-bold">{{ doc.file_size_mb|floatformat:2 }} MB</span>
+                                                </small>
                                             </div>
                                         </div>
 
@@ -147,7 +194,7 @@
 
                                             <input type="file" name="file" class="form-control-file form-control-sm mr-2 mb-2 mb-md-0" required multiple style="max-width: 250px;">
 
-                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold ml-auto shadow-sm"><i class="fas fa-upload"></i> Bulk Upload</button>
+                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold ml-auto shadow-sm" {% if storage_percentage >= 100 %}disabled{% endif %}><i class="fas fa-upload"></i> Bulk Upload</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -217,7 +264,7 @@
         <p class="mb-2">You are about to delete the folder:</p>
         <strong id="modalFolderName" class="text-dark d-block mb-3" style="font-size: 1.3rem;"></strong>
         <div class="alert alert-warning text-left small mb-0">
-            <i class="fas fa-info-circle mr-1"></i> This will also permanently delete <strong>EVERY SINGLE FILE</strong> inside this folder.
+            <i class="fas fa-info-circle mr-1"></i> This will also permanently delete <strong>EVERY SINGLE FILE</strong> inside this folder, freeing up space.
         </div>
       </div>
       <div class="modal-footer justify-content-center bg-light border-0">
@@ -275,5 +322,16 @@
             document.body.style.overflow = 'auto';
         }
     }
+
+    // Auto-Dismiss Alerts Smoothly
+    document.addEventListener("DOMContentLoaded", function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }, 5000);
+        });
+    });
 </script>
 {% endblock %}
