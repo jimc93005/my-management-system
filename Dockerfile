@@ -7,6 +7,7 @@ ENV PYTHONUNBUFFERED=1
 
 # 3. Create and set the working directory inside the container
 WORKDIR /app
+
 # 4. Install system dependencies (Crucial for PostgreSQL, pycairo, and WeasyPrint)
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -21,10 +22,9 @@ RUN apt-get update && apt-get install -y \
     shared-mime-info \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
+
 # 5. Copy your requirements file and install Python packages
 COPY requirements.txt /app/
-# Dockerfile
-
 RUN pip install --default-timeout=1000 --upgrade pip && pip install --default-timeout=1000 -r requirements.txt
 
 # 6. Copy the rest of your project files into the container
@@ -33,5 +33,5 @@ COPY . /app/
 # 7. Expose the port your app will run on
 EXPOSE 8000
 
-# 8. The command that starts your application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# 8. Run migrations, collect static files, and start Gunicorn for production
+CMD ["sh", "-c", "python manage.py migrate_schemas && python manage.py collectstatic --noinput && gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000"]
