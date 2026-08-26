@@ -80,7 +80,7 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
         The Magic Automation: Creates Schema, Domain, and Admin User
         """
         # Set your base domain here. For local testing, use 'localhost'.
-        BASE_DOMAIN = 'localhost'
+        BASE_DOMAIN = 'threeangels.cloud'
         PORT = '8000'
 
         try:
