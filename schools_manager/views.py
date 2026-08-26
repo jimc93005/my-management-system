@@ -100,7 +100,7 @@ def approve_registration(request, pk):
             )
 
             # 2. Create the Tenant Domain
-            main_domain = "localhost"
+            main_domain = "threeangels.cloud"
             full_domain = f"{registration.subdomain.lower()}.{main_domain}"
 
             Domain.objects.create(
@@ -135,7 +135,7 @@ def approve_registration(request, pk):
             return redirect('tenant_admin_site:schools_manager_schoolregistrationrequest_changelist')
 
     # 6. Send Approval Email (Outside try/except block as requested)
-    domain_url = f"http://{full_domain}:8000"
+    domain_url = f"http://{full_domain}"
 
     # If this fails, Django will throw a direct Exception traceback on your screen
     send_approved_registration_email(registration, domain_url, temp_password)
