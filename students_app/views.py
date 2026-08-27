@@ -3233,14 +3233,14 @@ def export_subject_ranked_pdf(request, subject_id):
 
 # DETAILS OF THE ANNOUCEMENTS AND NEWS ARTICLES
 
-@login_required(login_url='login')
+
 def news_detail(request, pk):
     # Fetch the specific active article using its primary key (pk)
     article = get_object_or_404(NewsArticle, pk=pk, is_active=True)
     return render(request, 'students_app/news_detail.html', {'article': article})
 
 
-@login_required(login_url='login')
+
 def announcement_detail(request, pk):
     # Fetch the specific active announcement
     announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
