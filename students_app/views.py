@@ -1341,117 +1341,123 @@ def dashboard(request):
                 })
             context['class_stats'] = class_stats
 
+
+
+
+
     # -----------------------------------------------------
     # 3. FORM TEACHER DATA
     # -----------------------------------------------------
         # -----------------------------------------------------
         # 3. FORM TEACHER DATA
         # -----------------------------------------------------
-        if is_form_teacher:
-            my_class = user.my_form_class.first()
-            my_class_name_str = str(my_class.class_level)  # Get the exact string for snapshot matching
-
-            class_students = Students.objects.filter(class_level=my_class, status='Active')
-
-            # =========================================================
-            # 1. AUTO-DETECT CURRENT YEAR & TERM FIRST
-            # =========================================================
-            latest_class_grade = Grade.objects.filter(
-                student__in=class_students,
-                class_level_snapshot=my_class_name_str
-            ).order_by('-academic_year', '-term').first()
-
-            if latest_class_grade:
-                track_year = latest_class_grade.academic_year
-                track_term = latest_class_grade.term
-            else:
-                track_year = str(date.today().year)
-                track_term = '1'
-
-            # =========================================================
-            # 2. FILTER GRADES STRICTLY BY CURRENT CLASS & TERM
-            # =========================================================
-            class_grades = Grade.objects.filter(
-                student__in=class_students,
-                academic_year=track_year,
-                term=track_term,
-                class_level_snapshot=my_class_name_str
-            )
-
-            context['my_class'] = my_class
-            context['class_students'] = class_students[:5]
-            context['class_subjects'] = Subject.objects.filter(target_class=my_class).select_related('teacher_subject')
-
-            t_grades = class_grades.count()
-            p_grades = class_grades.filter(score__gte=50).count()
-
-            # Gender pass rates
-            b_grades = class_grades.filter(student__gender='Male')
-            g_grades = class_grades.filter(student__gender='Female')
-
-            context['stats'] = {
-                'total': class_students.count(),
-                'boys': class_students.filter(gender='Male').count(),
-                'girls': class_students.filter(gender='Female').count(),
-                'pass_rate': round((p_grades / t_grades * 100), 1) if t_grades > 0 else 0,
-                'boys_pass': round((b_grades.filter(score__gte=50).count() / b_grades.count() * 100),
-                                   1) if b_grades.count() > 0 else 0,
-                'girls_pass': round((g_grades.filter(score__gte=50).count() / g_grades.count() * 100),
-                                    1) if g_grades.count() > 0 else 0,
-            }
-
-            # --- SMART ATTENDANCE DASHBOARD LOGIC ---
-            today = date.today()
-
-            # If students were promoted today, their morning attendance from the old class will carry over
-            # unless filtered. If your Attendance model has a 'term' or 'class_level' field, add it here.
-            todays_attendance = Attendance.objects.filter(
-                student__in=class_students,
-                date=today
-                # class_level=my_class  <-- UNCOMMENT if your model tracks the class the attendance was taken in
-            )
-
-            context['attendance_stats'] = {
-                'present': todays_attendance.filter(status='Present').count(),
-                'absent': todays_attendance.filter(status='Absent').count(),
-                'late': todays_attendance.filter(status='Late').count(),
-                'not_recorded': class_students.count() - todays_attendance.count()
-            }
-
-            # Ensure old warnings from previous classes don't show up in the new class
-            context['active_warnings'] = AttendanceWarning.objects.filter(
-                student__in=class_students,
-                is_resolved=False,
-                date_flagged__year=int(track_year)  # Prevents previous years' warnings from showing
-            ).select_related('student').order_by('-date_flagged')
-
-            # =========================================================
-            # 3. MASTER CLASS GRADING PROGRESS LOGIC
-            # =========================================================
-            expected_result = class_students.annotate(
-                sub_count=Count('subject')
-            ).aggregate(total=Sum('sub_count'))
-
-            total_expected = expected_result['total'] or 0
-            total_entered = class_grades.count()  # Reusing our strictly filtered query from above
-
-            if total_expected > 0:
-                class_grading_progress = int((total_entered / total_expected) * 100)
-            else:
-                class_grading_progress = 0
-
-            context.update({
-                'track_year': track_year,
-                'track_term': track_term,
-                'total_expected': total_expected,
-                'total_entered': total_entered,
-                'class_grading_progress': class_grading_progress,
-            })
-        # 👆 END PROGRESS LOGIC 👆
 
     # -----------------------------------------------------
     # 4. REGULAR TEACHER DATA
     # -----------------------------------------------------
+
+    if is_form_teacher:
+        my_class = user.my_form_class.first()
+        my_class_name_str = str(my_class.class_level)  # Get the exact string for snapshot matching
+
+        class_students = Students.objects.filter(class_level=my_class, status='Active')
+
+        # =========================================================
+        # 1. AUTO-DETECT CURRENT YEAR & TERM FIRST
+        # =========================================================
+        latest_class_grade = Grade.objects.filter(
+            student__in=class_students,
+            class_level_snapshot=my_class_name_str
+        ).order_by('-academic_year', '-term').first()
+
+        if latest_class_grade:
+            track_year = latest_class_grade.academic_year
+            track_term = latest_class_grade.term
+        else:
+            track_year = str(date.today().year)
+            track_term = '1'
+
+        # =========================================================
+        # 2. FILTER GRADES STRICTLY BY CURRENT CLASS & TERM
+        # =========================================================
+        class_grades = Grade.objects.filter(
+            student__in=class_students,
+            academic_year=track_year,
+            term=track_term,
+            class_level_snapshot=my_class_name_str
+        )
+
+        context['my_class'] = my_class
+        context['class_students'] = class_students[:5]
+        context['class_subjects'] = Subject.objects.filter(target_class=my_class).select_related('teacher_subject')
+
+        t_grades = class_grades.count()
+        p_grades = class_grades.filter(score__gte=50).count()
+
+        # Gender pass rates
+        b_grades = class_grades.filter(student__gender='Male')
+        g_grades = class_grades.filter(student__gender='Female')
+
+        context['stats'] = {
+            'total': class_students.count(),
+            'boys': class_students.filter(gender='Male').count(),
+            'girls': class_students.filter(gender='Female').count(),
+            'pass_rate': round((p_grades / t_grades * 100), 1) if t_grades > 0 else 0,
+            'boys_pass': round((b_grades.filter(score__gte=50).count() / b_grades.count() * 100),
+                               1) if b_grades.count() > 0 else 0,
+            'girls_pass': round((g_grades.filter(score__gte=50).count() / g_grades.count() * 100),
+                                1) if g_grades.count() > 0 else 0,
+        }
+
+        # --- SMART ATTENDANCE DASHBOARD LOGIC ---
+        today = date.today()
+
+        # If students were promoted today, their morning attendance from the old class will carry over
+        # unless filtered. If your Attendance model has a 'term' or 'class_level' field, add it here.
+        todays_attendance = Attendance.objects.filter(
+            student__in=class_students,
+            date=today
+            # class_level=my_class  <-- UNCOMMENT if your model tracks the class the attendance was taken in
+        )
+
+        context['attendance_stats'] = {
+            'present': todays_attendance.filter(status='Present').count(),
+            'absent': todays_attendance.filter(status='Absent').count(),
+            'late': todays_attendance.filter(status='Late').count(),
+            'not_recorded': class_students.count() - todays_attendance.count()
+        }
+
+        # Ensure old warnings from previous classes don't show up in the new class
+        context['active_warnings'] = AttendanceWarning.objects.filter(
+            student__in=class_students,
+            is_resolved=False,
+            date_flagged__year=int(track_year)  # Prevents previous years' warnings from showing
+        ).select_related('student').order_by('-date_flagged')
+
+        # =========================================================
+        # 3. MASTER CLASS GRADING PROGRESS LOGIC
+        # =========================================================
+        expected_result = class_students.annotate(
+            sub_count=Count('subject')
+        ).aggregate(total=Sum('sub_count'))
+
+        total_expected = expected_result['total'] or 0
+        total_entered = class_grades.count()  # Reusing our strictly filtered query from above
+
+        if total_expected > 0:
+            class_grading_progress = int((total_entered / total_expected) * 100)
+        else:
+            class_grading_progress = 0
+
+        context.update({
+            'track_year': track_year,
+            'track_term': track_term,
+            'total_expected': total_expected,
+            'total_entered': total_entered,
+            'class_grading_progress': class_grading_progress,
+        })
+    # 👆 END PROGRESS LOGIC 👆
+
     if is_teacher:
         context['subjects'] = Subject.objects.filter(teacher_subject=user)
 
