@@ -361,7 +361,7 @@
                             </div>
                             <p class="mb-1 font-weight-bold small text-dark">Girls ({{ stats.girls_pass }}%)</p>
                             <div class="progress" style="height: 10px;">
-                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ stats.girls_pass }}%"></div>
+                                <div class="progress-bar bg-warning" role="progressbar" style="width:{{ stats.girls_pass }}%"></div>
                             </div>
                         </div>
                     </div>
@@ -473,11 +473,17 @@
                     <div class="card border-0 shadow-sm rounded-lg h-100">
                         <div class="card-header bg-white border-bottom py-3">
                             <h5 class="mb-0 font-weight-bold text-dark"><i class="fas fa-tools text-primary mr-2"></i> Class Tools</h5>
-                        </div>
                         <div class="card-body p-4">
-                            <a href="{% url 'students_app:students_by_class' my_class.class_level %}" class="btn btn-outline-primary btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
-                                <i class="fas fa-users fa-lg mr-3 w-20 text-center"></i> View Class Roster
-                            </a>
+                                {% if my_class and my_class.class_level %}
+                                    <a href="{% url 'students_app:students_by_class' my_class.class_level %}" class="btn btn-outline-primary btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
+                                        <i class="fas fa-users fa-lg mr-3 w-20 text-center"></i> View Class Roster
+                                    </a>
+                                {% else %}
+                                    <div class="alert alert-warning mb-3 p-3">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i> No class level assigned yet.
+                                </div>
+                            {% endif %}
+
                             <a href="{% url 'students_app:add_student' %}" class="btn btn-outline-success btn-block text-left mb-3 p-3 font-weight-bold rounded shadow-sm">
                                 <i class="fas fa-user-plus fa-lg mr-3 w-20 text-center"></i> Register New Student
                             </a>
