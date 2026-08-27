@@ -30,6 +30,7 @@ urlpatterns = [
 
     path('apply/', register_school_view, name='register_school'),
     path('schools/', include('schools_manager.urls')),
+    path('users/', include('users.urls')),
 
     # You can also include your public landing page here later!
     # path('', include('public_app.urls')),
