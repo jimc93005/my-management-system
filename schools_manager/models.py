@@ -140,7 +140,7 @@ from django.core.exceptions import ValidationError
 
 
 # 1. THE MAIN CONFIGURATION (Singleton Model)
-class LandingPageConfig(models.fields.Model):
+class LandingPageConfig(models.Model):
     # Global Brand
     site_name = models.CharField(max_length=100, default="Three Angels Cloud")
     primary_color = models.CharField(max_length=7, default="#4f46e5", help_text="Hex color code (e.g., #4f46e5)")
