@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config.site_name|default:"EduSphere Solutions" }} | Next-Gen School Architecture</title>
+    <title>{{ config.site_name|default:"Three Angels Solutions" }} | Next-Gen School Architecture</title>
 
-    <!-- Pre-compiled Bootstrap 5 CSS (Resolves mobile loading delay) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <!-- Google Fonts: Plus Jakarta Sans for a modern SaaS look -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Dynamic Brand Color Injection */
             --brand-primary: {{ config.primary_color|default:"#4f46e5" }};
             --brand-secondary: #0ea5e9;
             --bg-light: #f8fafc;
@@ -27,6 +23,7 @@
             background-color: #ffffff;
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
         /* --- Navbar --- */
@@ -48,15 +45,15 @@
             background: var(--brand-primary);
             color: #ffffff;
             font-weight: 600;
-            padding: 0.75rem 1.5rem;
+            padding: 0.85rem 1.75rem;
             border-radius: 50px;
             border: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.30);
         }
         .btn-primary-saas:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
             color: #ffffff;
         }
 
@@ -64,11 +61,10 @@
             background: #ffffff;
             color: var(--text-main);
             font-weight: 600;
-            padding: 0.75rem 1.5rem;
+            padding: 0.85rem 1.75rem;
             border-radius: 50px;
             border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: background-color 0.2s ease;
         }
         .btn-outline-saas:hover {
             background: #f1f5f9;
@@ -77,50 +73,77 @@
 
         /* --- Hero Section --- */
         .hero-section {
-            padding: 120px 0 80px;
+            padding: 140px 0 72px;
             background: radial-gradient(circle at top center, #f0f4ff 0%, #ffffff 100%);
             text-align: center;
         }
         .hero-title {
             font-weight: 800;
-            font-size: 3.5rem;
+            font-size: clamp(2.1rem, 5vw, 3.5rem);
             line-height: 1.1;
             letter-spacing: -0.03em;
             color: #0f172a;
+            opacity: 0;
+            animation: hero-rise 0.7s ease-out forwards;
         }
         .hero-subtitle {
-            font-size: 1.25rem;
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
             color: var(--text-muted);
             font-weight: 400;
             max-width: 700px;
             margin: 1.5rem auto;
+            opacity: 0;
+            animation: hero-rise 0.7s ease-out 0.15s forwards;
+        }
+        .hero-cta-wrap {
+            opacity: 0;
+            animation: hero-rise 0.7s ease-out 0.3s forwards;
+        }
+        @keyframes hero-rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- Marquee Animation --- */
+        /* --- Trust Stat Strip --- */
+        .trust-strip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 0.6rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1.75rem;
+        }
+
+        /* --- Marquee --- */
         .marquee-wrapper {
-            background-color: #f8fafc;
+            background-color: var(--bg-light);
             border-top: 1px solid #e2e8f0;
             border-bottom: 1px solid #e2e8f0;
             padding: 2rem 0;
             overflow: hidden;
             position: relative;
         }
-        /* Fade edges */
         .marquee-wrapper::before, .marquee-wrapper::after {
             content: '';
             position: absolute;
             top: 0;
-            width: 150px;
+            width: 120px;
             height: 100%;
             z-index: 2;
         }
         .marquee-wrapper::before {
             left: 0;
-            background: linear-gradient(to right, #ffffff, transparent);
+            background: linear-gradient(to right, var(--bg-light), transparent);
         }
         .marquee-wrapper::after {
             right: 0;
-            background: linear-gradient(to left, #ffffff, transparent);
+            background: linear-gradient(to left, var(--bg-light), transparent);
         }
         .animate-marquee {
             display: flex;
@@ -129,9 +152,7 @@
             gap: 1.5rem;
             padding-left: 1.5rem;
         }
-        .animate-marquee:hover {
-            animation-play-state: paused;
-        }
+        .animate-marquee:hover { animation-play-state: paused; }
         @keyframes marquee {
             0% { transform: translateX(0%); }
             100% { transform: translateX(-50%); }
@@ -148,6 +169,12 @@
             font-weight: 500;
             color: var(--text-main);
             font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .section-heading {
+            font-weight: 800;
+            font-size: clamp(1.65rem, 4vw, 2.5rem);
         }
 
         /* --- Problem/Solution Cards --- */
@@ -155,23 +182,39 @@
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 24px;
-            padding: 3rem;
+            padding: clamp(1.75rem, 4vw, 3rem);
             height: 100%;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
         }
-        .saas-card:hover {
-            transform: translateY(-5px);
+        .badge-problem { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+        .badge-solution { background: #f0fdf4; color: #22c55e; border: 1px solid #bbf7d0; }
+
+        /* --- How It Works (real 3-step sequence) --- */
+        .step-card {
+            text-align: center;
+            padding: 1.5rem 1rem;
         }
-        .badge-problem {
-            background: #fef2f2;
-            color: #ef4444;
-            border: 1px solid #fecaca;
+        .step-number {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--brand-primary);
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
         }
-        .badge-solution {
-            background: #f0fdf4;
-            color: #22c55e;
-            border: 1px solid #bbf7d0;
+        .step-connector { display: none; }
+        @media (min-width: 768px) {
+            .step-connector {
+                display: block;
+                border-top: 2px dashed #cbd5e1;
+                width: 100%;
+                margin-top: 26px;
+            }
         }
 
         /* --- Footer --- */
@@ -197,12 +240,9 @@
             display: block;
             margin-bottom: 0.75rem;
         }
-        .footer-link:hover {
-            color: var(--brand-primary);
-        }
+        .footer-link:hover { color: var(--brand-primary); }
         .status-dot {
-            height: 10px;
-            width: 10px;
+            height: 10px; width: 10px;
             background-color: #22c55e;
             border-radius: 50%;
             display: inline-block;
@@ -215,6 +255,18 @@
             70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
             100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
+
+        /* --- Mobile polish --- */
+        @media (max-width: 576px) {
+            .hero-section { padding: 110px 0 56px; }
+            .btn-primary-saas, .btn-outline-saas { width: 100%; justify-content: center; }
+        }
+
+        /* --- Respect reduced-motion preference --- */
+        @media (prefers-reduced-motion: reduce) {
+            .animate-marquee { animation: none; }
+            .hero-title, .hero-subtitle, .hero-cta-wrap { animation: none; opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -224,28 +276,24 @@
         <div class="container-fluid px-4 px-lg-5">
             <a class="navbar-brand d-flex align-items-center gap-2" href="#">
                 <span class="brand-text fs-4">{{ config.site_name|default:"Three Angels Solutions" }}</span>
-                <span class="badge bg-light text-primary border border-primary-subtle rounded-pill fw-normal">SaaS v2.0</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <div class="d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
-                    <a href="{% url 'schools_manager:pricing' %}" class="text-decoration-none text-secondary fw-semibold btn-link-hover">
+                    <a href="{% url 'schools_manager:pricing' %}" class="text-decoration-none text-secondary fw-semibold">
                         <i class="bi bi-tags-fill me-1"></i> Pricing
                     </a>
-                    <a href="{% url 'register_school' %}" class="text-decoration-none text-secondary fw-semibold btn-link-hover">
+                    <a href="{% url 'register_school' %}" class="text-decoration-none text-secondary fw-semibold">
                         Apply Now
                     </a>
-                    <a href="/admin_tenants/" class="btn btn-outline-saas d-flex align-items-center gap-2">
-                        Control Panel <i class="bi bi-arrow-right"></i>
-                    </a>
+                    
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Alert Messages -->
     {% if messages %}
     <div class="container mt-5 pt-5">
         {% for message in messages %}
@@ -259,13 +307,19 @@
     <!-- Hero Section -->
     <header class="hero-section">
         <div class="container px-4">
+            {% if schools %}
+            <div class="trust-strip">
+                <span class="status-dot"></span>
+                Powering {{ schools.count }} school portal{{ schools.count|pluralize }} right now
+            </div>
+            {% endif %}
             <h1 class="hero-title">
                 {{ config.hero_title|default:"Infinite, Isolated School Networks." }}
             </h1>
             <p class="hero-subtitle">
                 {{ config.hero_subtitle|default:"Empower thousands of academic institutions with completely separated, automated school management systems." }}
             </p>
-            <div class="mt-5 d-flex justify-content-center gap-3 flex-column flex-sm-row">
+            <div class="hero-cta-wrap mt-4 d-flex justify-content-center gap-3 flex-column flex-sm-row">
                 <a href="{% url 'register_school' %}" class="btn btn-primary-saas btn-lg d-inline-flex align-items-center justify-content-center gap-2">
                     {{ config.primary_cta_text|default:"Register Your School" }} <i class="bi bi-arrow-right"></i>
                 </a>
@@ -276,21 +330,18 @@
     <!-- Marquee Features Section -->
     <section class="marquee-wrapper">
         <div class="animate-marquee">
-            <!-- Dynamic Features Loop -->
             {% for feature in features %}
                 <div class="marquee-item">
                     <i class="{{ feature.icon_class|default:'bi bi-check-circle-fill text-primary' }} fs-5"></i>
                     <span>{{ feature.title }}</span>
                 </div>
             {% empty %}
-                <!-- Fallback if no features in DB yet -->
                 <div class="marquee-item"><i class="bi bi-file-earmark-bar-graph text-primary fs-5"></i> <span>Automated School Reports</span></div>
                 <div class="marquee-item"><i class="bi bi-people-fill text-primary fs-5"></i> <span>Real-time Student Roster</span></div>
                 <div class="marquee-item"><i class="bi bi-lightning-fill text-primary fs-5"></i> <span>Automated Attendance</span></div>
                 <div class="marquee-item"><i class="bi bi-calendar-week-fill text-primary fs-5"></i> <span>Dynamic Timetables</span></div>
                 <div class="marquee-item"><i class="bi bi-shield-lock-fill text-primary fs-5"></i> <span>Role-Based Dashboards</span></div>
             {% endfor %}
-            <!-- Duplicate for seamless infinite scrolling -->
             {% for feature in features %}
                 <div class="marquee-item">
                     <i class="{{ feature.icon_class|default:'bi bi-check-circle-fill text-primary' }} fs-5"></i>
@@ -309,29 +360,26 @@
     <!-- Problem / Solution Section -->
     <section class="container py-5 mt-5">
         <div class="text-center mb-5 pb-3">
-            <h2 class="fw-bold text-main fs-1">Engineered for Radical Data Security</h2>
+            <h2 class="section-heading">Engineered for radical data security</h2>
             <p class="text-muted mx-auto fs-5" style="max-width: 700px;">
                 Replace manual, paper-based administrative chaos with a secure, automated cloud infrastructure designed specifically for modern education.
             </p>
         </div>
 
         <div class="row g-4">
-            <!-- Problem Card -->
             <div class="col-md-6">
                 <div class="saas-card">
-                    <span class="badge badge-problem rounded-pill px-3 py-2 fw-semibold mb-4 text-uppercase">The Problem</span>
-                    <h3 class="fw-bold mb-3 fs-4">Manual Processing & Data Loss</h3>
+                    <span class="badge badge-problem rounded-pill px-3 py-2 fw-semibold mb-4">The problem</span>
+                    <h3 class="fw-bold mb-3 fs-4">Manual processing & data loss</h3>
                     <p class="text-muted lh-lg mb-0">
                         Current school data management relies heavily on manual data entry, calculations, and physical documentation. This process is time-consuming and inefficient, requiring substantial physical storage space and often resulting in the accumulation of paper-based records.
                     </p>
                 </div>
             </div>
-
-            <!-- Solution Card -->
             <div class="col-md-6">
                 <div class="saas-card">
-                    <span class="badge badge-solution rounded-pill px-3 py-2 fw-semibold mb-4 text-uppercase">Our Solution</span>
-                    <h3 class="fw-bold mb-3 fs-4">Centralized Digital Architecture</h3>
+                    <span class="badge badge-solution rounded-pill px-3 py-2 fw-semibold mb-4">Our solution</span>
+                    <h3 class="fw-bold mb-3 fs-4">Centralized digital architecture</h3>
                     <p class="text-muted lh-lg mb-0">
                         Our system digitizes and centralizes the management of school data. It automatically performs calculations and generates student performance reports, reducing manual workload, minimizing errors, and eliminating the dependence on physical paperwork.
                     </p>
@@ -340,12 +388,42 @@
         </div>
     </section>
 
-    <!-- Dynamic Footer Section -->
+    <!-- How It Works — a genuine 3-step sequence -->
+    <section class="container py-5 my-4">
+        <div class="text-center mb-5">
+            <h2 class="section-heading">From application to launch in three steps</h2>
+        </div>
+        <div class="row g-4 align-items-start">
+            <div class="col-md-4">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4 class="fw-bold fs-5 mb-2">Apply online</h4>
+                    <p class="text-muted mb-0">Submit your school's details and proof of payment through our registration form.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-connector"></div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4 class="fw-bold fs-5 mb-2">Get approved</h4>
+                    <p class="text-muted mb-0">Our team reviews your application and confirms your subscription within one business day.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-connector"></div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4 class="fw-bold fs-5 mb-2">Launch your portal</h4>
+                    <p class="text-muted mb-0">Receive your dedicated subdomain and administrator login by email, ready to use immediately.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer-saas">
         <div class="container">
             <div class="row g-5">
-
-                <!-- Bio Column -->
                 <div class="col-lg-4 col-md-6">
                     <span class="brand-text fs-4 d-block mb-3">{{ config.site_name|default:"EduSphere Inc." }}</span>
                     <p class="text-muted lh-lg pe-lg-4">
@@ -353,9 +431,8 @@
                     </p>
                 </div>
 
-                <!-- Contact Column -->
                 <div class="col-lg-3 col-md-6">
-                    <h4 class="footer-heading">Contact Us</h4>
+                    <h4 class="footer-heading">Contact us</h4>
                     <ul class="list-unstyled mb-0">
                         <li class="mb-3 d-flex align-items-center gap-2 text-muted">
                             <i class="bi bi-envelope text-primary"></i>
@@ -372,9 +449,8 @@
                     </ul>
                 </div>
 
-                <!-- Legal Links Column (Dynamic) -->
                 <div class="col-lg-2 col-md-6">
-                    <h4 class="footer-heading">Legal & Privacy</h4>
+                    <h4 class="footer-heading">Legal & privacy</h4>
                     <ul class="list-unstyled mb-0">
                         {% for link in legal_links %}
                             <li><a href="{{ link.url }}" class="footer-link">{{ link.title }}</a></li>
@@ -385,12 +461,11 @@
                     </ul>
                 </div>
 
-                <!-- Status & Social Column (Dynamic) -->
                 <div class="col-lg-3 col-md-6">
-                    <h4 class="footer-heading">System Status</h4>
+                    <h4 class="footer-heading">System status</h4>
                     <div class="p-3 bg-light rounded-3 border mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">Master Database</span>
+                            <span class="text-muted small">Master database</span>
                             {% if footer_config.db_is_operational %}
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"><span class="status-dot"></span>Operational</span>
                             {% else %}
@@ -398,29 +473,24 @@
                             {% endif %}
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">Engine Version</span>
+                            <span class="text-muted small">Engine version</span>
                             <span class="text-dark small fw-medium">{{ footer_config.engine_version|default:"v2.0.0 (Stable)" }}</span>
                         </div>
                     </div>
-
                     <div class="d-flex gap-3">
                         {% for link in social_links %}
-                            <a href="{{ link.url }}" class="text-muted text-decoration-none hover-primary transition-colors" title="{{ link.title }}">
-                                {{ link.title }}
-                            </a>
+                            <a href="{{ link.url }}" class="text-muted text-decoration-none" title="{{ link.title }}">{{ link.title }}</a>
                         {% endfor %}
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Bar -->
             <div class="border-top mt-5 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center">
                 <p class="text-muted small mb-0">{{ footer_config.copyright_text|default:"© 2026 EduSphere Architectural Engine. All rights reserved." }}</p>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap Bundle with Popper (Required for mobile navbar toggler) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
