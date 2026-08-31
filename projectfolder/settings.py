@@ -36,13 +36,13 @@ if env_file.exists():
 # ALLOWED_HOSTS = env('ALLOWED_HOSTS',).split(',')
 
 # 1. SECRET KEY: Read from env, with a fallback
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY', default='local-key')
 
 # 2. DEBUG MODE: Safely parse boolean from env
 DEBUG = env.bool('DEBUG', default=False)
 
 # 3. ALLOWED HOSTS & CSRF
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['.localhost', '127.0.0.1'])
 
 
 
@@ -143,11 +143,11 @@ WSGI_APPLICATION = 'projectfolder.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': env('POSTGRES_DB'),
-        'USER': env('POSTGRES_USER'),
-        'PASSWORD': env('POSTGRES_PASSWORD'),
-        'HOST': env('POSTGRES_HOST'),
-        'PORT': env('POSTGRES_PORT'),
+        'NAME': env('POSTGRES_DB',default='school_tenant_db'),
+        'USER': env('POSTGRES_USER', default='admin'),
+        'PASSWORD': env('POSTGRES_PASSWORD', default='localdevpassword'),
+        'HOST': env('POSTGRES_HOST', default='localhost'),
+        'PORT': env('POSTGRES_PORT', default='5432'),
     }
 }
 

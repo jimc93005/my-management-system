@@ -3,241 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three Angels Solutions | Next-Gen School Architecture</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{{ config.site_name|default:"EduSphere Solutions" }} | Next-Gen School Architecture</title>
+
+    <!-- Pre-compiled Bootstrap 5 CSS (Resolves mobile loading delay) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts: Plus Jakarta Sans for a modern SaaS look -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        /* Smooth infinite marquee animation for the moving tiles */
-        @keyframes marquee {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
+        :root {
+            /* Dynamic Brand Color Injection */
+            --brand-primary: {{ config.primary_color|default:"#4f46e5" }};
+            --brand-secondary: #0ea5e9;
+            --bg-light: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #ffffff;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Navbar --- */
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .brand-text {
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- Buttons --- */
+        .btn-primary-saas {
+            background: var(--brand-primary);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+        .btn-primary-saas:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+            color: #ffffff;
+        }
+
+        .btn-outline-saas {
+            background: #ffffff;
+            color: var(--text-main);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-outline-saas:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        /* --- Hero Section --- */
+        .hero-section {
+            padding: 120px 0 80px;
+            background: radial-gradient(circle at top center, #f0f4ff 0%, #ffffff 100%);
+            text-align: center;
+        }
+        .hero-title {
+            font-weight: 800;
+            font-size: 3.5rem;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            color: #0f172a;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            max-width: 700px;
+            margin: 1.5rem auto;
+        }
+
+        /* --- Marquee Animation --- */
+        .marquee-wrapper {
+            background-color: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            overflow: hidden;
+            position: relative;
+        }
+        /* Fade edges */
+        .marquee-wrapper::before, .marquee-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 150px;
+            height: 100%;
+            z-index: 2;
+        }
+        .marquee-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, #ffffff, transparent);
+        }
+        .marquee-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, #ffffff, transparent);
         }
         .animate-marquee {
             display: flex;
             width: max-content;
-            animation: marquee 25s linear infinite;
+            animation: marquee 30s linear infinite;
+            gap: 1.5rem;
+            padding-left: 1.5rem;
         }
         .animate-marquee:hover {
             animation-play-state: paused;
         }
-        .btn-price-glow {
-  background: linear-gradient(135deg, #00C4CC 0%, #0072FF 100%);
-  color: white !important;
-  border: none;
-  padding: 12px 30px;
-  border-radius: 50px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
-  transition: all 0.3s ease-in-out;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-item {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            font-weight: 500;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
 
-.btn-price-glow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 196, 204, 0.6);
-  background: linear-gradient(135deg, #0072FF 0%, #00C4CC 100%);
-}
+        /* --- Problem/Solution Cards --- */
+        .saas-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 3rem;
+            height: 100%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        .saas-card:hover {
+            transform: translateY(-5px);
+        }
+        .badge-problem {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+        }
+        .badge-solution {
+            background: #f0fdf4;
+            color: #22c55e;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* --- Footer --- */
+        .footer-saas {
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 5rem 0 2rem;
+            margin-top: 4rem;
+        }
+        .footer-heading {
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #0f172a;
+            margin-bottom: 1.5rem;
+        }
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+        .footer-link:hover {
+            color: var(--brand-primary);
+        }
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 0 3px #dcfce7;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body>
 
-    <nav class="border-b border-slate-800 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">Three Angels Solutions</span>
-            <span class="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20 font-mono">SaaS v2.0</span>
-        </div>
-        <div class="flex items-center space-x-6">
-            <!-- NEW: Link to Registration Form in Navbar -->
-             <a href="{% url 'schools_manager:pricing' %}" class="btn-price-glow text-decoration-none">
-                 <i class="bi bi-tags-fill"></i> <!-- Optional Bootstrap Icon -->
-                        Choose Pricing
-             </a>
-            <a href="{% url 'register_school' %}" class="text-sm font-semibold text-slate-300 hover:text-indigo-400 transition duration-200">
-                Apply Now
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-glass fixed-top py-3">
+        <div class="container-fluid px-4 px-lg-5">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <span class="brand-text fs-4">{{ config.site_name|default:"Three Angels Solutions" }}</span>
+                <span class="badge bg-light text-primary border border-primary-subtle rounded-pill fw-normal">SaaS v2.0</span>
             </a>
-
-
-            <a href="/admin_tenants/" class="text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition duration-200 shadow-lg shadow-slate-950/50">
-                Landlord Control Panel &rarr;
-            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
+                    <a href="{% url 'schools_manager:pricing' %}" class="text-decoration-none text-secondary fw-semibold btn-link-hover">
+                        <i class="bi bi-tags-fill me-1"></i> Pricing
+                    </a>
+                    <a href="{% url 'register_school' %}" class="text-decoration-none text-secondary fw-semibold btn-link-hover">
+                        Apply Now
+                    </a>
+                    <a href="/admin_tenants/" class="btn btn-outline-saas d-flex align-items-center gap-2">
+                        Control Panel <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
+    <!-- Alert Messages -->
     {% if messages %}
-    <div class="max-w-4xl mx-auto px-6 pt-8">
+    <div class="container mt-5 pt-5">
         {% for message in messages %}
-            <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl text-center font-medium shadow-lg">
+            <div class="alert alert-success border-success-subtle bg-success-subtle text-success rounded-4 text-center fw-medium mt-4 shadow-sm" role="alert">
                 {{ message }}
             </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <header class="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
-        <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight md:leading-none">
-            Three Angels Solutions. <br class="hidden md:block">
-            <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Infinite, Isolated School Networks.</span>
-        </h1>
-        <p class="mt-6 text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
-            Three Angels Solutions introduces state-of-the-art database multi-tenancy. Empower thousands of academic institutions with completely separated, automated schools management systems.
-        </p>
-
-        <!-- NEW: Call to Action Button in Header -->
-        <div class="mt-10 flex justify-center">
-            <a href="{% url 'register_school' %}" class="px-8 py-4 text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-900/20 transition duration-200 transform hover:-translate-y-1">
-                Register Your School Today &rarr;
-            </a>
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="container px-4">
+            <h1 class="hero-title">
+                {{ config.hero_title|default:"Infinite, Isolated School Networks." }}
+            </h1>
+            <p class="hero-subtitle">
+                {{ config.hero_subtitle|default:"Empower thousands of academic institutions with completely separated, automated school management systems." }}
+            </p>
+            <div class="mt-5 d-flex justify-content-center gap-3 flex-column flex-sm-row">
+                <a href="{% url 'register_school' %}" class="btn btn-primary-saas btn-lg d-inline-flex align-items-center justify-content-center gap-2">
+                    {{ config.primary_cta_text|default:"Register Your School" }} <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
         </div>
     </header>
 
-    <section class="bg-slate-950 py-10 border-y border-slate-800 overflow-hidden relative mt-8">
-        <div class="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
-        <div class="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
+    <!-- Marquee Features Section -->
+    <section class="marquee-wrapper">
+        <div class="animate-marquee">
+            <!-- Dynamic Features Loop -->
+            {% for feature in features %}
+                <div class="marquee-item">
+                    <i class="{{ feature.icon_class|default:'bi bi-check-circle-fill text-primary' }} fs-5"></i>
+                    <span>{{ feature.title }}</span>
+                </div>
+            {% empty %}
+                <!-- Fallback if no features in DB yet -->
+                <div class="marquee-item"><i class="bi bi-file-earmark-bar-graph text-primary fs-5"></i> <span>Automated School Reports</span></div>
+                <div class="marquee-item"><i class="bi bi-people-fill text-primary fs-5"></i> <span>Real-time Student Roster</span></div>
+                <div class="marquee-item"><i class="bi bi-lightning-fill text-primary fs-5"></i> <span>Automated Attendance</span></div>
+                <div class="marquee-item"><i class="bi bi-calendar-week-fill text-primary fs-5"></i> <span>Dynamic Timetables</span></div>
+                <div class="marquee-item"><i class="bi bi-shield-lock-fill text-primary fs-5"></i> <span>Role-Based Dashboards</span></div>
+            {% endfor %}
+            <!-- Duplicate for seamless infinite scrolling -->
+            {% for feature in features %}
+                <div class="marquee-item">
+                    <i class="{{ feature.icon_class|default:'bi bi-check-circle-fill text-primary' }} fs-5"></i>
+                    <span>{{ feature.title }}</span>
+                </div>
+            {% empty %}
+                <div class="marquee-item"><i class="bi bi-file-earmark-bar-graph text-primary fs-5"></i> <span>Automated School Reports</span></div>
+                <div class="marquee-item"><i class="bi bi-people-fill text-primary fs-5"></i> <span>Real-time Student Roster</span></div>
+                <div class="marquee-item"><i class="bi bi-lightning-fill text-primary fs-5"></i> <span>Automated Attendance</span></div>
+                <div class="marquee-item"><i class="bi bi-calendar-week-fill text-primary fs-5"></i> <span>Dynamic Timetables</span></div>
+                <div class="marquee-item"><i class="bi bi-shield-lock-fill text-primary fs-5"></i> <span>Role-Based Dashboards</span></div>
+            {% endfor %}
+        </div>
+    </section>
 
-        <div class="animate-marquee space-x-6 flex items-center">
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🛡️</span> <span class="font-medium tracking-wide text-sm">Automated School reports generation</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">📊</span> <span class="font-medium tracking-wide text-sm">Real-time Student Roster Analytics</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">⚡</span> <span class="font-medium tracking-wide text-sm">Automated Attendance Tracking</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">📅</span> <span class="font-medium tracking-wide text-sm">Dynamic Timetable Calendars</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🔑</span> <span class="font-medium tracking-wide text-sm">Customized Dashboard for different roles of teachers</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🌐</span> <span class="font-medium tracking-wide text-sm">Automated Generation of Calendar of Events</span>
+    <!-- Problem / Solution Section -->
+    <section class="container py-5 mt-5">
+        <div class="text-center mb-5 pb-3">
+            <h2 class="fw-bold text-main fs-1">Engineered for Radical Data Security</h2>
+            <p class="text-muted mx-auto fs-5" style="max-width: 700px;">
+                Replace manual, paper-based administrative chaos with a secure, automated cloud infrastructure designed specifically for modern education.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Problem Card -->
+            <div class="col-md-6">
+                <div class="saas-card">
+                    <span class="badge badge-problem rounded-pill px-3 py-2 fw-semibold mb-4 text-uppercase">The Problem</span>
+                    <h3 class="fw-bold mb-3 fs-4">Manual Processing & Data Loss</h3>
+                    <p class="text-muted lh-lg mb-0">
+                        Current school data management relies heavily on manual data entry, calculations, and physical documentation. This process is time-consuming and inefficient, requiring substantial physical storage space and often resulting in the accumulation of paper-based records.
+                    </p>
+                </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🛡️</span> <span class="font-medium tracking-wide text-sm">Automated School reports generation</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">📊</span> <span class="font-medium tracking-wide text-sm">Real-time Student Roster Analytics</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">⚡</span> <span class="font-medium tracking-wide text-sm">Automated Attendance Tracking</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">📅</span> <span class="font-medium tracking-wide text-sm">Dynamic Timetable Calendars</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🔑</span> <span class="font-medium tracking-wide text-sm">Customized Dashboard for different roles of teachers</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl flex items-center space-x-3 shadow-xl">
-                <span class="text-xl">🌐</span> <span class="font-medium tracking-wide text-sm">Automated Generation of Calendar of Events</span>
+            <!-- Solution Card -->
+            <div class="col-md-6">
+                <div class="saas-card">
+                    <span class="badge badge-solution rounded-pill px-3 py-2 fw-semibold mb-4 text-uppercase">Our Solution</span>
+                    <h3 class="fw-bold mb-3 fs-4">Centralized Digital Architecture</h3>
+                    <p class="text-muted lh-lg mb-0">
+                        Our system digitizes and centralizes the management of school data. It automatically performs calculations and generates student performance reports, reducing manual workload, minimizing errors, and eliminating the dependence on physical paperwork.
+                    </p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="max-w-5xl mx-auto px-6 py-24">
-        <div class="text-center">
-            <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Engineered for Radical Data Security and Smooth School Management</h2>
-            <p class="mt-4 text-slate-400 font-light max-w-xl mx-auto">Traditional school data management is manual and tiresome leading poor data analytics
-                and time consuming as well as storage . Three Angels Solutions provides the most secure,
-                reliable and automated method of processing schools documents and data storage in cloud.</p>
-        </div>
+    <!-- Dynamic Footer Section -->
+    <footer class="footer-saas">
+        <div class="container">
+            <div class="row g-5">
 
-        <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl">
-                <div class="bg-red-500/10 text-red-400 p-3 rounded-2xl w-fit border border-red-500/20 font-bold mb-5">THE PROBLEM</div>
-                <h3 class="text-xl font-bold text-white mb-3">Manual Processing of school data and Loss of Important Academic Data</h3>
-                <p class="text-slate-400 font-light leading-relaxed">
-                    Current school data management relies heavily on manual data entry, calculations, and physical documentation.
-                    This process is time-consuming and inefficient, requiring substantial physical storage
-                    space and often resulting in the accumulation of paper-based records.
+                <!-- Bio Column -->
+                <div class="col-lg-4 col-md-6">
+                    <span class="brand-text fs-4 d-block mb-3">{{ config.site_name|default:"EduSphere Inc." }}</span>
+                    <p class="text-muted lh-lg pe-lg-4">
+                        {{ footer_config.company_bio|default:"Pioneering robust multi-tenant architectures for academic institutions worldwide. Built for scale, engineered for security." }}
+                    </p>
+                </div>
 
-                    Teachers also spend significant amounts of time manually entering, calculating, and compiling
-                    students' academic results. This increases the possibility of human errors and reduces the time
-                    available for teaching and other important administrative responsibilities.
-                </p>
+                <!-- Contact Column -->
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="footer-heading">Contact Us</h4>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3 d-flex align-items-center gap-2 text-muted">
+                            <i class="bi bi-envelope text-primary"></i>
+                            <a href="mailto:{{ footer_config.contact_email|default:'jimc93005@gmail.com' }}" class="footer-link d-inline mb-0">{{ footer_config.contact_email|default:"jimc93005@gmail.com" }}</a>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center gap-2 text-muted">
+                            <i class="bi bi-telephone text-primary"></i>
+                            <a href="tel:{{ footer_config.contact_phone }}" class="footer-link d-inline mb-0">{{ footer_config.contact_phone|default:"+265 880 325 161" }}</a>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 text-muted mt-3">
+                            <i class="bi bi-geo-alt text-primary mt-1"></i>
+                            <span class="lh-sm">{{ footer_config.contact_location|default:"Malawi<br>Global Operations Center"|safe }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Legal Links Column (Dynamic) -->
+                <div class="col-lg-2 col-md-6">
+                    <h4 class="footer-heading">Legal & Privacy</h4>
+                    <ul class="list-unstyled mb-0">
+                        {% for link in legal_links %}
+                            <li><a href="{{ link.url }}" class="footer-link">{{ link.title }}</a></li>
+                        {% empty %}
+                            <li><a href="#" class="footer-link">Privacy Policy</a></li>
+                            <li><a href="#" class="footer-link">Terms of Service</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Status & Social Column (Dynamic) -->
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="footer-heading">System Status</h4>
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Master Database</span>
+                            {% if footer_config.db_is_operational %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"><span class="status-dot"></span>Operational</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Maintenance</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Engine Version</span>
+                            <span class="text-dark small fw-medium">{{ footer_config.engine_version|default:"v2.0.0 (Stable)" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        {% for link in social_links %}
+                            <a href="{{ link.url }}" class="text-muted text-decoration-none hover-primary transition-colors" title="{{ link.title }}">
+                                {{ link.title }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl">
-                <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-2xl w-fit border border-emerald-500/20 font-bold mb-5">OUR SOLUTION</div>
-                <h3 class="text-xl font-bold text-white mb-3">Centralized Digital Management of School Data and Academic Records</h3>
-                <p class="text-slate-400 font-light leading-relaxed">
-                   Our system digitizes and centralizes the management of school data, allowing teachers and administrators to
-                    efficiently enter, process, store, and retrieve academic records from a single platform.
-
-                    The system automatically performs calculations and generates student performance reports, reducing
-                    manual workload, minimizing errors, and eliminating the dependence on large volumes of physical paperwork.
-                    This enables teachers to spend less time on administrative tasks and more time focusing on teaching and student development.
-                </p>
-            </div>
-        </div>
-    </section>
-
-   <footer class="bg-slate-950 border-t border-slate-800 text-slate-400 py-16 px-6 mt-12 relative z-10">
-        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-
-            <div class="md:col-span-1">
-                <span class="text-2xl font-black text-white tracking-tight">EduSphere Inc.</span>
-                <p class="mt-4 text-sm font-light text-slate-500 leading-relaxed">
-                    Pioneering robust multi-tenant architectures for academic institutions worldwide. Built for scale, engineered for security.
-                </p>
-            </div>
-
-            <div>
-                <h4 class="text-white font-bold text-sm uppercase tracking-wider">Contact Us</h4>
-                <ul class="mt-4 space-y-4 text-sm font-light">
-                    <li class="flex items-center space-x-3">
-                        <span class="text-lg">📧</span>
-                        <a href="mailto:jimc93005@gmail.com" class="hover:text-indigo-400 transition">jimc93005@gmail.com</a>
-                    </li>
-                    <li class="flex items-center space-x-3">
-                        <span class="text-lg">📞</span>
-                        <a href="tel:+265880325161" class="hover:text-indigo-400 transition">+265 880 325 161</a>
-                    </li>
-                    <li class="flex items-start space-x-3">
-                        <span class="text-lg">📍</span>
-                        <span>Malawi<br>Global Operations Center</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div>
-                <h4 class="text-white font-bold text-sm uppercase tracking-wider">Legal & Privacy</h4>
-                <ul class="mt-4 space-y-3 text-sm font-light">
-                    <li><a href="#" class="hover:text-indigo-400 transition">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition">Terms of Service</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition">Data Processing Agreement</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition">Cookie Preferences</a></li>
-                </ul>
-            </div>
-
-            <div>
-                <h4 class="text-white font-bold text-sm uppercase tracking-wider">System Status</h4>
-                <ul class="mt-4 space-y-3 text-sm font-light">
-                    <li>
-                        <span class="text-slate-500">Master Database:</span>
-                        <span class="text-emerald-400 font-medium flex items-center mt-1">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-                            Operational
-                        </span>
-                    </li>
-                    <li class="mt-4"><span class="text-slate-500">Engine Version:</span> v2.0.0 (Stable)</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="max-w-6xl mx-auto mt-12 pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center text-xs text-slate-600 font-mono">
-            <p>&copy; 2026 EduSphere Architectural Engine. All rights reserved.</p>
-            <div class="mt-4 md:mt-0 space-x-6">
-                <a href="#" class="hover:text-slate-400 transition">Twitter / X</a>
-                <a href="#" class="hover:text-slate-400 transition">LinkedIn</a>
-                <a href="#" class="hover:text-slate-400 transition">GitHub</a>
+            <!-- Bottom Bar -->
+            <div class="border-top mt-5 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <p class="text-muted small mb-0">{{ footer_config.copyright_text|default:"© 2026 EduSphere Architectural Engine. All rights reserved." }}</p>
             </div>
         </div>
     </footer>
 
+    <!-- Bootstrap Bundle with Popper (Required for mobile navbar toggler) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

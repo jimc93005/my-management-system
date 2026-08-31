@@ -143,3 +143,97 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
     list_display = ('name', 'monthly_price', 'annual_price', 'is_active', 'is_highlighted')
     prepopulated_fields = {'slug': ('name',)}
     inlines = [PlanFeatureInline]
+
+
+
+from django.contrib import admin
+from .models import (
+    LandingPageConfig, Feature,
+    FAQ, NewsletterSubscriber, CompanyProfile, TeamMember, MediaShowcase
+)
+# Assuming you already have your tenant_admin_site defined at the top of this file:
+# tenant_admin_site = AdminSite(name='tenant_admin')
+
+# --- 1. SINGLETON ADMINS (For Master Config & Company Profile) ---
+class SingletonModelAdmin(admin.ModelAdmin):
+    """Prevents the admin from adding more than one configuration record."""
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+@admin.register(LandingPageConfig, site=tenant_admin_site)
+class LandingPageConfigAdmin(SingletonModelAdmin):
+    list_display = ('site_name', 'hero_title')
+    fieldsets = (
+        ('Global Brand', {'fields': ('site_name', 'primary_color')}),
+        ('Hero Section', {'fields': ('hero_title', 'hero_subtitle', 'hero_image')}),
+        ('Calls to Action', {'fields': ('primary_cta_text', 'primary_cta_link', 'secondary_cta_text', 'secondary_cta_link')}),
+    )
+
+@admin.register(CompanyProfile, site=tenant_admin_site)
+class CompanyProfileAdmin(SingletonModelAdmin):
+    list_display = ('headline',)
+
+@admin.register(Feature, site=tenant_admin_site)
+class FeatureAdmin(admin.ModelAdmin):
+    list_display = ('title', 'icon_class', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    ordering = ('display_order',)
+
+@admin.register(FAQ, site=tenant_admin_site)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('question', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    ordering = ('display_order',)
+
+@admin.register(TeamMember, site=tenant_admin_site)
+class TeamMemberAdmin(admin.ModelAdmin):
+    list_display = ('name', 'role', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active',)
+    ordering = ('display_order',)
+
+@admin.register(MediaShowcase, site=tenant_admin_site)
+class MediaShowcaseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'media_type', 'allow_download', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active', 'allow_download')
+    list_filter = ('media_type', 'is_active')
+    ordering = ('display_order',)
+
+@admin.register(NewsletterSubscriber, site=tenant_admin_site)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ('email', 'subscribed_at', 'is_active')
+    list_filter = ('is_active', 'subscribed_at')
+    search_fields = ('email',)
+    readonly_fields = ('subscribed_at',)
+
+
+
+
+
+from .models import FooterConfig, FooterLink
+
+@admin.register(FooterConfig, site=tenant_admin_site)
+class FooterConfigAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('Branding & Bio', {
+            'fields': ('company_bio',)
+        }),
+        ('Contact Information', {
+            'fields': ('contact_email', 'contact_phone', 'contact_location')
+        }),
+        ('System Status', {
+            'fields': ('db_is_operational', 'engine_version')
+        }),
+        ('Bottom Bar', {
+            'fields': ('copyright_text',)
+        }),
+    )
+
+@admin.register(FooterLink, site=tenant_admin_site)
+class FooterLinkAdmin(admin.ModelAdmin):
+    list_display = ('title', 'link_type', 'url', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('link_type', 'is_active')
+    ordering = ('link_type', 'display_order')

@@ -178,15 +178,61 @@ def pricing_view(request):
     return render(request, 'schools_manager/pricing.html', {'plans': plans})
 
 # schools_manager/views.py
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from .models import (
+    LandingPageConfig, Feature, FAQ, CompanyProfile,
+    TeamMember, MediaShowcase, NewsletterSubscriber,
+    FooterConfig, FooterLink  # <-- Added new imports
+)
+from schools_manager.models import School
 
-def preview_approved_email(request):
-    """
-    Temporary view to preview the email template in the browser.
-    """
+
+def public_landing_page(request):
+    # 1. Handle Newsletter Submissions
+    if request.method == 'POST' and 'newsletter_email' in request.POST:
+        email = request.POST.get('newsletter_email', '').strip()
+        if email:
+            try:
+                validate_email(email)
+                NewsletterSubscriber.objects.get_or_create(email=email)
+                messages.success(request, "Thank you for subscribing to our updates!")
+            except ValidationError:
+                messages.error(request, "Please enter a valid email address.")
+        return redirect('public_landing')
+
+    # 2. Fetch CMS Singletons
+    config = LandingPageConfig.objects.first()
+    company = CompanyProfile.objects.first()
+    footer_config = FooterConfig.objects.first()  # <-- Fetch footer text
+
+    # 3. Fetch Active List Data
+    features = Feature.objects.filter(is_active=True).order_by('display_order')
+    faqs = FAQ.objects.filter(is_active=True).order_by('display_order')
+    team = TeamMember.objects.filter(is_active=True).order_by('display_order')
+    media = MediaShowcase.objects.filter(is_active=True).order_by('display_order')
+
+    # <-- Fetch and split footer links by their category
+    legal_links = FooterLink.objects.filter(is_active=True, link_type='legal').order_by('display_order')
+    social_links = FooterLink.objects.filter(is_active=True, link_type='social').order_by('display_order')
+
+    # 4. Fetch Active Client Tenants (excluding the public schema)
+    schools = School.objects.exclude(schema_name='public').prefetch_related('domains')
+
+    # 5. Build Context
     context = {
-        'school_name': 'Sample Academy',
-        'domain_url': 'https://sample.threeangels.com',
-        'email': 'admin@sample.com',
-        'temp_password': 'PassWord123!',
+        'config': config,
+        'company': company,
+        'footer_config': footer_config,  # <-- Added to context
+        'features': features,
+        'faqs': faqs,
+        'team': team,
+        'media': media,
+        'legal_links': legal_links,  # <-- Added to context
+        'social_links': social_links,  # <-- Added to context
+        'schools': schools,
     }
-    return render(request, 'emails/registration_approved.html', context)
+
+    return render(request, 'public/landing_page.html', context)

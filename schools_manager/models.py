@@ -309,3 +309,63 @@ class MediaShowcase(models.Model):
         if self.media_type == 'VIDEO' and not self.video_url and not self.video_file:
             raise ValidationError(
                 "You must provide either a Video URL or upload a Video File if the media type is 'Video'.")
+
+
+class FooterConfig(models.Model):
+    """Singleton model for the main footer text, contact info, and status."""
+    # Column 1: Bio
+    company_bio = models.TextField(
+        default="Pioneering robust multi-tenant architectures for academic institutions worldwide. Built for scale, engineered for security."
+    )
+
+    # Column 2: Contact
+    contact_email = models.EmailField(default="jimc93005@gmail.com")
+    contact_phone = models.CharField(max_length=50, default="+265 880 325 161")
+    contact_location = models.TextField(default="Malawi\nGlobal Operations Center")
+
+    # Column 4: Status
+    db_is_operational = models.BooleanField(
+        default=True,
+        help_text="Uncheck to change the indicator to red/offline."
+    )
+    engine_version = models.CharField(max_length=50, default="v2.0.0 (Stable)")
+
+    # Bottom Row
+    copyright_text = models.CharField(
+        max_length=255,
+        default="© 2026 EduSphere Architectural Engine. All rights reserved."
+    )
+
+    class Meta:
+        verbose_name = "Footer Configuration"
+        verbose_name_plural = "Footer Configuration"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super(FooterConfig, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "Footer Settings"
+
+
+class FooterLink(models.Model):
+    """Stores both Legal links and Social links using a category choice."""
+    LINK_CHOICES = (
+        ('legal', 'Legal & Privacy'),
+        ('social', 'Social Media'),
+    )
+
+    title = models.CharField(max_length=100, help_text="e.g., Privacy Policy or Twitter / X")
+    url = models.URLField(max_length=255)
+    link_type = models.CharField(max_length=20, choices=LINK_CHOICES, default='legal')
+
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['display_order']
+        verbose_name = "Footer Link"
+        verbose_name_plural = "Footer Links"
+
+    def __str__(self):
+        return f"{self.title} ({self.get_link_type_display()})"
