@@ -235,4 +235,4 @@ def public_landing_page(request):
         'schools': schools,
     }
 
-    return render(request, 'public/landing_page.html', context)
+    return render(request, 'templates/landing.html', context)

@@ -1849,7 +1849,7 @@ def student_attendance_history(request, student_id):
 
 
 # STATISTICS VIEW
-@login_required(login_url='login')
+@login_required()
 def academic_statistics(request):
     if not request.user.has_perm('students_app.view_subject'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -1989,7 +1989,7 @@ def academic_statistics(request):
 
     return render(request, 'students_app/statistics.html', context)
 
-@login_required(login_url='login')
+@login_required()
 def calendar_of_events(request):
     if not request.user.has_perm('students_app.view_calendarevent'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
@@ -2497,7 +2497,7 @@ from django.contrib import messages
 
 
 from django.core.exceptions import ValidationError
-@login_required(login_url='login')
+@login_required()
 def document_manager(request):
     # BASE PERMISSION: Can they view the page at all?
     if not request.user.has_perm('students_app.view_folder'):
@@ -2864,7 +2864,7 @@ def edit_grade_boundary(request, boundary_id):
     )
 
 
-@login_required(login_url='login')
+@login_required()
 def subject_department_list(request):
     if not request.user.has_perm('students_app.view_subjectdepartment'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
