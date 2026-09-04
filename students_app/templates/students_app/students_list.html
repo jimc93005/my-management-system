@@ -1,150 +1,1427 @@
 {% extends 'students_app/base.html' %}
+
 {% block content %}
 
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="font-weight-bold text-dark">Student Directory</h2>
-            <p class="text-muted">Manage records, grades, and academic standing</p>
+<div class="student-directory-container">
+
+    <!-- =========================================================
+         PAGE HEADER
+         ========================================================= -->
+
+    <div class="directory-header mb-4">
+
+        <div class="directory-title">
+
+            <h2 class="font-weight-bold text-dark mb-1">
+                Student Directory
+            </h2>
+
+            <p class="text-muted mb-0">
+                Manage records, grades, and academic standing
+            </p>
+
         </div>
-        <a href="{% url 'students_app:add_student' %}" class="btn btn-success shadow-sm px-4">
-            <i class="fas fa-plus"></i> + Add New Student
+
+
+        <a href="{% url 'students_app:add_student' %}"
+           class="btn btn-success shadow-sm add-student-btn">
+
+            <i class="fas fa-plus mr-1"></i>
+
+            Add New Student
+
         </a>
+
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <form method="GET" action="{% url 'students_app:students_list' %}" class="d-flex shadow-sm">
-                <input type="text" name="q" class="form-control border-0 py-4"
-                       placeholder="Search by name, ID, or date..." value="{{ query }}">
-                <button class="btn btn-primary px-4" type="submit">Search</button>
+
+
+    <!-- =========================================================
+         SEARCH + STUDENT COUNT
+         ========================================================= -->
+
+    <div class="row directory-row mb-4">
+
+        <!-- Search -->
+        <div class="col-12 col-lg-8 mb-3 mb-lg-0">
+
+            <form method="GET"
+                  action="{% url 'students_app:students_list' %}"
+                  class="search-form shadow-sm">
+
+                <input type="text"
+                       name="q"
+                       class="form-control search-input"
+                       placeholder="Search by name, ID, or date..."
+                       value="{{ query }}">
+
+                <button class="btn btn-primary search-button"
+                        type="submit">
+
+                    <i class="fas fa-search mr-1"></i>
+
+                    Search
+
+                </button>
+
+
                 {% if query %}
-                    <a href="{% url 'students_app:students_list' %}" class="btn btn-light d-flex align-items-center border-left">Clear</a>
+
+                    <a href="{% url 'students_app:students_list' %}"
+                       class="btn btn-light clear-button">
+
+                        <i class="fas fa-times mr-1"></i>
+
+                        Clear
+
+                    </a>
+
                 {% endif %}
+
             </form>
+
         </div>
-        <div class="col-md-4 text-right d-flex align-items-center justify-content-end">
-            <span class="badge badge-info p-2">{{ students.paginator.count }} Total Students</span>
+
+
+        <!-- Total students -->
+        <div class="col-12 col-lg-4">
+
+            <div class="student-count-container">
+
+                <span class="badge badge-info student-count">
+
+                    <i class="fas fa-users mr-1"></i>
+
+                    {{ students.paginator.count }}
+                    Total Students
+
+                </span>
+
+            </div>
+
         </div>
+
     </div>
 
-    <div class="card shadow-sm border-0">
+
+
+    <!-- =========================================================
+         STUDENT TABLE
+         ========================================================= -->
+
+    <div class="card student-table-card shadow-sm border-0">
+
         <div class="card-body p-0">
+
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+
+                <table class="table table-hover align-middle mb-0 student-table">
+
                     <thead class="bg-light text-secondary">
+
                         <tr>
-                            <th class="px-4 py-3">Full Name</th>
-                            <th>Student ID</th>
-                            <th>Registration Date</th>
-                            <th class="text-center">Grades & Profile</th>
-                            <th class="text-right px-4">Actions</th>
+
+                            <th class="student-name-column">
+                                Full Name
+                            </th>
+
+                            <th>
+                                Student ID
+                            </th>
+
+                            <th>
+                                Registration Date
+                            </th>
+
+                            <th class="text-center">
+                                Grades & Profile
+                            </th>
+
+                            <th class="text-right">
+                                Actions
+                            </th>
+
                         </tr>
+
                     </thead>
+
+
                     <tbody>
+
                         {% for student in students %}
+
                         <tr>
-                            <td class="px-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-circle mr-3">
-                                        {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
-                                    </div>
-                                    <div>
-                                        <span class="font-weight-bold d-block text-dark">{{ student.first_name.upper }} {{ student.surname.upper }}</span>
-                                    </div>
-                                </div>
-                            </td>
+
+                            <!-- =================================================
+                                 STUDENT NAME
+                                 ================================================= -->
+
                             <td>
-                                <code class="text-primary font-weight-bold">#{{ student.student_id }}</code>
+
+                                <div class="student-identity">
+
+                                    <div class="avatar-circle">
+
+                                        {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+
+                                    </div>
+
+
+                                    <div class="student-name">
+
+                                        <span class="font-weight-bold d-block text-dark">
+
+                                            {{ student.first_name.upper }}
+                                            {{ student.surname.upper }}
+
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
                             </td>
-                            <td>{{ student.created_at|date:"M d, Y" }}</td>
+
+
+
+                            <!-- =================================================
+                                 STUDENT ID
+                                 ================================================= -->
+
+                            <td>
+
+                                <code class="text-primary font-weight-bold">
+
+                                    #{{ student.student_id }}
+
+                                </code>
+
+                            </td>
+
+
+
+                            <!-- =================================================
+                                 REGISTRATION DATE
+                                 ================================================= -->
+
+                            <td>
+
+                                <span class="registration-date">
+
+                                    {{ student.created_at|date:"M d, Y" }}
+
+                                </span>
+
+                            </td>
+
+
+
+                            <!-- =================================================
+                                 GRADES + PROFILE
+                                 ================================================= -->
+
                             <td class="text-center">
-                                <div class="btn-group shadow-sm">
-                                    <a href="{% url 'students_app:add_grade' student.id %}" class="btn btn-white btn-sm border">➕ Add Grade</a>
-                                    <a href="{% url 'students_app:student_profile' student.id %}" class="btn btn-white btn-sm border">👁️ View Report</a>
+
+                                <div class="student-actions-group">
+
+                                    <a href="{% url 'students_app:add_grade' student.id %}"
+                                       class="btn btn-white btn-sm border student-action-btn">
+
+                                        <i class="fas fa-plus-circle text-success mr-1"></i>
+
+                                        Add Grade
+
+                                    </a>
+
+
+                                    <a href="{% url 'students_app:student_profile' student.id %}"
+                                       class="btn btn-white btn-sm border student-action-btn">
+
+                                        <i class="fas fa-eye text-primary mr-1"></i>
+
+                                        View Report
+
+                                    </a>
+
                                 </div>
+
                             </td>
-                            <td class="text-right px-4">
-                                <a href="{% url 'students_app:edit_student' student.id %}" class="btn btn-link text-primary p-0 mr-3" title="Edit">Edit</a>
-                                <a href="{% url 'students_app:delete_student' student.id %}" class="btn btn-link text-danger p-0" title="Delete">Delete</a>
+
+
+
+                            <!-- =================================================
+                                 EDIT + DELETE
+                                 ================================================= -->
+
+                            <td class="text-right">
+
+                                <div class="record-actions">
+
+                                    <a href="{% url 'students_app:edit_student' student.id %}"
+                                       class="btn btn-link text-primary record-action-link"
+                                       title="Edit">
+
+                                        <i class="fas fa-edit mr-1"></i>
+
+                                        Edit
+
+                                    </a>
+
+
+                                    <a href="{% url 'students_app:delete_student' student.id %}"
+                                       class="btn btn-link text-danger record-action-link"
+                                       title="Delete">
+
+                                        <i class="fas fa-trash-alt mr-1"></i>
+
+                                        Delete
+
+                                    </a>
+
+                                </div>
+
                             </td>
+
                         </tr>
+
+
                         {% empty %}
+
+                        <!-- =================================================
+                             NO STUDENTS
+                             ================================================= -->
+
                         <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="text-muted">
-                                    <p class="mb-0">No students found matching your criteria.</p>
-                                    <a href="{% url 'students_app:students_list' %}" class="small text-primary">View all students</a>
+
+                            <td colspan="5"
+                                class="text-center empty-state">
+
+                                <div class="empty-state-content">
+
+                                    <div class="empty-state-icon">
+
+                                        <i class="fas fa-user-graduate"></i>
+
+                                    </div>
+
+
+                                    <h5 class="font-weight-bold text-dark mb-2">
+
+                                        No Students Found
+
+                                    </h5>
+
+
+                                    <p class="text-muted mb-2">
+
+                                        No students found matching your criteria.
+
+                                    </p>
+
+
+                                    <a href="{% url 'students_app:students_list' %}"
+                                       class="small text-primary font-weight-bold">
+
+                                        View all students
+
+                                    </a>
+
                                 </div>
+
                             </td>
+
                         </tr>
+
                         {% endfor %}
+
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
+
     </div>
+
+
+
+    <!-- =========================================================
+         PAGINATION
+         ========================================================= -->
 
     {% if students.has_other_pages %}
-    <nav aria-label="Page navigation" class="mt-4">
+
+    <nav aria-label="Page navigation"
+         class="pagination-container mt-4">
+
         <ul class="pagination justify-content-center shadow-sm">
+
+
+            <!-- Previous -->
+
             {% if students.has_previous %}
+
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ students.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+
+                    <a class="page-link"
+                       href="?page={{ students.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">
+
+                        <i class="fas fa-chevron-left mr-1"></i>
+
+                        Previous
+
+                    </a>
+
                 </li>
+
             {% else %}
-                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+
+                <li class="page-item disabled">
+
+                    <span class="page-link">
+
+                        <i class="fas fa-chevron-left mr-1"></i>
+
+                        Previous
+
+                    </span>
+
+                </li>
+
             {% endif %}
+
+
+
+            <!-- Page numbers -->
 
             {% for i in students.paginator.page_range %}
+
                 {% if students.number == i %}
-                    <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
-                {% elif i > students.number|add:'-3' and i < students.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a>
+
+                    <li class="page-item active">
+
+                        <span class="page-link">
+
+                            {{ i }}
+
+                            <span class="sr-only">
+                                (current)
+                            </span>
+
+                        </span>
+
                     </li>
+
+
+                {% elif i > students.number|add:'-3' and i < students.number|add:'3' %}
+
+                    <li class="page-item">
+
+                        <a class="page-link"
+                           href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">
+
+                            {{ i }}
+
+                        </a>
+
+                    </li>
+
                 {% endif %}
+
             {% endfor %}
 
+
+
+            <!-- Next -->
+
             {% if students.has_next %}
+
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ students.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+
+                    <a class="page-link"
+                       href="?page={{ students.next_page_number }}{% if query %}&q={{ query }}{% endif %}">
+
+                        Next
+
+                        <i class="fas fa-chevron-right ml-1"></i>
+
+                    </a>
+
                 </li>
+
             {% else %}
-                <li class="page-item disabled"><span class="page-link">Next</span></li>
+
+                <li class="page-item disabled">
+
+                    <span class="page-link">
+
+                        Next
+
+                        <i class="fas fa-chevron-right ml-1"></i>
+
+                    </span>
+
+                </li>
+
             {% endif %}
+
+
         </ul>
+
     </nav>
+
     {% endif %}
 
 </div>
 
+
+
+<!-- =============================================================
+     RESPONSIVE CSS
+     ============================================================= -->
+
 <style>
-    body { background-color: #f8f9fa; }
-    .card { border-radius: 15px; overflow: hidden; }
-    .table thead th {
-        background-color: #f1f3f5;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border-bottom: 2px solid #dee2e6;
+
+/* =============================================================
+   GLOBAL PAGE
+   ============================================================= */
+
+html,
+body {
+
+    width: 100%;
+
+    min-height: 100%;
+
+    margin: 0;
+
+    padding: 0;
+
+}
+
+
+body {
+
+    background-color: #f8f9fa;
+
+    overflow-x: hidden;
+
+}
+
+
+/* =============================================================
+   FULL WIDTH CONTAINER
+   ============================================================= */
+
+.student-directory-container {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-height: calc(100vh - 60px);
+
+    margin: 0;
+
+    padding:
+        clamp(12px, 2vw, 35px);
+
+    box-sizing: border-box;
+
+}
+
+
+/* Make sure everything stays inside screen */
+
+.student-directory-container,
+.student-directory-container * {
+
+    box-sizing: border-box;
+
+}
+
+
+/* =============================================================
+   HEADER
+   ============================================================= */
+
+.directory-header {
+
+    width: 100%;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+}
+
+
+.directory-title {
+
+    min-width: 0;
+
+}
+
+
+.directory-title h2 {
+
+    font-size:
+        clamp(1.35rem, 2vw, 2rem);
+
+}
+
+
+.directory-title p {
+
+    font-size:
+        clamp(0.85rem, 1vw, 1rem);
+
+}
+
+
+.add-student-btn {
+
+    flex-shrink: 0;
+
+    padding:
+        10px 20px;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.add-student-btn:hover {
+
+    transform: translateY(-2px);
+
+}
+
+
+/* =============================================================
+   BOOTSTRAP ROW
+   ============================================================= */
+
+.directory-row {
+
+    width: 100%;
+
+    margin-left: 0;
+
+    margin-right: 0;
+
+}
+
+
+/* =============================================================
+   SEARCH
+   ============================================================= */
+
+.search-form {
+
+    width: 100%;
+
+    display: flex;
+
+    align-items: stretch;
+
+}
+
+
+.search-input {
+
+    min-width: 0;
+
+    flex: 1;
+
+    height: 50px;
+
+    border: 0;
+
+    padding:
+        10px 18px;
+
+    border-radius:
+        8px 0 0 8px;
+
+}
+
+
+.search-input:focus {
+
+    box-shadow:
+        0 0 0 2px rgba(0,123,255,0.15);
+
+    outline: none;
+
+}
+
+
+.search-button {
+
+    height: 50px;
+
+    padding:
+        0 22px;
+
+    border-radius: 0;
+
+    white-space: nowrap;
+
+}
+
+
+.clear-button {
+
+    height: 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding:
+        0 18px;
+
+    border-radius:
+        0 8px 8px 0;
+
+    white-space: nowrap;
+
+}
+
+
+/* =============================================================
+   STUDENT COUNT
+   ============================================================= */
+
+.student-count-container {
+
+    height: 100%;
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    align-items: center;
+
+}
+
+
+.student-count {
+
+    padding:
+        10px 15px;
+
+    font-size:
+        0.9rem;
+
+    border-radius: 20px;
+
+}
+
+
+/* =============================================================
+   TABLE CARD
+   ============================================================= */
+
+.student-table-card {
+
+    width: 100%;
+
+    border-radius: 15px;
+
+    overflow: hidden;
+
+}
+
+
+/* =============================================================
+   TABLE
+   ============================================================= */
+
+.student-table {
+
+    width: 100%;
+
+    margin: 0;
+
+}
+
+
+.student-table thead th {
+
+    background-color: #f1f3f5;
+
+    font-size:
+        0.75rem;
+
+    text-transform: uppercase;
+
+    letter-spacing:
+        1px;
+
+    border-bottom:
+        2px solid #dee2e6;
+
+    padding:
+        16px;
+
+    white-space: nowrap;
+
+}
+
+
+.student-table tbody td {
+
+    padding:
+        14px 16px;
+
+    vertical-align: middle;
+
+}
+
+
+/* Keep table readable on smaller screens */
+
+.student-table {
+
+    min-width: 900px;
+
+}
+
+
+/* =============================================================
+   STUDENT IDENTITY
+   ============================================================= */
+
+.student-identity {
+
+    display: flex;
+
+    align-items: center;
+
+    min-width: 220px;
+
+}
+
+
+.avatar-circle {
+
+    width: 40px;
+
+    height: 40px;
+
+    min-width: 40px;
+
+    background-color: #e7f0ff;
+
+    color: #007bff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    font-weight: bold;
+
+    font-size:
+        0.8rem;
+
+    margin-right: 12px;
+
+}
+
+
+.student-name {
+
+    min-width: 0;
+
+}
+
+
+.student-name span {
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+/* =============================================================
+   REGISTRATION DATE
+   ============================================================= */
+
+.registration-date {
+
+    white-space: nowrap;
+
+    color: #6c757d;
+
+}
+
+
+/* =============================================================
+   STUDENT ACTIONS
+   ============================================================= */
+
+.student-actions-group {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    white-space: nowrap;
+
+}
+
+
+.student-action-btn {
+
+    padding:
+        7px 12px;
+
+    background-color: white;
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.student-action-btn:hover {
+
+    background-color: #f8f9fa;
+
+    transform: translateY(-1px);
+
+}
+
+
+.student-action-btn:first-child {
+
+    border-radius:
+        6px 0 0 6px;
+
+}
+
+
+.student-action-btn:last-child {
+
+    border-radius:
+        0 6px 6px 0;
+
+}
+
+
+/* =============================================================
+   RECORD ACTIONS
+   ============================================================= */
+
+.record-actions {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    white-space: nowrap;
+
+}
+
+
+.record-action-link {
+
+    padding: 0;
+
+    margin-left: 15px;
+
+    font-weight: 600;
+
+}
+
+
+.record-action-link:hover {
+
+    text-decoration: none;
+
+}
+
+
+/* =============================================================
+   EMPTY STATE
+   ============================================================= */
+
+.empty-state {
+
+    padding:
+        70px 20px !important;
+
+}
+
+
+.empty-state-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+.empty-state-icon {
+
+    width: 65px;
+
+    height: 65px;
+
+    border-radius: 50%;
+
+    background-color: #e7f0ff;
+
+    color: #007bff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size:
+        1.7rem;
+
+    margin-bottom: 15px;
+
+}
+
+
+/* =============================================================
+   PAGINATION
+   ============================================================= */
+
+.pagination-container {
+
+    width: 100%;
+
+}
+
+
+.pagination {
+
+    margin-bottom: 0;
+
+    flex-wrap: wrap;
+
+}
+
+
+.pagination .page-link {
+
+    min-width: 40px;
+
+    height: 40px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding:
+        8px 12px;
+
+    border-radius: 0;
+
+}
+
+
+.pagination .page-item:first-child .page-link {
+
+    border-radius:
+        7px 0 0 7px;
+
+}
+
+
+.pagination .page-item:last-child .page-link {
+
+    border-radius:
+        0 7px 7px 0;
+
+}
+
+
+.pagination .page-item.active .page-link {
+
+    background-color: #007bff;
+
+    border-color: #007bff;
+
+}
+
+
+/* =============================================================
+   LARGE DESKTOP
+   ============================================================= */
+
+@media (min-width: 1400px) {
+
+    .student-directory-container {
+
+        padding-left: 3vw;
+
+        padding-right: 3vw;
+
     }
-    .avatar-circle {
-        width: 35px;
-        height: 35px;
-        background-color: #e7f0ff;
-        color: #007bff;
-        display: flex;
-        align-items: center;
+
+}
+
+
+/* =============================================================
+   LAPTOP
+   ============================================================= */
+
+@media (min-width: 992px) and (max-width: 1399px) {
+
+    .student-directory-container {
+
+        padding: 25px;
+
+    }
+
+}
+
+
+/* =============================================================
+   TABLET
+   ============================================================= */
+
+@media (max-width: 991px) {
+
+    .student-directory-container {
+
+        padding: 20px;
+
+    }
+
+
+    .student-count-container {
+
+        justify-content: flex-start;
+
+    }
+
+
+    .student-count {
+
+        margin-top: 0;
+
+    }
+
+}
+
+
+/* =============================================================
+   MOBILE
+   ============================================================= */
+
+@media (max-width: 767px) {
+
+    .student-directory-container {
+
+        padding: 12px;
+
+        min-height: 100vh;
+
+    }
+
+
+    /* Page heading */
+
+    .directory-header {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 15px;
+
+    }
+
+
+    .add-student-btn {
+
+        width: 100%;
+
+        text-align: center;
+
+        padding: 12px;
+
+    }
+
+
+    /* Search */
+
+    .search-form {
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+    }
+
+
+    .search-input {
+
+        width: 100%;
+
+        flex-basis: 100%;
+
+        border-radius: 8px;
+
+        height: 48px;
+
+    }
+
+
+    .search-button {
+
+        flex: 1;
+
+        height: 45px;
+
+        border-radius: 7px;
+
+    }
+
+
+    .clear-button {
+
+        flex: 0 0 auto;
+
+        height: 45px;
+
+        border-radius: 7px;
+
+    }
+
+
+    /* Student count */
+
+    .student-count-container {
+
+        justify-content: flex-start;
+
+        margin-top: 5px;
+
+    }
+
+
+    /* Table */
+
+    .student-table-card {
+
+        border-radius: 10px;
+
+    }
+
+
+    .table-responsive {
+
+        overflow-x: auto;
+
+        -webkit-overflow-scrolling: touch;
+
+    }
+
+
+    .student-table {
+
+        min-width: 900px;
+
+    }
+
+
+    /* Pagination */
+
+    .pagination {
+
         justify-content: center;
-        border-radius: 50%;
-        font-weight: bold;
-        font-size: 0.8rem;
+
     }
-    .btn-group .btn { border-radius: 0; }
-    .btn-group .btn:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
-    .btn-group .btn:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
-    .pagination .page-item.active .page-link { background-color: #007bff; border-color: #007bff; }
+
+
+    .pagination .page-link {
+
+        min-width: 38px;
+
+        height: 38px;
+
+        padding:
+            7px 9px;
+
+        font-size:
+            0.85rem;
+
+    }
+
+}
+
+
+/* =============================================================
+   SMALL MOBILE PHONES
+   ============================================================= */
+
+@media (max-width: 480px) {
+
+    .student-directory-container {
+
+        padding: 8px;
+
+    }
+
+
+    .directory-title h2 {
+
+        font-size: 1.3rem;
+
+    }
+
+
+    .directory-title p {
+
+        font-size: 0.82rem;
+
+    }
+
+
+    .add-student-btn {
+
+        font-size:
+            0.9rem;
+
+    }
+
+
+    .student-count {
+
+        font-size:
+            0.8rem;
+
+    }
+
+
+    .empty-state {
+
+        padding:
+            50px 15px !important;
+
+    }
+
+
+    .pagination .page-link {
+
+        min-width: 35px;
+
+        height: 35px;
+
+        font-size:
+            0.8rem;
+
+    }
+
+}
+
+
+/* =============================================================
+   VERY SMALL PHONES
+   ============================================================= */
+
+@media (max-width: 360px) {
+
+    .student-directory-container {
+
+        padding: 6px;
+
+    }
+
+
+    .directory-title h2 {
+
+        font-size: 1.15rem;
+
+    }
+
+
+    .search-button {
+
+        font-size:
+            0.85rem;
+
+    }
+
+
+    .clear-button {
+
+        font-size:
+            0.85rem;
+
+    }
+
+}
+
+
+/* =============================================================
+   PREVENT HORIZONTAL PAGE OVERFLOW
+   ============================================================= */
+
+img,
+svg,
+video {
+
+    max-width: 100%;
+
+    height: auto;
+
+}
+
+
+input,
+select,
+textarea {
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+}
+
 </style>
 
 {% endblock content %}
