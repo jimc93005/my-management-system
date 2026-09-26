@@ -1,0 +1,77 @@
+{# schools_manager/templates/schools_manager/payment_methods.html #}
+{% extends 'schools_manager/base_public.html' %}
+
+{% block title %}Payment Methods | {{ config.site_name|default:"Edusphere" }}{% endblock %}
+
+{% block extra_css %}
+    .payment-hero {
+        padding: 70px 0 40px;
+        text-align: center;
+    }
+    .payment-hero h1 {
+        font-size: clamp(1.9rem, 4vw, 2.75rem);
+        color: var(--dark-blue);
+    }
+    .payment-card {
+        background: #ffffff;
+        border: 1px solid rgba(10,37,64,0.08);
+        border-radius: 18px;
+        padding: 1.75rem;
+        height: 100%;
+        box-shadow: 0 8px 20px -6px rgba(10,37,64,0.06);
+    }
+    .payment-logo {
+        height: 60px;
+        width: auto;
+        max-width: 140px;
+        object-fit: contain;
+        margin-bottom: 1rem;
+    }
+    .payment-logo-placeholder {
+        height: 60px;
+        width: 60px;
+        border-radius: 12px;
+        background: var(--light-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        color: var(--primary-teal);
+        font-size: 1.5rem;
+    }
+{% endblock %}
+
+{% block content %}
+    <section class="payment-hero">
+        <div class="container">
+            <h1 class="fw-bold mb-3">Payment Methods</h1>
+            <p class="text-muted mx-auto" style="max-width: 600px;">
+                Choose whichever option is most convenient for you when submitting your registration payment.
+            </p>
+        </div>
+    </section>
+
+    <section class="container pb-5">
+        {% if payment_methods %}
+            <div class="row g-4">
+                {% for method in payment_methods %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="payment-card">
+                            {% if method.logo %}
+                                <img src="{{ method.logo.url }}" alt="{{ method.name }}" class="payment-logo">
+                            {% else %}
+                                <div class="payment-logo-placeholder">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                            {% endif %}
+                            <h5 class="fw-bold mb-2">{{ method.name }}</h5>
+                            <p class="text-muted small mb-0" style="white-space: pre-line;">{{ method.payment_information }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-muted py-5">Payment methods will be listed here soon. Contact us directly for now.</p>
+        {% endif %}
+    </section>
+{% endblock %}

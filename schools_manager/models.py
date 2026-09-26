@@ -9,8 +9,16 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 
+
+
+
 # 1. THE TENANT MODEL
 class School(TenantMixin):
+    STATUS_CHOICES = (
+        ('Active', 'Active'),
+        ('Suspended', 'Suspended'),
+    )
+
     name = models.CharField(max_length=100)
     allocated_storage_mb = models.FloatField(
         default=500.0,
@@ -19,29 +27,30 @@ class School(TenantMixin):
     used_storage_mb = models.FloatField(default=0.0)
     created_on = models.DateField(auto_now_add=True)
 
-    # default true, schema will be automatically created and synced when it is saved
+    # --- NEW SUBSCRIPTION FIELDS ---
+    current_plan = models.ForeignKey(
+        'SubscriptionPlan',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    subscription_end_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
+    # -------------------------------
+
     auto_create_schema = True
-    auto_drop_schema = True # Be careful with this in production!
+    auto_drop_schema = True
 
     def delete(self, force_drop=False, *args, **kwargs):
-        """
-        Overrides the default delete method to ensure media files
-        are wiped when the tenant is deleted.
-        """
-        # 1. Grab the exact folder path BEFORE the database record is gone
+        # ... (keep your existing delete method exactly as it is) ...
         tenant_media_path = os.path.join(settings.MEDIA_ROOT, self.schema_name)
-
-        # 2. Delete the tenant from the database (this drops the schema in django-tenants)
         super().delete(force_drop=force_drop, *args, **kwargs)
-
-        # 3. Wipe the folder from the hard drive
         if os.path.exists(tenant_media_path) and os.path.isdir(tenant_media_path):
             shutil.rmtree(tenant_media_path)
             print(f"🗑️ SUCCESS: Wiped media folder for {self.schema_name}")
 
     def __str__(self):
         return self.name
-
 
 # 2. THE DOMAIN MODEL
 class Domain(DomainMixin):
@@ -78,11 +87,13 @@ class SchoolRegistrationRequest(models.Model):
         help_text="The plan they selected on the pricing page."
     )
     BILLING_CHOICES = (
-        ('monthly', 'Monthly'),
-        ('annual', 'Annually'),
+        ('monthly', '1 Month'),
+        ('quarterly', '3 Months (Quarterly)'),
+        ('four_months', '4 Months (Term)'),
+        ('annual', '12 Months (Annually)'),
     )
     billing_cycle = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=BILLING_CHOICES,
         default='monthly'
     )
@@ -95,18 +106,21 @@ class SchoolRegistrationRequest(models.Model):
         return f"{self.school_name} - {self.status}"
 
 
-from django.db import models
-
-
 class SubscriptionPlan(models.Model):
     name = models.CharField(max_length=100, help_text="e.g., Basic, Premium, Enterprise")
     slug = models.SlugField(unique=True, help_text="URL-friendly name (e.g., basic-plan)")
+
+    # --- UPDATED PRICING FIELDS ---
     monthly_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per month")
+    quarterly_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                          help_text="Price for 3 months (Quarterly)")
+    four_month_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                           help_text="Price for 4 months (Academic Term)")
     annual_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per year (usually discounted)")
+    # ------------------------------
+
     description = models.TextField(blank=True, help_text="A short summary of who this plan is for.")
     is_active = models.BooleanField(default=True, help_text="Uncheck to hide this plan from the pricing page.")
-
-    # Optional styling field if you want to highlight a specific plan (like "Most Popular")
     is_highlighted = models.BooleanField(default=False)
 
     class Meta:
@@ -205,9 +219,15 @@ class FAQ(models.Model):
 
 
 # 6. NEWSLETTER SUBSCRIBERS
+import uuid
 class NewsletterSubscriber(models.Model):
     email = models.EmailField(unique=True, help_text="Subscriber's email address")
     subscribed_at = models.DateTimeField(auto_now_add=True)
+    unsubscribe_token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False
+    )
     is_active = models.BooleanField(default=True, help_text="Uncheck if the user unsubscribes")
 
     class Meta:
@@ -369,3 +389,128 @@ class FooterLink(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_link_type_display()})"
+
+
+
+
+# PAYMENT DETAILS
+
+class PaymentMethod(models.Model):
+    name = models.CharField(max_length=100, help_text="e.g., National Bank of Malawi, TNM Mpamba, Airtel Money")
+    logo = models.ImageField(upload_to='payment_methods/', blank=True, null=True,
+                             help_text="Upload the provider's logo (e.g., bank logo, mobile money symbol).")
+    payment_information = models.TextField(
+        help_text="Account details, phone number, or instructions for paying via this method."
+    )
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True, help_text="Uncheck to hide this payment method from the page")
+
+    class Meta:
+        ordering = ['display_order']
+        verbose_name = "Payment Method"
+        verbose_name_plural = "Payment Methods"
+
+    def __str__(self):
+        return self.name
+
+
+
+
+
+# EMAILS MODIFICATIONS DETAILS
+
+class NewsletterAsset(models.Model):
+    ASSET_TYPE_CHOICES = [
+        ('logo', 'Logo'),
+        ('image', 'Picture'),
+        ('document', 'Document'),
+    ]
+
+    title = models.CharField(
+        max_length=150,
+        help_text="A name for this asset"
+    )
+
+    asset_type = models.CharField(
+        max_length=20,
+        choices=ASSET_TYPE_CHOICES,
+        help_text="Choose whether this is a logo, picture, or document"
+    )
+
+    file = models.FileField(
+        upload_to='newsletter_assets/',
+        help_text="Upload the logo, picture, or document"
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only active assets will be available when creating newsletters"
+    )
+
+    is_temporary = models.BooleanField(
+        default=True,
+        help_text="Temporary assets can be automatically deleted after they are no longer needed"
+    )
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = "Newsletter Asset"
+        verbose_name_plural = "Newsletter Assets"
+
+    def __str__(self):
+        return f"{self.title} ({self.get_asset_type_display()})"
+
+
+class SubscriptionRenewal(models.Model):
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+    )
+    BILLING_CHOICES = (
+        ('monthly', '1 Month'),
+        ('quarterly', '3 Months (Quarterly)'),
+        ('four_months', '4 Months (Term)'),
+        ('annual', '12 Months (Annually)'),
+    )
+
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='renewals')
+    billing_cycle = models.CharField(max_length=15, choices=BILLING_CHOICES, default='monthly')
+    proof_of_payment = models.ImageField(upload_to='renewal_proofs/')
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    admin_notes = models.TextField(blank=True, null=True)
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = "Subscription Renewal"
+        verbose_name_plural = "Subscription Renewals"
+
+    def __str__(self):
+        return f"{self.school.name} - {self.get_billing_cycle_display()} Renewal ({self.status})"
+
+
+
+from django.db import models
+
+class HeroBanner(models.Model):
+    title = models.CharField(max_length=100, help_text="Internal name to help you identify this image.")
+    image = models.ImageField(upload_to='hero_banners/', help_text="Upload a high-resolution image (e.g., 1920x1080).")
+    caption = models.CharField(max_length=255, blank=True, null=True, help_text="The text box that appears over the image (optional).")
+    is_active = models.BooleanField(default=True, help_text="Uncheck this to hide the image without deleting it.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Hero Banner"
+        verbose_name_plural = "Hero Banners"
+
+    def __str__(self):
+        return self.title

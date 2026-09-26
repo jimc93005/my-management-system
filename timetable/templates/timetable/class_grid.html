@@ -1,0 +1,33 @@
+<!-- timetable/templates/timetable/class_grid.html -->
+<h2>{{ class_level.name }} - {{ matrix_data.timetable_name }}</h2>
+
+<table class="table table-bordered table-striped text-center">
+    <thead class="table-dark">
+        <tr>
+            <th>Day</th>
+            {% for period in matrix_data.period_headers %}
+                <th>Period {{ period }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in matrix_data.grid %}
+            <tr>
+                <td class="fw-bold align-middle">{{ row.day_name }}</td>
+
+                {% for slot in row.periods %}
+                    <td>
+                        {% if slot.is_free %}
+                            <span class="text-muted">Free</span>
+                        {% else %}
+                            <!-- Display Subject, Teacher, and Room -->
+                            <strong>{{ slot.entry.assignment.subject.name }}</strong><br>
+                            <small>{{ slot.entry.assignment.teacher }}</small><br>
+                            <span class="badge bg-secondary">{{ slot.entry.room.code|default:"No Room" }}</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

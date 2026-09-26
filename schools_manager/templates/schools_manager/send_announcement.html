@@ -1,0 +1,455 @@
+{# schools_manager/templates/schools_manager/admin/send_announcement.html #}
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<style>
+    :root {
+        --nl-primary: #008080;
+        --nl-primary-dark: #006666;
+        --nl-accent: #FF6B35;
+        --nl-text: #0A2540;
+        --nl-muted: #5f6b7a;
+        --nl-border: #d9e2ec;
+        --nl-bg-soft: #f6f9fc;
+    }
+
+    .newsletter-wrapper {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 10px 0 50px;
+        font-family: 'Poppins', -apple-system, sans-serif;
+    }
+
+    .newsletter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+
+    .newsletter-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--nl-text) !important;
+    }
+
+    .recipient-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 20px;
+        background: rgba(0, 128, 128, 0.1);
+        color: var(--nl-primary-dark) !important;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    .recipient-count::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--nl-primary);
+    }
+
+    /* =========================================
+       CARD
+       ========================================= */
+
+    .newsletter-card {
+        background: #ffffff !important;
+        border: 1px solid var(--nl-border);
+        border-radius: 14px;
+        padding: 26px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(10, 37, 64, 0.05);
+    }
+
+    .card-heading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .step-badge {
+        flex-shrink: 0;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--nl-primary);
+        color: #fff !important;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .newsletter-card h2 {
+        margin: 0;
+        color: var(--nl-text) !important;
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    .section-description {
+        margin: 0 0 20px 38px;
+        color: var(--nl-muted) !important;
+        font-size: 13.5px;
+    }
+
+    /* =========================================
+       FORM FIELDS
+       ========================================= */
+
+    .field-group { margin-bottom: 22px; }
+    .field-group:last-child { margin-bottom: 0; }
+
+    .field-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .field-label {
+        color: #1f2937 !important;
+        font-size: 14.5px;
+        font-weight: 700;
+    }
+
+    .char-counter {
+        font-size: 12px;
+        color: var(--nl-muted) !important;
+        font-weight: 600;
+    }
+    .char-counter.warn { color: var(--nl-accent) !important; }
+
+    .newsletter-input,
+    .newsletter-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 9px;
+        background: #ffffff !important;
+        color: #1f2937 !important;
+        padding: 11px 14px;
+        font-size: 15px;
+        font-family: inherit;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .newsletter-input:focus,
+    .newsletter-textarea:focus {
+        border-color: var(--nl-primary) !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.15);
+    }
+
+    .newsletter-textarea {
+        min-height: 220px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+
+    /* =========================================
+       SELECTABLE OPTION ROWS (shared pattern)
+       ========================================= */
+
+    .option-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 15px;
+        margin-bottom: 9px;
+        border: 1.5px solid var(--nl-border);
+        border-radius: 10px;
+        background: var(--nl-bg-soft) !important;
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }
+    .option-row:last-child { margin-bottom: 0; }
+    .option-row:hover {
+        border-color: var(--nl-primary);
+    }
+    .option-row:has(input:checked) {
+        border-color: var(--nl-primary);
+        background: rgba(0, 128, 128, 0.06) !important;
+        box-shadow: 0 0 0 1px var(--nl-primary);
+    }
+
+    .option-row input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        flex-shrink: 0;
+        cursor: pointer;
+        accent-color: var(--nl-primary);
+    }
+
+    .option-row .option-icon {
+        font-size: 19px;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .option-row .option-text {
+        color: #1f2937 !important;
+        font-size: 14.5px;
+        font-weight: 600;
+    }
+
+    .logo-preview {
+        width: 52px;
+        height: 52px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: #ffffff;
+        border: 1px solid #e1e7ef;
+        padding: 4px;
+        box-sizing: border-box;
+        flex-shrink: 0;
+    }
+
+    .bulk-actions {
+        display: flex;
+        gap: 14px;
+        margin: -6px 0 14px 38px;
+    }
+    .bulk-actions button {
+        background: none;
+        border: none;
+        color: var(--nl-primary-dark) !important;
+        font-size: 12.5px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: underline;
+    }
+    .bulk-actions button:hover { color: var(--nl-accent) !important; }
+
+    /* =========================================
+       EMAIL OPTIONS
+       ========================================= */
+
+    .email-option.option-row {
+        background: rgba(0, 128, 128, 0.05) !important;
+        border-color: rgba(0, 128, 128, 0.25);
+        align-items: flex-start;
+        padding: 16px;
+    }
+    .email-option input { margin-top: 2px; }
+    .email-option strong {
+        display: block;
+        color: var(--nl-text) !important;
+        font-size: 14.5px;
+        margin-bottom: 3px;
+    }
+    .email-option small {
+        display: block;
+        color: var(--nl-muted) !important;
+        line-height: 1.5;
+        font-weight: 400;
+    }
+
+    /* =========================================
+       SEND BUTTON
+       ========================================= */
+
+    .send-button-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 14px;
+        margin-top: 10px;
+    }
+
+    .send-newsletter-button {
+        border: none !important;
+        border-radius: 9px !important;
+        padding: 13px 28px !important;
+        background: linear-gradient(45deg, var(--nl-primary), #00A6A6) !important;
+        color: #ffffff !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0, 128, 128, 0.3);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .send-newsletter-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(0, 128, 128, 0.4);
+    }
+
+    /* =========================================
+       MOBILE
+       ========================================= */
+
+    @media (max-width: 700px) {
+        .newsletter-wrapper { padding: 5px 10px 30px; }
+        .newsletter-card { padding: 18px; }
+        .newsletter-header h1 { font-size: 24px; }
+        .section-description, .bulk-actions { margin-left: 0; }
+        .send-button-wrapper { flex-direction: column-reverse; align-items: stretch; }
+        .send-newsletter-button { width: 100%; justify-content: center; }
+    }
+</style>
+
+
+<div class="newsletter-wrapper">
+
+    <div class="newsletter-header">
+        <h1>Send Announcement</h1>
+        <span class="recipient-count">{{ recipient_count }} active subscriber{{ recipient_count|pluralize }}</span>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- STEP 1: EMAIL CONTENT -->
+        <div class="newsletter-card">
+            <div class="card-heading">
+                <span class="step-badge">1</span>
+                <h2>Email Content</h2>
+            </div>
+            <p class="section-description">Write the subject and message that your subscribers will receive.</p>
+
+            <div class="field-group">
+                <div class="field-label-row">
+                    <label for="subject" class="field-label">Subject</label>
+                    <span class="char-counter" id="subjectCounter">0 characters</span>
+                </div>
+                <input type="text" name="subject" id="subject" class="newsletter-input"
+                       placeholder="Enter your announcement subject..." required autocomplete="off">
+            </div>
+
+            <div class="field-group">
+                <label for="body" class="field-label">Message</label>
+                <textarea name="body" id="body" class="newsletter-textarea"
+                          placeholder="Write your announcement message here..." required></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 2: LOGO -->
+        {% if logos %}
+        <div class="newsletter-card">
+            <div class="card-heading">
+                <span class="step-badge">2</span>
+                <h2>Newsletter Logo</h2>
+            </div>
+            <p class="section-description">Select one logo to appear in the newsletter.</p>
+
+            {% for logo in logos %}
+                <label class="option-row" for="logo_{{ logo.pk }}">
+                    <input type="radio" name="logo_id" value="{{ logo.pk }}" id="logo_{{ logo.pk }}">
+                    {% if logo.file %}
+                        <img src="{{ logo.file.url }}" alt="{{ logo.title }}" class="logo-preview">
+                    {% endif %}
+                    <span class="option-text">{{ logo.title }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- STEP 3: PICTURES -->
+        {% if pictures %}
+        <div class="newsletter-card">
+            <div class="card-heading">
+                <span class="step-badge">3</span>
+                <h2>Newsletter Pictures</h2>
+            </div>
+            <p class="section-description">Select one or more pictures to display inside the email.</p>
+            <div class="bulk-actions">
+                <button type="button" onclick="toggleAll('picture_ids', true)">Select all</button>
+                <button type="button" onclick="toggleAll('picture_ids', false)">Clear</button>
+            </div>
+
+            {% for picture in pictures %}
+                <label class="option-row" for="picture_{{ picture.pk }}">
+                    <input type="checkbox" name="picture_ids" value="{{ picture.pk }}" id="picture_{{ picture.pk }}">
+                    <span class="option-icon">🖼️</span>
+                    <span class="option-text">{{ picture.title }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- STEP 4: DOCUMENTS -->
+        {% if documents %}
+        <div class="newsletter-card">
+            <div class="card-heading">
+                <span class="step-badge">4</span>
+                <h2>Newsletter Documents</h2>
+            </div>
+            <p class="section-description">Select one or more documents to attach to the email.</p>
+            <div class="bulk-actions">
+                <button type="button" onclick="toggleAll('document_ids', true)">Select all</button>
+                <button type="button" onclick="toggleAll('document_ids', false)">Clear</button>
+            </div>
+
+            {% for document in documents %}
+                <label class="option-row" for="document_{{ document.pk }}">
+                    <input type="checkbox" name="document_ids" value="{{ document.pk }}" id="document_{{ document.pk }}">
+                    <span class="option-icon">📄</span>
+                    <span class="option-text">{{ document.title }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- STEP 5: OPTIONS -->
+        <div class="newsletter-card">
+            <div class="card-heading">
+                <span class="step-badge">5</span>
+                <h2>Email Options</h2>
+            </div>
+            <p class="section-description">Choose additional options for this newsletter.</p>
+
+            <label class="option-row email-option" for="include_unsubscribe">
+                <input type="checkbox" name="include_unsubscribe" value="yes" id="include_unsubscribe" checked>
+                <span>
+                    <strong>Include unsubscribe link</strong>
+                    <small>Subscribers will be able to unsubscribe from future newsletter announcements.</small>
+                </span>
+            </label>
+        </div>
+
+        <div class="send-button-wrapper">
+            <button type="submit" class="send-newsletter-button">
+                Send Announcement
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    // Live character counter for the subject line
+    const subjectInput = document.getElementById('subject');
+    const subjectCounter = document.getElementById('subjectCounter');
+    if (subjectInput && subjectCounter) {
+        subjectInput.addEventListener('input', function () {
+            const len = this.value.length;
+            subjectCounter.textContent = len + ' characters';
+            subjectCounter.classList.toggle('warn', len > 60);
+        });
+    }
+
+    // Select all / Clear for checkbox groups
+    function toggleAll(name, checked) {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(function (checkbox) {
+            checkbox.checked = checked;
+        });
+    }
+</script>
+
+{% endblock %}

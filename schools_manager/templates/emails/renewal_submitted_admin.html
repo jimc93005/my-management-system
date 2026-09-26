@@ -1,0 +1,12 @@
+{% extends 'emails/email_base.html' %}
+{% block content %}
+    <h2>New Payment Uploaded</h2>
+    <p>A new subscription renewal proof has been submitted for review.</p>
+    <ul>
+        <li><strong>School:</strong> {{ renewal.school.name }}</li>
+        <li><strong>Domain:</strong> {{ renewal.school.schema_name }}.threeangels.cloud</li>
+        <li><strong>Cycle:</strong> {{ renewal.get_billing_cycle_display }}</li>
+        <li><strong>Submitted:</strong> {{ renewal.submitted_at|date:"Y-m-d H:i" }}</li>
+    </ul>
+    <p>Please log in to the Master Admin panel to review and approve the request.</p>
+{% endblock %}

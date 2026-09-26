@@ -1,0 +1,8 @@
+{% extends 'emails/email_base.html' %}
+{% block content %}
+    <h2 style="color: #dc2626;">Account Suspended</h2>
+    <p>Hello,</p>
+    <p>Your subscription for the <strong>{{ school.name }}</strong> portal has expired. As a result, access to the system has been temporarily suspended.</p>
+    <p><strong>Your data is completely safe.</strong> To restore access immediately, please visit your portal URL to view payment instructions and upload your renewal receipt.</p>
+    <a href="http://{{ school.schema_name }}.threeangels.cloud/subscription-expired/" class="btn">Upload Payment Proof</a>
+{% endblock %}

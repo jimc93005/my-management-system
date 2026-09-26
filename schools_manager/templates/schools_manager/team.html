@@ -1,0 +1,981 @@
+{# schools_manager/templates/schools_manager/team.html #}
+{% extends 'schools_manager/base_public.html' %}
+
+{% block title %}Our Team | {{ config.site_name|default:"Edusphere" }}{% endblock %}
+
+{% block extra_css %}
+
+<style>
+
+/* =========================================================
+   TEAM PAGE — PREMIUM DESIGN
+   ========================================================= */
+
+:root {
+    --team-dark: #0a2540;
+    --team-dark-2: #071c30;
+    --team-teal: #00a6a6;
+    --team-teal-dark: #007f82;
+    --team-light: #f7fafc;
+    --team-muted: #667788;
+    --team-border: rgba(10, 37, 64, 0.08);
+}
+
+
+/* =========================================================
+   PAGE BACKGROUND
+   ========================================================= */
+
+.team-page {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(0,166,166,0.06),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 90% 30%,
+            rgba(10,37,64,0.05),
+            transparent 30%
+        ),
+        #ffffff;
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.team-hero {
+    position: relative;
+    padding: 120px 20px 110px;
+    text-align: center;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(10,37,64,0.03),
+            rgba(0,166,166,0.07)
+        );
+    border-bottom: 1px solid rgba(10,37,64,0.05);
+}
+
+
+/* Decorative glow */
+
+.team-hero::before {
+    content: "";
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: rgba(0,166,166,0.08);
+    filter: blur(70px);
+    top: -220px;
+    left: -160px;
+    animation: heroFloat 8s ease-in-out infinite;
+}
+
+
+.team-hero::after {
+    content: "";
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: rgba(10,37,64,0.06);
+    filter: blur(70px);
+    bottom: -200px;
+    right: -120px;
+    animation: heroFloat 10s ease-in-out infinite reverse;
+}
+
+
+@keyframes heroFloat {
+
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(25px) scale(1.08);
+    }
+}
+
+
+/* Hero content */
+
+.team-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 850px;
+    margin: auto;
+}
+
+
+.team-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    margin-bottom: 22px;
+
+    border-radius: 50px;
+
+    background: rgba(0,166,166,0.08);
+    border: 1px solid rgba(0,166,166,0.14);
+
+    color: var(--team-teal-dark);
+
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.7px;
+}
+
+
+.team-eyebrow::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--team-teal);
+
+    box-shadow:
+        0 0 0 5px rgba(0,166,166,0.10);
+}
+
+
+.team-hero h1 {
+    margin: 0 0 22px;
+
+    color: var(--team-dark);
+
+    font-size: clamp(
+        2.8rem,
+        6vw,
+        5rem
+    );
+
+    line-height: 1.05;
+    letter-spacing: -2.5px;
+    font-weight: 800;
+}
+
+
+.team-hero h1 span {
+    background: linear-gradient(
+        135deg,
+        var(--team-teal),
+        #007b7b
+    );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+
+.team-hero-description {
+    max-width: 650px;
+    margin: auto;
+
+    color: var(--team-muted);
+
+    font-size: 1.15rem;
+    line-height: 1.8;
+}
+
+
+/* =========================================================
+   TEAM INTRO
+   ========================================================= */
+
+.team-intro {
+    padding: 75px 0 35px;
+    text-align: center;
+}
+
+
+.team-intro-label {
+    color: var(--team-teal);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    margin-bottom: 10px;
+}
+
+
+.team-intro h2 {
+    color: var(--team-dark);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 15px;
+}
+
+
+.team-intro p {
+    max-width: 650px;
+    margin: auto;
+    color: var(--team-muted);
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   TEAM GRID
+   ========================================================= */
+
+.team-grid {
+    padding-bottom: 100px;
+}
+
+
+.team-card-column {
+    margin-bottom: 30px;
+}
+
+
+/* =========================================================
+   TEAM CARD
+   ========================================================= */
+
+.team-card {
+    position: relative;
+
+    height: 100%;
+
+    padding: 35px 28px 30px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff 0%,
+            #fbfdfe 100%
+        );
+
+    border: 1px solid var(--team-border);
+
+    border-radius: 28px;
+
+    box-shadow:
+        0 8px 30px rgba(10,37,64,0.035);
+
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+
+    transition:
+        transform 0.45s cubic-bezier(
+            0.165,
+            0.84,
+            0.44,
+            1
+        ),
+        box-shadow 0.45s ease,
+        border-color 0.45s ease;
+}
+
+
+/* Top decorative line */
+
+.team-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 50%;
+
+    width: 0;
+    height: 3px;
+
+    background: linear-gradient(
+        90deg,
+        var(--team-teal),
+        #007b7b
+    );
+
+    transform: translateX(-50%);
+
+    transition: width 0.45s ease;
+}
+
+
+.team-card:hover::before {
+    width: 100%;
+}
+
+
+.team-card:hover {
+    transform: translateY(-12px);
+
+    border-color:
+        rgba(0,166,166,0.18);
+
+    box-shadow:
+        0 25px 60px rgba(10,37,64,0.10);
+}
+
+
+/* =========================================================
+   PHOTO
+   ========================================================= */
+
+.team-photo-wrapper {
+    position: relative;
+
+    width: 190px;
+    height: 190px;
+
+    margin: 0 auto 25px;
+
+    border-radius: 50%;
+
+    padding: 7px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--team-teal),
+            var(--team-dark)
+        );
+
+    box-shadow:
+        0 12px 35px rgba(10,37,64,0.12);
+
+    transition:
+        transform 0.5s ease,
+        box-shadow 0.5s ease;
+}
+
+
+.team-card:hover .team-photo-wrapper {
+    transform: translateY(-5px) scale(1.03);
+
+    box-shadow:
+        0 20px 45px rgba(0,166,166,0.20);
+}
+
+
+.team-photo-wrapper::after {
+    content: "";
+
+    position: absolute;
+
+    inset: -7px;
+
+    border-radius: 50%;
+
+    border: 1px solid
+        rgba(0,166,166,0.18);
+
+    pointer-events: none;
+}
+
+
+.team-photo {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    object-position: top center;
+
+    background: #ffffff;
+
+    border: 5px solid #ffffff;
+
+    transition:
+        transform 0.6s
+        cubic-bezier(
+            0.165,
+            0.84,
+            0.44,
+            1
+        );
+}
+
+
+.team-card:hover .team-photo {
+    transform: scale(1.06);
+}
+
+
+/* =========================================================
+   PLACEHOLDER AVATAR
+   ========================================================= */
+
+.team-photo-placeholder {
+    width: 100%;
+    height: 100%;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--team-teal),
+            #006e73
+        );
+
+    color: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 3.2rem;
+
+    font-weight: 800;
+
+    border: 5px solid #ffffff;
+
+    box-shadow:
+        inset 0 0 30px
+        rgba(0,0,0,0.08);
+}
+
+
+/* =========================================================
+   NAME
+   ========================================================= */
+
+.team-name {
+    color: var(--team-dark);
+
+    font-size: 1.35rem;
+
+    font-weight: 800;
+
+    letter-spacing: -0.4px;
+
+    margin-bottom: 8px;
+}
+
+
+/* =========================================================
+   ROLE
+   ========================================================= */
+
+.team-role {
+    display: inline-block;
+
+    align-self: center;
+
+    margin: 0 auto 20px;
+
+    padding: 7px 13px;
+
+    border-radius: 50px;
+
+    background:
+        rgba(0,166,166,0.08);
+
+    color: var(--team-teal-dark);
+
+    font-size: 0.68rem;
+
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1.2px;
+}
+
+
+/* =========================================================
+   BIO
+   ========================================================= */
+
+.team-bio {
+    color: var(--team-muted);
+
+    font-size: 0.94rem;
+
+    line-height: 1.75;
+
+    margin-bottom: 25px;
+
+    flex-grow: 1;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.team-divider {
+    width: 45px;
+    height: 3px;
+
+    margin: 0 auto 22px;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--team-teal),
+            #007b7b
+        );
+}
+
+
+/* =========================================================
+   SOCIALS
+   ========================================================= */
+
+.team-socials {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-top: auto;
+}
+
+
+.team-socials a {
+    position: relative;
+
+    width: 43px;
+    height: 43px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        #f4f7f9;
+
+    color: #647484;
+
+    border: 1px solid
+        rgba(10,37,64,0.06);
+
+    text-decoration: none;
+
+    transition:
+        all 0.3s ease;
+}
+
+
+.team-socials a:hover {
+    background:
+        var(--team-teal);
+
+    color: #ffffff;
+
+    border-color:
+        var(--team-teal);
+
+    transform:
+        translateY(-4px);
+
+    box-shadow:
+        0 10px 20px
+        rgba(0,166,166,0.20);
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.team-empty {
+    max-width: 600px;
+
+    margin: 40px auto 100px;
+
+    padding: 65px 30px;
+
+    text-align: center;
+
+    background:
+        rgba(255,255,255,0.8);
+
+    border:
+        1px solid var(--team-border);
+
+    border-radius: 28px;
+
+    box-shadow:
+        0 15px 45px
+        rgba(10,37,64,0.05);
+}
+
+
+.team-empty-icon {
+    width: 80px;
+    height: 80px;
+
+    margin: 0 auto 25px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(0,166,166,0.08);
+
+    color:
+        var(--team-teal);
+
+    font-size: 2rem;
+}
+
+
+.team-empty h4 {
+    color: var(--team-dark);
+
+    font-weight: 800;
+
+    margin-bottom: 10px;
+}
+
+
+.team-empty p {
+    color: var(--team-muted);
+
+    margin: 0;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .team-hero {
+        padding: 85px 20px 75px;
+    }
+
+    .team-hero h1 {
+        letter-spacing: -1.5px;
+    }
+
+    .team-hero-description {
+        font-size: 1rem;
+    }
+
+    .team-intro {
+        padding-top: 55px;
+    }
+
+    .team-photo-wrapper {
+        width: 170px;
+        height: 170px;
+    }
+
+    .team-card {
+        padding:
+            30px 22px 27px;
+    }
+}
+
+
+@media (max-width: 480px) {
+
+    .team-hero {
+        padding: 70px 15px 65px;
+    }
+
+    .team-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .team-photo-wrapper {
+        width: 155px;
+        height: 155px;
+    }
+
+    .team-name {
+        font-size: 1.2rem;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+    }
+}
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="team-page">
+
+
+    <!-- =====================================================
+         HERO
+    ====================================================== -->
+
+    <section class="team-hero">
+
+        <div class="team-hero-content">
+
+            <div class="team-eyebrow">
+                The people behind {{ config.site_name|default:"Edusphere" }}
+            </div>
+
+            <h1>
+                Meet the
+                <span>People</span>
+                Behind Our Vision
+            </h1>
+
+            <p class="team-hero-description">
+                The passionate people building, supporting and
+                continuously improving
+                <strong>
+                    {{ config.site_name|default:"Edusphere" }}
+                </strong>
+                to make education smarter, simpler and more connected.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         INTRODUCTION
+    ====================================================== -->
+
+    <section class="team-intro">
+
+        <div class="container">
+
+            <div class="team-intro-label">
+                Our People
+            </div>
+
+            <h2>
+                A Team Driven by Purpose
+            </h2>
+
+            <p>
+                Great products are built by great people.
+                Meet the individuals bringing expertise,
+                creativity and dedication to our mission.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         TEAM MEMBERS
+    ====================================================== -->
+
+    <section class="container team-grid">
+
+        {% if team_members %}
+
+            <div class="row g-4">
+
+                {% for member in team_members %}
+
+                    <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 team-card-column">
+
+                        <article class="team-card">
+
+
+                            <!-- PHOTO -->
+
+                            <div class="team-photo-wrapper">
+
+                                {% if member.photo %}
+
+                                    <img
+                                        src="{{ member.photo.url }}"
+                                        alt="{{ member.name }}"
+                                        class="team-photo"
+                                        loading="lazy"
+                                    >
+
+                                {% else %}
+
+                                    <div
+                                        class="team-photo-placeholder"
+                                        aria-label="{{ member.name }}"
+                                    >
+                                        {{ member.name|slice:":1"|upper }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+
+                            <!-- NAME -->
+
+                            <h3 class="team-name">
+                                {{ member.name }}
+                            </h3>
+
+
+
+                            <!-- ROLE -->
+
+                            {% if member.role %}
+
+                                <div class="team-role">
+                                    {{ member.role }}
+                                </div>
+
+                            {% endif %}
+
+
+
+                            <!-- DIVIDER -->
+
+                            <div class="team-divider"></div>
+
+
+
+                            <!-- BIO -->
+
+                            {% if member.bio %}
+
+                                <p class="team-bio">
+                                    {{ member.bio }}
+                                </p>
+
+                            {% else %}
+
+                                <p class="team-bio">
+                                    Dedicated to helping build
+                                    better experiences through
+                                    innovation and collaboration.
+                                </p>
+
+                            {% endif %}
+
+
+
+                            <!-- SOCIAL LINKS -->
+
+                            {% if member.linkedin_url or member.twitter_url %}
+
+                                <div class="team-socials">
+
+                                    {% if member.linkedin_url %}
+
+                                        <a
+                                            href="{{ member.linkedin_url }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="View {{ member.name }} on LinkedIn"
+                                            title="LinkedIn"
+                                        >
+                                            <i class="fab fa-linkedin-in"></i>
+                                        </a>
+
+                                    {% endif %}
+
+
+                                    {% if member.twitter_url %}
+
+                                        <a
+                                            href="{{ member.twitter_url }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="View {{ member.name }} on X"
+                                            title="X"
+                                        >
+                                            <i class="fab fa-x-twitter"></i>
+                                        </a>
+
+                                    {% endif %}
+
+                                </div>
+
+                            {% endif %}
+
+
+                        </article>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+
+            <!-- =================================================
+                 EMPTY STATE
+            ================================================== -->
+
+            <div class="team-empty">
+
+                <div class="team-empty-icon">
+
+                    <i class="fas fa-users"></i>
+
+                </div>
+
+                <h4>
+                    Profiles Coming Soon
+                </h4>
+
+                <p>
+                    We are currently updating our team directory.
+                    Please check back soon to meet the people
+                    behind {{ config.site_name|default:"Edusphere" }}.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'timetable/base_setup.html' %}
+
+{% block setup_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Review & Generate</h4>
+    <p class="text-muted small mb-0">Verify your parameters before starting the auto-scheduler.</p>
+</div>
+
+<!-- Pre-Flight Checklist Summary -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Configuration Status</h6>
+                {% if settings %}
+                    <h3 class="mb-1 text-success"><i class="fas fa-check-circle me-2"></i>Active</h3>
+                    <p class="small text-muted mb-0">{{ settings.name }} ({{ settings.periods_per_day }} periods/day)</p>
+                {% else %}
+                    <h3 class="mb-1 text-danger"><i class="fas fa-times-circle me-2"></i>Missing</h3>
+                    <p class="small text-muted mb-0">Please complete General Settings.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Available Rooms</h6>
+                <h3 class="mb-1">{{ rooms_count }}</h3>
+                <p class="small text-muted mb-0">Active rooms mapped for scheduling.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Total Subjects</h6>
+                <h3 class="mb-1">{{ subjects_count }}</h3>
+                <p class="small text-muted mb-0">Total subjects across all classes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Readiness Alert & Trigger -->
+<div class="card border-0 shadow-sm bg-light">
+    <div class="card-body text-center p-5">
+        {% if is_ready %}
+            <i class="fas fa-rocket fa-3x text-primary mb-3"></i>
+            <h5 class="fw-bold">All Systems Go</h5>
+            <p class="text-muted mb-4">Your constraints, rooms, and configurations are set. The generation algorithm will attempt to place all periods without conflicts.</p>
+
+            <form method="post" onsubmit="return confirm('This will clear any existing draft timetables and generate a new one. Proceed?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-lg shadow px-5">
+                    <i class="fas fa-magic me-2"></i>Generate Timetable
+                </button>
+            </form>
+        {% else %}
+            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+            <h5 class="fw-bold text-danger">Action Required</h5>
+            <p class="text-muted mb-3">The timetable engine cannot start until the following issues are resolved:</p>
+            <ul class="list-unstyled text-start d-inline-block text-danger bg-white p-3 rounded border border-danger">
+                {% for error in readiness_errors %}
+                    <li><i class="fas fa-times me-2"></i>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

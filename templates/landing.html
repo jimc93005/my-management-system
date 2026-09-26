@@ -285,7 +285,7 @@
                     <a href="{% url 'schools_manager:pricing' %}" class="text-decoration-none text-secondary fw-semibold">
                         <i class="bi bi-tags-fill me-1"></i> Pricing
                     </a>
-                    <a href="{% url 'register_school' %}" class="text-decoration-none text-secondary fw-semibold">
+                    <a href="{% url 'schools_manager:register_school' %}" class="text-decoration-none text-secondary fw-semibold">
                         Apply Now
                     </a>
 
@@ -320,7 +320,7 @@
                 {{ config.hero_subtitle|default:"Empower thousands of academic institutions with completely separated, automated school management systems." }}
             </p>
             <div class="hero-cta-wrap mt-4 d-flex justify-content-center gap-3 flex-column flex-sm-row">
-                <a href="{% url 'register_school' %}" class="btn btn-primary-saas btn-lg d-inline-flex align-items-center justify-content-center gap-2">
+                <a href="{% url 'schools_manager:register_school' %}" class="btn btn-primary-saas btn-lg d-inline-flex align-items-center justify-content-center gap-2">
                     {{ config.primary_cta_text|default:"Register Your School" }} <i class="bi bi-arrow-right"></i>
                 </a>
             </div>

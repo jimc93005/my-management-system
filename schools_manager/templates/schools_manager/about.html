@@ -1,0 +1,58 @@
+{# schools_manager/templates/schools_manager/about.html #}
+{% extends 'schools_manager/base_public.html' %}
+
+{% block title %}About Us | {{ config.site_name|default:"Edusphere" }}{% endblock %}
+
+{% block extra_css %}
+    .about-hero {
+        padding: 70px 0 40px;
+        text-align: center;
+    }
+    .about-hero h1 {
+        font-size: clamp(1.9rem, 4vw, 2.75rem);
+        color: var(--dark-blue);
+    }
+    .mission-card {
+        background: linear-gradient(45deg, var(--primary-teal), #00A6A6);
+        color: #ffffff;
+        border-radius: 20px;
+        padding: clamp(1.75rem, 4vw, 3rem);
+        text-align: center;
+        font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    .history-block {
+        max-width: 720px;
+        margin: 0 auto;
+        color: rgba(10,37,64,0.75);
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+{% endblock %}
+
+{% block content %}
+    <section class="about-hero">
+        <div class="container">
+            <h1 class="fw-bold">{{ company.headline|default:"Empowering Education Through Technology" }}</h1>
+        </div>
+    </section>
+
+    {% if company.mission_statement %}
+    <section class="container pb-5" style="max-width: 800px;">
+        <div class="mission-card">
+            {{ company.mission_statement }}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="container pb-5">
+        <div class="history-block">
+            {% if company.company_history %}
+                {{ company.company_history|linebreaksbr }}
+            {% else %}
+                <p class="text-center text-muted">Our story is coming soon.</p>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

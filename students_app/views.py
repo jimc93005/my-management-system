@@ -25,6 +25,8 @@ from .forms import GradingSystemForm, GradeBoundaryForm, ClassLevelForm
 from .models import SubjectDepartment
 from .models import CalendarEvent
 from .forms import SubjectDepartmentForm
+from collections import defaultdict
+from timetable.models import Timetable
 
 
 
@@ -1265,6 +1267,7 @@ def dashboard(request):
 
     # --- Notifications ---
     unread_notifications = StaffNotification.objects.filter(recipient=user, is_read=False)
+    current_timetable = Timetable.objects.last()
 
     # Base Context
     context = {
@@ -1275,6 +1278,7 @@ def dashboard(request):
         'is_teacher': is_teacher,
         'unread_notifications': unread_notifications,
         'unread_count': unread_notifications.count(),
+        'timetable': current_timetable,
     }
 
     # -----------------------------------------------------
@@ -1677,12 +1681,16 @@ def scholastic_report_pdf(request, class_level, academic_year, term):
 
 
 @login_required(login_url='login')
+# Make sure to import your model at the top of views.py
+# from .models import ClassLevel
+
 def scholastic_selector(request):
     if not request.user.has_perm('students_app.change_students'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " access this operation. Please contact"
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
+
     if request.method == 'POST':
         # Grab the choices the Headteacher made in the form
         class_level = request.POST.get('class_level')
@@ -1693,9 +1701,11 @@ def scholastic_selector(request):
         return redirect('students_app:scholastic_report_pdf', class_level=class_level, academic_year=academic_year,
                         term=term)
 
-    # If they just clicked the button on the dashboard, show them the form
-    return render(request, 'students_app/scholastic_selector.html')
+    # Fetch all dynamic classes from the database
+    dynamic_classes = ClassLevel.objects.all()
 
+    # Pass the classes to the template
+    return render(request, 'students_app/scholastic_selector.html', {'classes': dynamic_classes})
 
 # aluminai views
 @login_required()
@@ -1849,12 +1859,16 @@ def student_attendance_history(request, student_id):
 
 
 # STATISTICS VIEW
+
+
 @login_required()
 def academic_statistics(request):
     if not request.user.has_perm('students_app.view_subject'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(
+            request,
+            "🔒 Oops! You don't have permission to access this operation. "
+            "Please contact the Headteacher if you need this feature."
+        )
         return redirect('students_app:dashboard')
 
     classes = ClassLevel.objects.all()
@@ -1871,28 +1885,32 @@ def academic_statistics(request):
     }
 
     if selected_class and selected_term:
-        # 1. DEMOGRAPHICS
-        students = Students.objects.filter(class_level_id=selected_class, status='Active')
-        total_students = students.count()
-        total_boys = students.filter(gender='Male').count()
-        total_girls = students.filter(gender='Female').count()
+        # Get the selected ClassLevel instance to extract its exact string name
+        class_obj = get_object_or_404(ClassLevel, id=selected_class)
+        target_class_name = class_obj.class_level
 
-        # 2. GRADES DATA
-        # 🚀 SPEED UPGRADE: select_related fetches all student and subject text names in ONE trip!
+        # 1. HISTORICAL GRADES FETCH
+        # Query grades matching the exact class snapshot, term, and year
         grades = Grade.objects.filter(
-            student__in=students,
+            class_level_snapshot=target_class_name,
             term=selected_term,
-            academic_year=selected_year
+            academic_year=selected_year,
+            student__status='Active'
         ).select_related('subject', 'student')
+
+        # 2. DEMOGRAPHICS (Derived from historical exam takers)
+        historical_students = {grade.student for grade in grades}
+        total_students = len(historical_students)
+        total_boys = sum(1 for s in historical_students if s.gender == 'Male')
+        total_girls = sum(1 for s in historical_students if s.gender == 'Female')
 
         def calc_pass_rate(total, passed):
             return round((passed / total * 100), 1) if total > 0 else 0
 
         total_exams = grades.count()
-        passed_exams = grades.filter(score__gte=50).count()
+        passed_exams = sum(1 for g in grades if g.score >= 50)
         overall_pass_rate = calc_pass_rate(total_exams, passed_exams)
 
-        # In memory filtering is faster since we already fetched `grades`
         boys_total = sum(1 for g in grades if g.student.gender == 'Male')
         boys_passed = sum(1 for g in grades if g.student.gender == 'Male' and g.score >= 50)
         boys_pass_rate = calc_pass_rate(boys_total, boys_passed)
@@ -1902,57 +1920,47 @@ def academic_statistics(request):
         girls_pass_rate = calc_pass_rate(girls_total, girls_passed)
 
         # 3. SUBJECT PERFORMANCE (Best and Worst)
-        # THE FIX: We group the scores in Python to force Django to give us the text names!
-        from collections import defaultdict
-
         subject_totals = defaultdict(list)
         for grade in grades:
-            # By wrapping it in str(), we FORCE Django to use the text Name Tag instead of the ID number
             text_name = str(grade.subject.name)
             subject_totals[text_name].append(grade.score)
 
-        # Calculate the averages
         subject_stats = []
         for text_name, scores in subject_totals.items():
             avg = sum(scores) / len(scores)
             subject_stats.append({
-                'subject__name': text_name,  # We keep this key name so your HTML doesn't need to change!
+                'subject__name': text_name,
                 'avg_score': avg
             })
 
-        # Sort the list from highest average to lowest
         subject_stats.sort(key=lambda x: x['avg_score'], reverse=True)
 
-        # Assign best and worst
         best_subject = subject_stats[0] if subject_stats else None
         worst_subject = subject_stats[-1] if subject_stats else None
 
-        # Give the text names to the chart!
         chart_labels = [sub['subject__name'] for sub in subject_stats]
         chart_data = [round(sub['avg_score'], 1) for sub in subject_stats]
-        # 4. OVERALL PROGRESS (Line Graph)
+
+        # 4. OVERALL PROGRESS (Filtered by Class Snapshot)
         progress_data = []
-        for term in [1, 2, 3]:
+        for term_num in [1, 2, 3]:
             term_avg = Grade.objects.filter(
-                student__in=students, academic_year=selected_year, term=term
+                class_level_snapshot=target_class_name,
+                academic_year=selected_year,
+                term=term_num,
+                student__status='Active'
             ).aggregate(Avg('score'))['score__avg']
             progress_data.append(round(term_avg, 1) if term_avg else 0)
 
-        # ==========================================
         # 5. GRADE DISTRIBUTION BREAKDOWN
-        # ==========================================
-
-        class_obj = get_object_or_404(ClassLevel, id=selected_class)
-        class_name = class_obj.class_level.lower()
-
-        if '1' in class_name or '2' in class_name:
+        class_name_lower = target_class_name.lower()
+        if '1' in class_name_lower or '2' in class_name_lower:
             remark_headers = ['A', 'B', 'C', 'D', 'F']
         else:
             remark_headers = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
         subject_breakdown = {}
 
-        # Loop through every grade and tally the remarks
         for grade in grades:
             sub_name = grade.subject.name
             remark = str(grade.get_remark())
@@ -1967,7 +1975,7 @@ def academic_statistics(request):
         for sub, counts in subject_breakdown.items():
             breakdown_list.append({
                 'subject': sub,
-                'counts': [counts[hdr] for hdr in remark_headers]
+                'counts': [counts.get(hdr, 0) for hdr in remark_headers]
             })
 
         context.update({
@@ -1988,6 +1996,11 @@ def academic_statistics(request):
         })
 
     return render(request, 'students_app/statistics.html', context)
+
+
+
+
+
 
 @login_required()
 def calendar_of_events(request):
@@ -2518,8 +2531,17 @@ def document_manager(request):
 
             folder_form = FolderForm(request.POST)
             if folder_form.is_valid():
-                folder_form.save()
-                messages.success(request, "Folder created successfully!")
+                # Extract the intended folder name from the validated form
+                folder_name = folder_form.cleaned_data.get('name')
+
+                # Check if a folder with this name already exists
+                # This prevents identical folders from being created on a double-click
+                if Folder.objects.filter(name=folder_name).exists():
+                    messages.info(request, f"Folder '{folder_name}' already exists.")
+                else:
+                    folder_form.save()
+                    messages.success(request, "Folder created successfully!")
+
                 return redirect('students_app:document_manager')
 
         # 2. BULK UPLOAD DOCUMENTS
@@ -2613,6 +2635,7 @@ def document_manager(request):
                 messages.error(request, "The requested folder could not be found.")
 
             return redirect('students_app:document_manager')
+
     # GET REQUEST LOAD
     folder_form = FolderForm()
     document_form = DocumentForm()
@@ -2640,8 +2663,6 @@ def document_manager(request):
         'remaining_storage': remaining_storage,
     }
     return render(request, 'students_app/document_manager.html', context)
-
-
 
 
 
@@ -3249,3 +3270,154 @@ def announcement_detail(request, pk):
 
 
 
+# HEADTEACHERS LIST
+# schools_manager/views.py
+
+from django.db.models import Avg
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from .models import Grade, Students, ClassLevel, SchoolProfile
+
+
+def get_top_performers(class_level_snapshot, academic_year, term, limit=5):
+    """
+    Returns the top N students by average score for a given class snapshot/term/year.
+    Historically accurate because class_level_snapshot is frozen at grading time —
+    a later promotion never changes what this returns for a past term.
+    """
+    grades_qs = Grade.objects.filter(
+        class_level_snapshot=class_level_snapshot,
+        academic_year=academic_year,
+        term=term
+    )
+    student_ids = grades_qs.values_list('student_id', flat=True).distinct()
+
+    rankings = []
+    for student_id in student_ids:
+        student_grades = grades_qs.filter(student_id=student_id)
+        avg = student_grades.aggregate(avg=Avg('score'))['avg'] or 0
+        rankings.append({
+            'student_id': student_id,
+            'average': round(avg, 2),
+            'subject_count': student_grades.count(),
+        })
+
+    rankings.sort(key=lambda x: x['average'], reverse=True)
+
+    ranked = []
+    last_avg = None
+    position = 0
+    for index, r in enumerate(rankings):
+        if r['average'] != last_avg:
+            position = index + 1
+        last_avg = r['average']
+        r['position'] = position
+        ranked.append(r)
+
+    top = ranked[:limit]
+
+    student_map = {s.id: s for s in Students.objects.filter(id__in=[r['student_id'] for r in top])}
+    for r in top:
+        r['student'] = student_map.get(r['student_id'])
+
+    return top
+
+
+def _build_headteachers_list_context(academic_year, term):
+    """Shared between the browsable HTML view and the PDF view, so they never drift apart."""
+    class_results = []
+
+    if academic_year and term:
+        snapshots = Grade.objects.filter(
+            academic_year=academic_year, term=term
+        ).values_list('class_level_snapshot', flat=True).distinct()
+
+        for snapshot in snapshots:
+            top_students = get_top_performers(snapshot, academic_year, term, limit=5)
+            if top_students:  # skip classes with no grades recorded this term
+                class_results.append({'class_name': snapshot, 'top_students': top_students})
+
+        order_map = {cl.class_level: cl.level_order for cl in ClassLevel.objects.all()}
+        class_results.sort(key=lambda c: order_map.get(c['class_name'], 999))
+
+    return class_results
+
+
+@login_required()
+def headteachers_list_view(request):
+    academic_year = request.GET.get('academic_year')
+    term = request.GET.get('term')
+
+    available_years = Grade.objects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
+    available_terms = Grade.TERM_CHOICES
+
+    class_results = _build_headteachers_list_context(academic_year, term)
+
+    context = {
+        'academic_year': academic_year,
+        'term': term,
+        'class_results': class_results,
+        'available_years': available_years,
+        'available_terms': available_terms,
+    }
+    return render(request, 'students_app/headteachers_list.html', context)
+
+
+
+
+
+import pathlib
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+
+
+# Make sure your existing imports for SchoolProfile, Grade, and _build_headteachers_list_context are here
+@login_required()
+def headteachers_list_pdf_view(request):
+    academic_year = request.GET.get('academic_year')
+    term = request.GET.get('term')
+
+    class_results = _build_headteachers_list_context(academic_year, term)
+    school_profile = SchoolProfile.objects.first()
+
+    # --- HELPER FUNCTION FOR LOCAL FILES ---
+    def get_image_uri(image_field):
+        """Safely fetches the absolute local file path for WeasyPrint"""
+        if image_field and hasattr(image_field, 'path'):
+            try:
+                # Generates a direct file:/// path bypassing the network
+                return pathlib.Path(image_field.path).as_uri()
+            except NotImplementedError:
+                return image_field.url
+        return None
+
+    # Fetch the URIs using the helper instead of build_absolute_uri
+    school_logo_uri = get_image_uri(school_profile.logo if school_profile else None)
+    head_sig_uri = get_image_uri(school_profile.headteacher_signature if school_profile else None)
+
+    term_display = dict(Grade.TERM_CHOICES).get(term, term)
+
+    html_string = render_to_string('students_app/headteachers_list_pdf.html', {
+        'school_profile': school_profile,
+        'school_logo_uri': school_logo_uri,
+        'head_sig_uri': head_sig_uri,
+        'academic_year': academic_year,
+        'term': term_display,
+        'class_results': class_results,
+    })
+
+    # base_url is still useful here for static CSS files if you have any
+    pdf_file = HTML(
+        string=html_string,
+        base_url=request.build_absolute_uri('/')
+    ).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    filename = f"headteachers-list-{academic_year}-term{term}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response

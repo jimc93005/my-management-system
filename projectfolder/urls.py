@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.static import serve
+from django.urls import path, include
+from schools_manager.views import subscription_expired_view
 
 # project urls.py
 from django.conf import settings
@@ -26,6 +28,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
     path('', include('students_app.urls')),
+    path('timetable/', include('timetable.urls')),
+    path('subscription-expired/', subscription_expired_view, name='subscription_expired'),
 ]
 
 # Serve media files in development and production

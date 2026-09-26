@@ -26,10 +26,13 @@
                             <label class="font-weight-bold text-dark">Class Level</label>
                             <select name="class_level" class="form-control" required>
                                 <option value="" disabled selected>Select a Class...</option>
-                                <option value="1">Form 1</option>
-                                <option value="2">Form 2</option>
-                                <option value="3">Form 3</option>
-                                <option value="4">Form 4</option>
+
+                                <!-- Loop through the dynamic classes -->
+                                {% for cls in classes %}
+                                    <!-- Use cls.id for the value, and cls.class_level for the display name -->
+                                    <option value="{{ cls.class_level }}">{{ cls.class_level }}</option>
+                                {% endfor %}
+
                             </select>
                         </div>
 

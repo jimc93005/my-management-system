@@ -1,0 +1,12 @@
+{% extends 'emails/email_base.html' %}
+{% block content %}
+    <h2 style="color: #ea580c;">Payment Proof Rejected</h2>
+    <p>Hello,</p>
+    <p>We reviewed your recent renewal payment submission for <strong>{{ renewal.get_billing_cycle_display }}</strong>.</p>
+    <p>Unfortunately, your proof of payment could not be accepted for the following reason:</p>
+    <blockquote style="border-left: 4px solid #ea580c; padding-left: 15px; margin-left: 0; font-style: italic;">
+        {{ renewal.admin_notes }}
+    </blockquote>
+    <p>Please visit your portal to upload a clear receipt or contact our support team for assistance.</p>
+    <a href="http://{{ renewal.school.schema_name }}.threeangels.cloud/subscription-expired/" class="btn">Try Again</a>
+{% endblock %}

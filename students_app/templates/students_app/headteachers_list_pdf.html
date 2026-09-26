@@ -1,0 +1,117 @@
+{# schools_manager/templates/schools_manager/pdf/headteachers_list_pdf.html #}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: A4; margin: 18mm 14mm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #333; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #1a436d;
+            --secondary: #4a7ab5;
+            --light-blue: #f2f7fb;
+            --border-color: #d1d9e6;
+        }
+
+        #watermark {
+            position: fixed; top: 25%; left: 10%; width: 80%; opacity: 0.06; z-index: -1000; text-align: center;
+        }
+        #watermark img { width: 400px; }
+
+        .header-container { width: 100%; border-bottom: 2px solid var(--primary); padding-bottom: 4px; margin-bottom: 12pt; }
+        .header-table { width: 100%; border: none; }
+        .header-table td { border: none; vertical-align: middle; padding: 0; }
+        .logo-cell { width: 70pt; }
+        .logo-img { height: 55pt; width: auto; }
+        .school-info { text-align: center; }
+        .school-info h1 { font-size: 20pt; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .motto { font-style: italic; font-size: 9pt; color: #555; margin: 1pt 0; }
+
+        .list-title {
+            text-align: center; font-size: 15pt; font-weight: bold; color: var(--primary);
+            text-transform: uppercase; margin: 6pt 0 14pt; border-bottom: 1px solid var(--border-color); padding-bottom: 8pt;
+        }
+        .list-subtitle { text-align: center; font-size: 10pt; color: #555; margin-top: -10pt; margin-bottom: 14pt; }
+
+        .class-section { margin-bottom: 16pt; page-break-inside: avoid; }
+        .class-section h3 {
+            font-size: 12pt; color: var(--primary); margin: 0 0 6pt;
+            text-transform: uppercase; border-left: 5px solid var(--primary); padding-left: 8pt;
+        }
+        .results-table { width: 100%; border-collapse: collapse; }
+        .results-table th {
+            background-color: var(--primary); color: white; text-transform: uppercase;
+            font-size: 9pt; padding: 5pt; text-align: left; border: 1px solid var(--primary);
+        }
+        .results-table td { border: 1px solid var(--border-color); padding: 5pt 8pt; font-size: 10pt; }
+        .results-table tr:nth-child(even) { background-color: #fafafa; }
+        .rank-cell { font-weight: bold; text-align: center; color: var(--primary); }
+
+        .footer-table { width: 100%; margin-top: 24pt; border: none; page-break-inside: avoid; }
+        .footer-table td { border: none; width: 50%; text-align: center; vertical-align: bottom; }
+        .signature-line { border-top: 1px solid #000; width: 60%; margin: 0 auto 3pt auto; }
+        .signature-box { height: 35pt; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 2pt; }
+        .signature-img { max-height: 30pt; max-width: 120pt; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <div id="watermark">
+        {% if school_logo_uri %}<img src="{{ school_logo_uri }}">{% endif %}
+    </div>
+
+    <div class="header-container">
+        <table class="header-table">
+            <tr>
+                <td class="logo-cell">
+                    {% if school_logo_uri %}<img src="{{ school_logo_uri }}" class="logo-img">{% endif %}
+                </td>
+                <td class="school-info">
+                    <h1>{{ school_profile.name }}</h1>
+                    {% if school_profile.motto %}<p class="motto">"{{ school_profile.motto }}"</p>{% endif %}
+                </td>
+                <td class="logo-cell"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="list-title">Headteacher's List</div>
+    <div class="list-subtitle">Academic Year {{ academic_year }} &mdash; {{ term }}</div>
+
+    {% for class_data in class_results %}
+        <div class="class-section">
+            <h3>{{ class_data.class_name }}</h3>
+            <table class="results-table">
+                <thead>
+                    <tr><th width="15%">Rank</th><th width="60%">Student Name</th><th width="25%">Average Score</th></tr>
+                </thead>
+                <tbody>
+                    {% for entry in class_data.top_students %}
+                        <tr>
+                            <td class="rank-cell">{{ entry.position }}</td>
+                            <td>{{ entry.student.first_name }} {{ entry.student.surname }}</td>
+                            <td>{{ entry.average }}%</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+
+    <table class="footer-table">
+        <tr>
+            <td>
+                <div class="signature-box">
+                    {% if head_sig_uri %}<img src="{{ head_sig_uri }}" class="signature-img">{% endif %}
+                </div>
+                <div class="signature-line"></div>
+                <strong style="font-size: 9pt;">Headteacher</strong><br>
+                <small style="font-size: 8pt;">{{ school_profile.headteacher_name|default:"" }}</small>
+            </td>
+            <td></td>
+        </tr>
+    </table>
+
+</body>
+</html>

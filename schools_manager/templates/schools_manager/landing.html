@@ -1,0 +1,745 @@
+{# schools_manager/templates/schools_manager/landing.html #}
+{% extends 'schools_manager/base_public.html' %}
+
+{% block title %}{{ config.site_name|default:"Edusphere" }} | Smart School Management{% endblock %}
+
+{% block extra_css %}
+    <style>
+        :root {
+            --primary-teal: #00A6A6;
+            --primary-teal-dark: #008080;
+            --dark-blue: #0a2540;
+            --dark-blue-hover: #07192c;
+            --light-bg: #f8fafc;
+            --text-muted: #64748b;
+            --card-border: rgba(10, 37, 64, 0.08);
+            --card-shadow: 0 12px 30px -10px rgba(10, 37, 64, 0.08);
+            --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- Hero Image Slider --- */
+        #heroCarousel {
+            width: 100%;
+            position: relative;
+            background-color: var(--dark-blue);
+        }
+
+        #heroCarousel .carousel-inner {
+            width: 100%;
+        }
+
+        #heroCarousel .carousel-item {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #heroCarousel .carousel-item img {
+            display: block;
+            width: 100%;
+            height: 72vh;
+            min-height: 480px;
+            max-height: 850px;
+            object-fit: contain;
+            object-position: center;
+            transition: transform 6s ease-out;
+        }
+
+        #heroCarousel .carousel-item.active img {
+            transform: scale(1.03);
+        }
+
+        /* Navigation Arrows */
+        #heroCarousel .carousel-control-prev,
+        #heroCarousel .carousel-control-next {
+            width: 5%;
+            z-index: 5;
+            opacity: 0.85;
+            transition: var(--transition-smooth);
+        }
+
+        #heroCarousel .carousel-control-prev:hover,
+        #heroCarousel .carousel-control-next:hover {
+            opacity: 1;
+        }
+
+        #heroCarousel .carousel-control-prev-icon,
+        #heroCarousel .carousel-control-next-icon {
+            width: 2.8rem;
+            height: 2.8rem;
+            background-color: rgba(10, 37, 64, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-size: 45%;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: var(--transition-smooth);
+        }
+
+        #heroCarousel .carousel-control-prev:hover .carousel-control-prev-icon,
+        #heroCarousel .carousel-control-next:hover .carousel-control-next-icon {
+            background-color: var(--primary-teal);
+            transform: scale(1.1);
+        }
+
+        /* UNIMA-Style Caption Box */
+        .hero-caption-box {
+            position: absolute;
+            bottom: 40px;
+            left: 5%;
+            background: rgba(10, 37, 64, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #ffffff;
+            padding: 18px 28px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            line-height: 1.5;
+            z-index: 3;
+            max-width: 580px;
+            border-left: 5px solid var(--primary-teal);
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            text-align: left;
+            animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* --- Buttons & Action Elements --- */
+        .btn-edusphere {
+            background: var(--primary-teal);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.85rem 2.25rem;
+            border-radius: 50px;
+            border: none;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 166, 166, 0.3);
+            transition: var(--transition-smooth);
+        }
+
+        .btn-edusphere:hover {
+            background: var(--primary-teal-dark);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 166, 166, 0.4);
+        }
+
+        .btn-outline-edusphere {
+            background: #ffffff;
+            color: var(--dark-blue);
+            font-weight: 600;
+            padding: 0.85rem 2.25rem;
+            border-radius: 50px;
+            border: 1px solid rgba(10, 37, 64, 0.18);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-outline-edusphere:hover {
+            background: #f1f5f9;
+            color: var(--dark-blue);
+            border-color: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+
+        .trust-strip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            background: #ffffff;
+            border: 1px solid rgba(10, 37, 64, 0.08);
+            padding: 0.65rem 1.35rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+            box-shadow: 0 4px 15px rgba(10, 37, 64, 0.05);
+            margin-bottom: 1.75rem;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 3px #dcfce7;
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: var(--dark-blue);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+            color: var(--text-muted);
+            font-weight: 400;
+            line-height: 1.6;
+            max-width: 720px;
+            margin: 1.25rem auto 2.25rem;
+        }
+
+        /* --- Marquee --- */
+        .marquee-wrapper {
+            background-color: #ffffff;
+            border-top: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            padding: 1.75rem 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .marquee-wrapper::before,
+        .marquee-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 120px;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .marquee-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, #ffffff, transparent);
+        }
+
+        .marquee-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, #ffffff, transparent);
+        }
+
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 35s linear infinite;
+            gap: 1.25rem;
+            padding-left: 1.25rem;
+        }
+
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .marquee-item {
+            background: var(--light-bg);
+            border: 1px solid var(--card-border);
+            padding: 0.85rem 1.5rem;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+            font-size: 0.92rem;
+            white-space: nowrap;
+            transition: var(--transition-smooth);
+        }
+
+        .marquee-item:hover {
+            background: #ffffff;
+            border-color: var(--primary-teal);
+            box-shadow: 0 4px 12px rgba(0, 166, 166, 0.12);
+        }
+
+        .marquee-item i {
+            color: var(--primary-teal);
+            font-size: 1.05rem;
+        }
+
+        /* --- Cards & Content Sections --- */
+        .section-heading {
+            font-weight: 800;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: var(--dark-blue);
+            letter-spacing: -0.02em;
+        }
+
+        .saas-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: clamp(1.8rem, 4vw, 2.75rem);
+            height: 100%;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition-smooth);
+        }
+
+        .saas-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(10, 37, 64, 0.12);
+            border-color: rgba(10, 37, 64, 0.15);
+        }
+
+        .badge-problem {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .badge-solution {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* --- Process Steps --- */
+        .step-card {
+            text-align: center;
+            padding: 1.5rem 1.25rem;
+        }
+
+        .step-number {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-teal), #008080);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 8px 20px rgba(0, 166, 166, 0.3);
+            transition: var(--transition-smooth);
+        }
+
+        .step-card:hover .step-number {
+            transform: scale(1.1) rotate(4deg);
+        }
+
+        .step-connector {
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .step-connector {
+                display: block;
+                border-top: 2px dashed rgba(10, 37, 64, 0.18);
+                width: 100%;
+                margin-top: 27px;
+            }
+        }
+
+        /* --- Mobile Responsive Tweaks --- */
+        @media (max-width: 767.98px) {
+            #heroCarousel .carousel-item img {
+                height: 50vh;
+                min-height: 360px;
+            }
+
+            .hero-caption-box {
+                left: 4%;
+                right: 4%;
+                bottom: 20px;
+                max-width: none;
+                padding: 12px 18px;
+                font-size: 0.9rem;
+                border-radius: 8px;
+            }
+
+            #heroCarousel .carousel-control-prev,
+            #heroCarousel .carousel-control-next {
+                width: 12%;
+            }
+
+            #heroCarousel .carousel-control-prev-icon,
+            #heroCarousel .carousel-control-next-icon {
+                width: 2.2rem;
+                height: 2.2rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-marquee { animation: none; }
+            #heroCarousel .carousel-item img { transition: none; }
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+
+    <!-- ========================================================= -->
+    <!-- 1. HERO IMAGE SLIDER (UNIMA Style)                        -->
+    <!-- ========================================================= -->
+
+    <header id="heroCarousel"
+            class="carousel slide"
+            data-bs-ride="carousel"
+            data-bs-interval="5000">
+
+        <div class="carousel-inner">
+
+            {% for banner in hero_banners %}
+
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+
+                    <!-- High Resolution Hero Banner Image -->
+                    <img src="{{ banner.image.url }}"
+                         class="d-block w-100"
+                         alt="{{ banner.title }}">
+
+                    <!-- UNIMA-Style Bottom Left Caption Overlay -->
+                    {% if banner.caption %}
+                        <div class="hero-caption-box d-none d-md-block">
+                            {{ banner.caption }}
+                        </div>
+                    {% endif %}
+
+                </div>
+
+            {% empty %}
+
+                <!-- Clean Fallback Banner if No Images are Uploaded -->
+                <div class="carousel-item active"
+                     style="background: linear-gradient(135deg, #0a2540 0%, #008080 100%); min-height: 480px;">
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <!-- Slider Arrow Navigation -->
+        <button class="carousel-control-prev"
+                type="button"
+                data-bs-target="#heroCarousel"
+                data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+
+        <button class="carousel-control-next"
+                type="button"
+                data-bs-target="#heroCarousel"
+                data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+
+    </header>
+
+
+    <!-- ========================================================= -->
+    <!-- 2. MAIN MISSION & ACTION SECTION                          -->
+    <!-- ========================================================= -->
+
+    <section class="container px-4 py-5 my-3 text-center">
+
+        {% if schools %}
+            <div class="trust-strip">
+                <span class="status-dot"></span>
+                Powering {{ schools.count }} school portal{{ schools.count|pluralize }} right now
+            </div>
+        {% endif %}
+
+        <!-- Primary Heading -->
+        <h1 class="hero-title">
+            {{ config.hero_title|default:"Infinite, Isolated School Networks." }}
+        </h1>
+
+        <!-- Subtitle Text -->
+        <p class="hero-subtitle">
+            {{ config.hero_subtitle|default:"Empower thousands of academic institutions with completely separated, automated school management systems." }}
+        </p>
+
+        <!-- CTA Action Buttons -->
+        <div class="mt-4 d-flex justify-content-center gap-3 flex-column flex-sm-row">
+            <a href="{% url 'schools_manager:register' %}"
+               class="btn-edusphere d-inline-flex align-items-center justify-content-center gap-2">
+                {{ config.primary_cta_text|default:"Register Your School" }}
+                <i class="fas fa-arrow-right small"></i>
+            </a>
+
+            {% if config.secondary_cta_text %}
+                <a href="{{ config.secondary_cta_link }}"
+                   class="btn-outline-edusphere d-inline-flex align-items-center justify-content-center gap-2">
+                    {{ config.secondary_cta_text }}
+                </a>
+            {% endif %}
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 3. MARQUEE FEATURES STRIP                                 -->
+    <!-- ========================================================= -->
+
+    <section class="marquee-wrapper mb-4">
+        <div class="animate-marquee">
+            {% for feature in features %}
+                <div class="marquee-item">
+                    <i class="{{ feature.icon_class|default:'fas fa-check-circle' }}"></i>
+                    <span>{{ feature.title }}</span>
+                </div>
+            {% empty %}
+                <div class="marquee-item"><i class="fas fa-chart-bar"></i> <span>Automated School Reports</span></div>
+                <div class="marquee-item"><i class="fas fa-user-graduate"></i> <span>Real-time Student Roster</span></div>
+                <div class="marquee-item"><i class="fas fa-bolt"></i> <span>Automated Attendance</span></div>
+                <div class="marquee-item"><i class="fas fa-calendar-week"></i> <span>Dynamic Timetables</span></div>
+                <div class="marquee-item"><i class="fas fa-shield-alt"></i> <span>Role-Based Dashboards</span></div>
+            {% endfor %}
+
+            <!-- Repeated Loop for Seamless Infinite Scroll -->
+            {% for feature in features %}
+                <div class="marquee-item">
+                    <i class="{{ feature.icon_class|default:'fas fa-check-circle' }}"></i>
+                    <span>{{ feature.title }}</span>
+                </div>
+            {% empty %}
+                <div class="marquee-item"><i class="fas fa-chart-bar"></i> <span>Automated School Reports</span></div>
+                <div class="marquee-item"><i class="fas fa-user-graduate"></i> <span>Real-time Student Roster</span></div>
+                <div class="marquee-item"><i class="fas fa-bolt"></i> <span>Automated Attendance</span></div>
+                <div class="marquee-item"><i class="fas fa-calendar-week"></i> <span>Dynamic Timetables</span></div>
+                <div class="marquee-item"><i class="fas fa-shield-alt"></i> <span>Role-Based Dashboards</span></div>
+            {% endfor %}
+        </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 4. PROBLEM & SOLUTION SECTION                             -->
+    <!-- ========================================================= -->
+
+    <section class="container py-5 mt-4">
+
+        <div class="text-center mb-5 pb-2">
+            <h2 class="section-heading">Engineered for radical data security</h2>
+            <p class="text-muted mx-auto fs-5 mt-2" style="max-width: 680px;">
+                Replace manual, paper-based administrative chaos with a secure, automated cloud infrastructure designed specifically for modern education.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="saas-card">
+                    <span class="badge badge-problem rounded-pill px-3 py-2 fw-semibold mb-4">
+                        The problem
+                    </span>
+                    <h3 class="fw-bold mb-3 fs-4" style="color: var(--dark-blue);">
+                        Manual processing & data loss
+                    </h3>
+                    <p class="text-muted lh-lg mb-0">
+                        Current school data management relies heavily on manual data entry, calculations, and physical documentation. This process is time-consuming and inefficient, requiring substantial physical storage space and often resulting in the accumulation of paper-based records.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="saas-card">
+                    <span class="badge badge-solution rounded-pill px-3 py-2 fw-semibold mb-4">
+                        Our solution
+                    </span>
+                    <h3 class="fw-bold mb-3 fs-4" style="color: var(--dark-blue);">
+                        Centralized digital architecture
+                    </h3>
+                    <p class="text-muted lh-lg mb-0">
+                        Our system digitizes and centralizes the management of school data. It automatically performs calculations and generates student performance reports, reducing manual workload, minimizing errors, and eliminating the dependence on physical paperwork.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 5. THREE-STEP PROCESS SECTION                             -->
+    <!-- ========================================================= -->
+
+    <section class="container py-5 my-4">
+
+        <div class="text-center mb-5">
+            <h2 class="section-heading">From application to launch in three steps</h2>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-md-4">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4 class="fw-bold fs-5 mb-2" style="color: var(--dark-blue);">Apply online</h4>
+                    <p class="text-muted mb-0">Submit your school's details and proof of payment through our registration form.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="step-connector"></div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4 class="fw-bold fs-5 mb-2" style="color: var(--dark-blue);">Get approved</h4>
+                    <p class="text-muted mb-0">Our team reviews your application and confirms your subscription within one business day.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="step-connector"></div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4 class="fw-bold fs-5 mb-2" style="color: var(--dark-blue);">Launch your portal</h4>
+                    <p class="text-muted mb-0">Receive your dedicated subdomain and administrator login by email, ready to use immediately.</p>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 6. ABOUT TEASER SECTION                                   -->
+    <!-- ========================================================= -->
+
+    {% if company %}
+        <section class="container py-5">
+            <div class="saas-card" style="background: linear-gradient(135deg, #ffffff 0%, var(--light-bg) 100%);">
+                <div class="row align-items-center g-5">
+                    <div class="col-md-7">
+                        <h2 class="section-heading mb-3">{{ company.headline|default:"Empowering Education Through Technology" }}</h2>
+                        <p class="text-muted mb-4 fs-6" style="line-height: 1.8;">
+                            {{ company.mission_statement|truncatewords:35 }}
+                        </p>
+                        <a href="{% url 'schools_manager:about' %}"
+                           class="btn-outline-edusphere d-inline-flex align-items-center gap-2">
+                            Learn more about us
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="col-md-5 d-none d-md-block text-center">
+                        <i class="fas fa-graduation-cap" style="font-size: 8rem; color: var(--primary-teal); opacity: 0.2;"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+
+    <!-- ========================================================= -->
+    <!-- 7. MEDIA SHOWCASE SECTION                                 -->
+    <!-- ========================================================= -->
+
+    {% if media %}
+        <section class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="section-heading">See it in action</h2>
+            </div>
+
+            <div class="row g-4">
+                {% for item in media %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="saas-card p-0 overflow-hidden">
+                            {% if item.media_type == 'IMAGE' and item.image %}
+                                <img src="{{ item.image.url }}"
+                                     alt="{{ item.title }}"
+                                     class="w-100"
+                                     style="height: 220px; object-fit: cover;">
+
+                            {% elif item.media_type == 'VIDEO' and item.video_file %}
+                                <video controls
+                                       class="w-100"
+                                       style="height: 220px; object-fit: cover; background: #000;">
+                                    <source src="{{ item.video_file.url }}">
+                                </video>
+
+                            {% elif item.media_type == 'VIDEO' and item.video_url %}
+                                <a href="{{ item.video_url }}"
+                                   target="_blank"
+                                   rel="noopener"
+                                   class="d-flex align-items-center justify-content-center text-white text-decoration-none"
+                                   style="height: 220px; background: var(--dark-blue);">
+                                    <i class="fas fa-play-circle fa-3x" style="color: var(--primary-teal);"></i>
+                                </a>
+                            {% endif %}
+
+                            <div class="p-4">
+                                <h6 class="fw-bold mb-2 fs-5" style="color: var(--dark-blue);">
+                                    {{ item.title }}
+                                </h6>
+
+                                {% if item.description %}
+                                    <p class="text-muted small mb-3 lh-base">
+                                        {{ item.description }}
+                                    </p>
+                                {% endif %}
+
+                                {% if item.allow_download %}
+                                    {% if item.image %}
+                                        <a href="{{ item.image.url }}" download class="btn-link text-decoration-none fw-semibold small" style="color: var(--primary-teal);">
+                                            <i class="fas fa-download me-1"></i> Download File
+                                        </a>
+                                    {% elif item.video_file %}
+                                        <a href="{{ item.video_file.url }}" download class="btn-link text-decoration-none fw-semibold small" style="color: var(--primary-teal);">
+                                            <i class="fas fa-download me-1"></i> Download File
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+
+    <!-- ========================================================= -->
+    <!-- 8. NEWSLETTER SIGNUP SECTION                              -->
+    <!-- ========================================================= -->
+
+    <section class="py-5 mt-4" style="background: var(--light-bg); border-top: 1px solid var(--card-border);">
+        <div class="container text-center py-4" style="max-width: 640px;">
+            <h2 class="section-heading mb-2">Stay in the loop</h2>
+            <p class="text-muted mb-4 fs-6">
+                Get occasional updates on new features and platform improvements directly to your inbox.
+            </p>
+
+            <form method="POST"
+                  action="{% url 'public_landing' %}"
+                  class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                {% csrf_token %}
+
+                <input type="email"
+                       name="newsletter_email"
+                       required
+                       placeholder="you@school.edu"
+                       class="form-control"
+                       style="max-width: 360px; border-radius: 50px; padding: 0.8rem 1.5rem; border: 1px solid var(--card-border); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+
+                <button type="submit" class="btn-edusphere">
+                    Subscribe
+                </button>
+            </form>
+        </div>
+    </section>
+
+{% endblock %}

@@ -157,6 +157,11 @@ urlpatterns = [
 
    path('calendar/delete/<int:event_id>/', views.delete_calendar_event, name='delete_calendar_event'),
 
+   # HEADTEACHERS LIST VIEWS
+# schools_manager/urls.py — add inside urlpatterns
+    path('headteachers-list/pdf/', views.headteachers_list_pdf_view, name='headteachers_list_pdf'),
+    path('headteachers-list/', views.headteachers_list_view, name='headteachers_list'),
+
 
 
 

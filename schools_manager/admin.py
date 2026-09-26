@@ -9,7 +9,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from .models import School, Domain, SchoolRegistrationRequest
-from .models import SubscriptionPlan, PlanFeature
+from .models import SubscriptionPlan, PlanFeature, PaymentMethod
 
 
 
@@ -201,12 +201,12 @@ class MediaShowcaseAdmin(admin.ModelAdmin):
     list_filter = ('media_type', 'is_active')
     ordering = ('display_order',)
 
-@admin.register(NewsletterSubscriber, site=tenant_admin_site)
-class NewsletterSubscriberAdmin(admin.ModelAdmin):
-    list_display = ('email', 'subscribed_at', 'is_active')
-    list_filter = ('is_active', 'subscribed_at')
-    search_fields = ('email',)
-    readonly_fields = ('subscribed_at',)
+# @admin.register(NewsletterSubscriber, site=tenant_admin_site)
+# class NewsletterSubscriberAdmin(admin.ModelAdmin):
+#     list_display = ('email', 'subscribed_at', 'is_active')
+#     list_filter = ('is_active', 'subscribed_at')
+#     search_fields = ('email',)
+#     readonly_fields = ('subscribed_at',)
 
 
 
@@ -237,3 +237,114 @@ class FooterLinkAdmin(admin.ModelAdmin):
     list_editable = ('display_order', 'is_active')
     list_filter = ('link_type', 'is_active')
     ordering = ('link_type', 'display_order')
+
+
+
+
+from django.contrib import messages
+
+from django.http import HttpResponseRedirect
+
+from django.contrib import admin, messages
+from django.shortcuts import redirect
+from .models import NewsletterSubscriber
+from .models import NewsletterAsset
+
+
+@admin.register(NewsletterSubscriber, site=tenant_admin_site)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ('email', 'subscribed_at', 'is_active')
+    list_filter = ('is_active', 'subscribed_at')
+    search_fields = ('email',)
+    readonly_fields = ('subscribed_at',)
+    actions = ['send_announcement']
+
+    @admin.action(description="Send announcement email to selected active subscribers")
+    def send_announcement(self, request, queryset):
+        active_recipients = queryset.filter(is_active=True)
+        if not active_recipients.exists():
+            self.message_user(request, "None of the selected subscribers are active.", level=messages.WARNING)
+            return
+
+        selected = active_recipients.values_list('pk', flat=True)
+        request.session['newsletter_recipient_ids'] = list(selected)
+
+        # FIX: Use the named URL pattern to redirect
+        return redirect('schools_manager:send_newsletter_announcement')
+
+    send_announcement.short_description = "Send announcement email to selected active subscribers"
+
+
+
+# schools_manager/admin.py
+
+@admin.register(PaymentMethod, site=tenant_admin_site)
+class PaymentMethodAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    ordering = ('display_order',)
+
+
+
+
+@admin.register(NewsletterAsset, site=tenant_admin_site)
+class NewsletterAssetAdmin(admin.ModelAdmin):
+    list_display = ('title', 'asset_type', 'file', 'uploaded_at', 'is_active', 'is_temporary',)
+    list_filter = ('asset_type', 'is_active', 'is_temporary', )
+    search_fields = ('title',)
+    readonly_fields = ('uploaded_at',  )
+    ordering = ( '-uploaded_at', )
+
+
+
+# RENWAL OF SUBSCRIPTIONS
+from .models import SubscriptionRenewal
+
+@admin.register(SubscriptionRenewal, site=tenant_admin_site)
+class SubscriptionRenewalAdmin(admin.ModelAdmin):
+    list_display = ['school', 'billing_cycle', 'status', 'submitted_at', 'admin_actions']
+    list_filter = ['status', 'billing_cycle', 'submitted_at']
+    search_fields = ['school__name', 'school__schema_name']
+    readonly_fields = ['submitted_at', 'reviewed_at']
+
+    fieldsets = (
+        ('School & Cycle', {
+            'fields': ('school', 'billing_cycle')
+        }),
+        ('Payment Verification', {
+            'fields': ('proof_of_payment',)
+        }),
+        ('Admin Action', {
+            'fields': ('status', 'admin_notes', 'reviewed_at', 'submitted_at')
+        }),
+    )
+
+    def admin_actions(self, obj):
+        """
+        Renders custom Approve and Reject buttons directly in the Master Admin dashboard row.
+        """
+        if obj.status == 'Pending':
+            approve_url = reverse('schools_manager:approve_renewal', args=[obj.pk])
+            reject_url = reverse('schools_manager:reject_renewal', args=[obj.pk])
+
+            return format_html(
+                '<a class="button" style="background-color: #10b981; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-right: 4px;" href="{}">Approve</a>'
+                '<a class="button" style="background-color: #ef4444; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold;" href="{}">Reject</a>',
+                approve_url, reject_url
+            )
+
+        return f"Processed ({obj.status})"
+
+    admin_actions.short_description = "Actions"
+
+
+
+from django.contrib import admin
+from .models import HeroBanner
+
+@admin.register(HeroBanner, site=tenant_admin_site)
+class HeroBannerAdmin(admin.ModelAdmin):
+    list_display = ('title', 'caption', 'is_active', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('title', 'caption')
+    list_editable = ('is_active',)

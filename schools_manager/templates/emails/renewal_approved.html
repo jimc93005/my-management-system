@@ -1,0 +1,8 @@
+{% extends 'emails/email_base.html' %}
+{% block content %}
+    <h2 style="color: #16a34a;">Payment Approved</h2>
+    <p>Hello,</p>
+    <p>Great news! Your renewal payment proof for <strong>{{ renewal.get_billing_cycle_display }}</strong> has been verified and approved.</p>
+    <p>Your portal is now fully active until <strong>{{ renewal.school.subscription_end_date|date:"d F Y" }}</strong>.</p>
+    <a href="http://{{ renewal.school.schema_name }}.threeangels.cloud" class="btn">Access Portal</a>
+{% endblock %}

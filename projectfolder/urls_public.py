@@ -7,12 +7,15 @@ from django.views.static import serve
 from django.contrib.auth.views import LogoutView
 
 # Custom app imports
-from schools_manager.views import register_school_view
+from schools_manager.views import register_school_view, public_landing_page, send_newsletter_announcement
+
 from schools_manager.admin import tenant_admin_site
 
 urlpatterns = [
     # Public landing page
-    path('', TemplateView.as_view(template_name='landing.html'), name='public_landing'),
+    # path('', TemplateView.as_view(template_name='landing.html'), name='public_landing'),
+# Public landing page
+    path('', public_landing_page, name='public_landing'),
     path('admin/', admin.site.urls),
 
     # 1. OVERRIDE ADMIN LOGOUT: Redirects directly to the home page ('/')
@@ -25,8 +28,10 @@ urlpatterns = [
     path('lobby-auth/', include([
         path('login/', RedirectView.as_view(url='/', permanent=False), name='login'),
     ])),
+    # path('custom-admin/newsletter/send-announcement/', send_newsletter_announcement, name='send_newsletter_announcement'),
 
-    path('apply/', register_school_view, name='register_school'),
+
+    # path('apply/', register_school_view, name='register_school'),
     path('schools/', include('schools_manager.urls')),
 ]
 

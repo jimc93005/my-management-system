@@ -89,6 +89,7 @@ TENANT_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'students_app',
+    'timetable',
     'users',
     'bootstrap4',
     'django_bootstrap5'
@@ -106,6 +107,7 @@ SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
 
 MIDDLEWARE = [
     'django_tenants.middleware.main.TenantMainMiddleware',
+    'schools_manager.middleware.TenantSubscriptionMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serves static files efficiently
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -129,7 +131,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'students_app.context_processors.school_footer_context'
+                'students_app.context_processors.school_footer_context',
+                'schools_manager.context_processors.public_site_context'
             ],
         },
     },

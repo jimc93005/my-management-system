@@ -1,0 +1,108 @@
+{% extends 'timetable/base_setup.html' %}
+
+{% block setup_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-user-clock me-2 text-primary"></i>Staff Availability</h4>
+    <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addUnavailabilityModal">
+        <i class="fas fa-plus me-2"></i>Add Unavailability
+    </button>
+</div>
+
+<!-- Unavailability Data Table -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Teacher</th>
+                        <th>Day of Week</th>
+                        <th>Period</th>
+                        <th>Reason</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in unavailabilities %}
+                    <tr>
+                        <td class="fw-bold"><i class="fas fa-user-tie me-2 text-secondary"></i>{{ item.teacher.get_full_name|default:item.teacher.username }}</td>
+                        <td>{{ item.get_day_display }}</td>
+                        <td>
+                            {% if item.period_number %}
+                                <span class="badge bg-warning text-dark">Period {{ item.period_number }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">All Day</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ item.reason|default:"-" }}</td>
+                        <td class="text-end">
+                            <form method="post" class="d-inline" onsubmit="return confirm('Remove this availability rule?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="unavailability_id" value="{{ item.id }}">
+                                <button type="submit" name="delete_unavailability" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fas fa-calendar-check fs-3 mb-3 d-block text-black-50"></i>
+                            All teachers are currently marked as fully available.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addUnavailabilityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-times me-2 text-primary"></i>Log Teacher Absence / Block</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">Please correct the errors below.</div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Teacher <span class="text-danger">*</span></label>
+                        {{ form.teacher }}
+                        {% if form.teacher.errors %}<div class="text-danger small">{{ form.teacher.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Day <span class="text-danger">*</span></label>
+                            {{ form.day }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Period Number</label>
+                            {{ form.period_number }}
+                            <div class="form-text small">Leave blank to block the entire day.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reason (Optional)</label>
+                        {{ form.reason }}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="save_unavailability" class="btn btn-primary">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

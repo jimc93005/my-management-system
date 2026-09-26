@@ -1,0 +1,176 @@
+{% extends 'timetable/base_setup.html' %}
+
+{% block setup_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-book me-2 text-primary"></i>Subject Rules & Allocations</h4>
+        <p class="text-muted small mb-0">Define period counts, double-period limits, and room needs per class level.</p>
+    </div>
+
+    <!-- Live Search Box -->
+    <div style="min-width: 250px;">
+        <div class="input-group input-group-sm shadow-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="subjectSearch" class="form-control" placeholder="Search subject or teacher...">
+        </div>
+    </div>
+</div>
+
+<!-- Class Level Tabs -->
+<div class="mb-4">
+    <ul class="nav nav-pills gap-1 bg-light p-2 rounded border">
+        {% for cl in class_levels %}
+            <li class="nav-item">
+                <a class="nav-link {% if selected_class and selected_class.id == cl.id %}active fw-bold{% endif %}"
+                   href="?class_id={{ cl.id }}">
+                    {{ cl.class_level }}
+                </a>
+            </li>
+        {% empty %}
+            <li class="nav-item"><span class="text-muted small px-2">No class levels found.</span></li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% if selected_class %}
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="subjectRulesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 22%;">Subject</th>
+                            <th style="width: 18%;">Assigned Teacher</th>
+                            <th style="width: 12%;">Periods / Wk</th>
+                            <th style="width: 12%;">Allow Double?</th>
+                            <th style="width: 12%;">Double Periods</th>
+                            <th style="width: 14%;">Room Type</th>
+                            <th style="width: 10%;">Specific Room</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in subject_rows %}
+                        <tr class="subject-row">
+                            <td>
+                                <span class="fw-bold text-dark subject-name">{{ row.subject.name }}</span>
+                            </td>
+                            <td>
+                                <span class="text-secondary small teacher-name">
+                                    {% if row.subject.teacher_subject %}
+                                        <i class="fas fa-user-tie me-1"></i>{{ row.subject.teacher_subject.get_full_name|default:row.subject.teacher_subject.username }}
+                                    {% else %}
+                                        <span class="text-danger small"><i class="fas fa-exclamation-triangle me-1"></i>Unassigned</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <input type="number"
+                                       name="periods_{{ row.subject.id }}"
+                                       value="{{ row.constraint.periods_per_week }}"
+                                       class="form-control form-control-sm"
+                                       min="1" max="30" required>
+                            </td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input double-toggle"
+                                           type="checkbox"
+                                           name="allow_double_{{ row.subject.id }}"
+                                           id="allow_double_{{ row.subject.id }}"
+                                           data-target="double_count_{{ row.subject.id }}"
+                                           {% if row.constraint.allow_double_periods %}checked{% endif %}>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="number"
+                                       name="double_periods_{{ row.subject.id }}"
+                                       id="double_count_{{ row.subject.id }}"
+                                       value="{{ row.constraint.double_periods_per_week }}"
+                                       class="form-control form-control-sm"
+                                       min="0" max="10"
+                                       {% if not row.constraint.allow_double_periods %}disabled{% endif %}>
+                            </td>
+                            <td>
+                                <select name="room_type_{{ row.subject.id }}" class="form-select form-select-sm">
+                                    {% for code, label in room_types %}
+                                        <option value="{{ code }}" {% if row.room_req.required_room_type == code %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select name="specific_room_{{ row.subject.id }}" class="form-select form-select-sm">
+                                    <option value="">-- None --</option>
+                                    {% for room in rooms %}
+                                        <option value="{{ room.id }}" {% if row.room_req.specific_room_id == room.id %}selected{% endif %}>
+                                            {{ room.code }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-folder-open fs-3 mb-2 d-block text-black-50"></i>
+                                No subjects assigned to <strong>{{ selected_class.class_level }}</strong> yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if subject_rows %}
+    <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+            <i class="fas fa-save me-2"></i>Save Rules for {{ selected_class.class_level }}
+        </button>
+    </div>
+    {% endif %}
+</form>
+{% else %}
+<div class="alert alert-info">
+    Please add at least one Class Level to configure subject rules.
+</div>
+{% endif %}
+
+<!-- Inline Script for Toggle and Search -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enable/disable max double periods based on toggle switch state
+    document.querySelectorAll('.double-toggle').forEach(function(toggle) {
+        toggle.addEventListener('change', function() {
+            const targetId = this.getAttribute('data-target');
+            const targetInput = document.getElementById(targetId);
+            if (targetInput) {
+                targetInput.disabled = !this.checked;
+                if (!this.checked) targetInput.value = 0;
+            }
+        });
+    });
+
+    // Frontend live search filter
+    const searchInput = document.getElementById('subjectSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const query = this.value.toLowerCase().trim();
+            document.querySelectorAll('.subject-row').forEach(function(row) {
+                const subjectName = row.querySelector('.subject-name').textContent.toLowerCase();
+                const teacherName = row.querySelector('.teacher-name').textContent.toLowerCase();
+                if (subjectName.includes(query) || teacherName.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

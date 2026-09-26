@@ -1,0 +1,209 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h2>
+            <i class="fas fa-school text-primary me-2"></i>
+            {{ timetable.name }} - Master Schedule
+        </h2>
+
+        <div class="d-flex gap-2">
+            <div class="btn-group">
+    <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-file-pdf me-1"></i> Download PDF
+    </button>
+    <ul class="dropdown-menu shadow">
+        <li>
+            <a class="dropdown-item" href="{% url 'timetable:export_timetable_pdf' timetable.id %}?day={{ selected_day }}" target="_blank">
+                <i class="fas fa-calendar-day me-2 text-muted"></i> This Day Only ({{ selected_day }})
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item fw-bold" href="{% url 'timetable:export_full_school_pdf' timetable.id %}" target="_blank">
+                <i class="fas fa-building me-2 text-primary"></i> Full School (All Days)
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+
+        <!-- You can dynamically loop through classes here if you pass 'classes' to your master view context -->
+        <li class="dropdown-header">Print by Class</li>
+{% for cls in classes %}
+    <li>
+        <a class="dropdown-item" href="{% url 'timetable:export_class_timetable_pdf' timetable.id cls.id %}" target="_blank">
+            <i class="fas fa-users me-2 text-muted"></i> {{ cls.class_level }}
+        </a>
+    </li>
+{% empty %}
+    <li><span class="dropdown-item text-muted">No classes found</span></li>
+{% endfor %}
+        
+</div>
+
+            <!-- The Generate Button Form -->
+            <form action="{% url 'timetable:generate_timetable' timetable.id %}"
+                  method="POST"
+                  onsubmit="return confirm('This will generate the timetable. Proceed?');">
+
+                {% csrf_token %}
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-cogs me-1"></i>
+                    Auto-Generate
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+    <!-- End Page Header -->
+
+
+    <!-- Day Selector Tabs -->
+    <ul class="nav nav-pills mb-3">
+
+        {% for day_val, day_name in day_choices %}
+
+            {% if day_val in matrix_data.working_days %}
+
+                <li class="nav-item">
+
+                    <a class="nav-link {% if day_val == selected_day %}active{% endif %}"
+                       href="?day={{ day_val }}">
+
+                        {{ day_name }}
+
+                    </a>
+
+                </li>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </ul>
+
+
+    <!-- Whole-School Matrix -->
+    <div class="card shadow-sm">
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered text-center align-middle mb-0">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th style="width: 8%;">
+                                Period
+                            </th>
+
+                            {% for class_obj in matrix_data.classes %}
+
+                                <th>
+                                    {{ class_obj.class_level }}
+                                </th>
+
+                            {% endfor %}
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for row in matrix_data.grid %}
+
+                            {% if row.type == 'break' %}
+
+                                <tr class="table-warning fw-bold text-center">
+
+                                    <td colspan="{{ matrix_data.classes|length|add:1 }}"
+                                        class="py-2 text-uppercase text-secondary">
+
+                                        <i class="fas fa-coffee me-1"></i>
+                                        {{ row.name }} ({{ row.duration }} Mins)
+
+                                    </td>
+
+                                </tr>
+
+                            {% else %}
+
+                                <tr>
+
+                                    <td class="fw-bold bg-light align-middle">
+
+                                        <div>
+                                            Period {{ row.period_number }}
+                                        </div>
+
+                                        <small class="text-muted fw-normal"
+                                               style="font-size: 0.75rem;">
+
+                                            <i class="far fa-clock me-1"></i>
+                                            {{ row.start_time }} - {{ row.end_time }}
+
+                                        </small>
+
+                                    </td>
+
+
+                                    {% for slot in row.class_slots %}
+
+                                        <td style="min-width: 130px;">
+
+                                            {% if slot.is_free %}
+
+                                                <span class="text-muted fst-italic">
+                                                    --
+                                                </span>
+
+                                            {% else %}
+
+                                                <div class="fw-bold text-primary">
+                                                    {{ slot.entry.subject.name }}
+                                                </div>
+
+                                                <small class="d-block text-secondary">
+                                                    {{ slot.entry.subject.teacher_subject }}
+                                                </small>
+
+                                                <span class="badge bg-light text-dark border mt-1">
+                                                    {{ slot.entry.room.code|default:"No Room" }}
+                                                </span>
+
+                                            {% endif %}
+
+                                        </td>
+
+                                    {% endfor %}
+
+                                </tr>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

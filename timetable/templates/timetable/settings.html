@@ -1,0 +1,359 @@
+{% extends 'timetable/base_setup.html' %}
+
+{% block setup_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">
+        <i class="fas fa-sliders-h me-2 text-primary"></i>General Timetable Settings
+    </h4>
+
+    {% if settings %}
+        <span class="badge {% if settings.is_active %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+            {% if settings.is_active %}
+                Active Configuration
+            {% else %}
+                Inactive Configuration
+            {% endif %}
+        </span>
+    {% endif %}
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Global Timetable Parameters -->
+    <div class="card mb-4 border-0 bg-light">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3 text-secondary">Basic Parameters</h6>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Configuration Name</label>
+                    {{ form.name }}
+
+                    {% if form.name.errors %}
+                        <div class="text-danger small">
+                            {{ form.name.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Start Time</label>
+                    {{ form.start_time }}
+
+                    {% if form.start_time.errors %}
+                        <div class="text-danger small">
+                            {{ form.start_time.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check form-switch mb-2">
+                        {{ form.is_active }}
+
+                        <label class="form-check-label fw-bold"
+                               for="{{ form.is_active.id_for_label }}">
+                            Set Active
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        Period Duration (Minutes)
+                    </label>
+
+                    {{ form.period_duration }}
+
+                    {% if form.period_duration.errors %}
+                        <div class="text-danger small">
+                            {{ form.period_duration.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        Periods Per Day
+                    </label>
+
+                    {{ form.periods_per_day }}
+
+                    {% if form.periods_per_day.errors %}
+                        <div class="text-danger small">
+                            {{ form.periods_per_day.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Teacher Constraints -->
+    <div class="card mb-4 border-0 bg-light">
+        <div class="card-body">
+
+            <h6 class="fw-bold mb-3 text-secondary">
+                Teacher Workload Constraints
+            </h6>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        Max Teacher Periods / Day
+                    </label>
+
+                    {{ form.default_max_teacher_periods_per_day }}
+
+                    {% if form.default_max_teacher_periods_per_day.errors %}
+                        <div class="text-danger small">
+                            {{ form.default_max_teacher_periods_per_day.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        Max Consecutive Periods
+                    </label>
+
+                    {{ form.default_max_consecutive_periods }}
+
+                    {% if form.default_max_consecutive_periods.errors %}
+                        <div class="text-danger small">
+                            {{ form.default_max_consecutive_periods.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Working Days Selection -->
+    <div class="card mb-4 border-0 bg-light">
+        <div class="card-body">
+
+            <h6 class="fw-bold mb-3 text-secondary">
+                Active Teaching Days
+            </h6>
+
+            <div class="d-flex flex-wrap gap-4">
+
+                {% for checkbox in form.working_days %}
+                    <div class="form-check">
+
+                        {{ checkbox.tag }}
+
+                        <label class="form-check-label fw-bold ms-1"
+                               for="{{ checkbox.id_for_label }}">
+                            {{ checkbox.choice_label }}
+                        </label>
+
+                    </div>
+                {% endfor %}
+
+            </div>
+
+            {% if form.working_days.errors %}
+                <div class="text-danger small mt-2">
+                    {{ form.working_days.errors.0 }}
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+
+    <!-- Timetable Breaks Formset -->
+    <div class="card mb-4 border-0 bg-light">
+        <div class="card-body">
+
+            <h6 class="fw-bold mb-3 text-secondary">
+                Scheduled Breaks & Assemblies
+            </h6>
+
+            {{ break_formset.management_form }}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered align-middle bg-white">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Break Name</th>
+                            <th>After Period Number</th>
+                            <th>Duration (Minutes)</th>
+                            <th class="text-center" style="width: 80px;">
+                                Delete
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for break_form in break_formset %}
+
+                            <tr>
+
+                                <td>
+                                    {{ break_form.id }}
+                                    {{ break_form.name }}
+
+                                    {% if break_form.name.errors %}
+                                        <div class="text-danger small">
+                                            {{ break_form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ break_form.after_period }}
+
+                                    {% if break_form.after_period.errors %}
+                                        <div class="text-danger small">
+                                            {{ break_form.after_period.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ break_form.duration }}
+
+                                    {% if break_form.duration.errors %}
+                                        <div class="text-danger small">
+                                            {{ break_form.duration.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center">
+
+                                    {% if break_form.instance.pk %}
+                                        {{ break_form.DELETE }}
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Blocked / Locked Periods Formset -->
+    <div class="card mb-4 border-0 bg-light">
+        <div class="card-body">
+
+            <h6 class="fw-bold mb-3 text-secondary">
+                Globally Blocked / Locked Periods
+            </h6>
+
+            <p class="text-muted small mb-3">
+                Lock specific period slots across the school so no teaching
+                subject can be scheduled into them (e.g., Friday Period 8 for Clubs).
+            </p>
+
+            {{ blocked_formset.management_form }}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered align-middle bg-white">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Day</th>
+                            <th>Period Number</th>
+                            <th>Reason / Label</th>
+                            <th class="text-center" style="width: 80px;">
+                                Delete
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for blocked_form in blocked_formset %}
+
+                            <tr>
+
+                                <td>
+                                    {{ blocked_form.id }}
+                                    {{ blocked_form.day }}
+
+                                    {% if blocked_form.day.errors %}
+                                        <div class="text-danger small">
+                                            {{ blocked_form.day.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ blocked_form.period_number }}
+
+                                    {% if blocked_form.period_number.errors %}
+                                        <div class="text-danger small">
+                                            {{ blocked_form.period_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ blocked_form.label }}
+
+                                    {% if blocked_form.label.errors %}
+                                        <div class="text-danger small">
+                                            {{ blocked_form.label.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center">
+
+                                    {% if blocked_form.instance.pk %}
+                                        {{ blocked_form.DELETE }}
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Save Configuration -->
+    <div class="d-flex justify-content-end">
+
+        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+
+            <i class="fas fa-save me-2"></i>
+            Save Configuration
+
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends 'emails/email_base.html' %}
+{% block content %}
+    <h2>Subscription Reminder</h2>
+    <p>Hello,</p>
+    <p>This is an automated reminder that your subscription for the <strong>{{ school.name }}</strong> portal will expire in <strong>{{ days_left }} days</strong> on {{ school.subscription_end_date|date:"d F Y" }}.</p>
+    <p>To avoid any disruption of service to your staff and students, please upload your proof of payment to the renewal dashboard.</p>
+    <a href="http://{{ school.schema_name }}.threeangels.cloud/subscription-expired/" class="btn">Renew Subscription</a>
+{% endblock %}

@@ -1,0 +1,823 @@
+{# schools_manager/templates/schools_manager/headteachers_list.html #}
+{% extends "students_app/base.html" %}
+
+{% block content %}
+
+<style>
+    /* =========================================================
+       HEADTEACHER'S LIST - RESPONSIVE PROFESSIONAL DESIGN
+       ========================================================= */
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .ht-page {
+        width: 100%;
+        min-height: 100vh;
+        padding: 25px 3%;
+        background: linear-gradient(135deg, #f4f8fb 0%, #eef4f8 100%);
+    }
+
+    .ht-wrapper {
+        width: 100%;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+
+    /* =========================
+       PAGE HEADER
+       ========================= */
+
+    .ht-header {
+        background: linear-gradient(135deg, #0A2540, #123e63);
+        color: #fff;
+        border-radius: 18px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 30px rgba(10, 37, 64, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .ht-header::after {
+        content: "";
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        right: -70px;
+        top: -90px;
+    }
+
+    .ht-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .ht-header h1 {
+        margin: 0 0 7px;
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #fff !important;
+    }
+
+    .ht-header p {
+        margin: 0;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    .ht-header-icon {
+        display: inline-flex;
+        width: 46px;
+        height: 46px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.12);
+        margin-right: 12px;
+        vertical-align: middle;
+    }
+
+    /* =========================
+       FILTER BAR
+       ========================= */
+
+    .ht-filter-bar {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr)
+                               minmax(180px, 1fr)
+                               auto
+                               auto;
+        gap: 16px;
+        align-items: end;
+
+        background: #fff;
+        border: 1px solid #dce5ed;
+        border-radius: 16px;
+        padding: 22px;
+
+        margin-bottom: 26px;
+
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .ht-filter-field {
+        min-width: 0;
+    }
+
+    .ht-filter-bar label {
+        display: block;
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 7px;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .ht-filter-bar select {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        padding: 9px 12px;
+        font-size: 14px;
+        color: #1e293b;
+        background: #fff;
+        outline: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .ht-filter-bar select:hover {
+        border-color: #008080;
+    }
+
+    .ht-filter-bar select:focus {
+        border-color: #008080;
+        box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.12);
+    }
+
+    .ht-filter-bar button {
+        height: 44px;
+        background: linear-gradient(135deg, #008080, #006b6b);
+        color: #fff;
+        border: none;
+        border-radius: 9px;
+        padding: 0 25px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .ht-filter-bar button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 128, 128, 0.25);
+    }
+
+    .ht-download {
+        display: inline-flex;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+
+        background: linear-gradient(135deg, #0A2540, #123e63);
+        color: #fff !important;
+
+        text-decoration: none;
+        border-radius: 9px;
+        padding: 0 22px;
+        font-weight: 700;
+        white-space: nowrap;
+
+        transition: all 0.2s ease;
+    }
+
+    .ht-download:hover {
+        color: #fff !important;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(10, 37, 64, 0.25);
+    }
+
+    /* =========================
+       RESULTS HEADER
+       ========================= */
+
+    .ht-results-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 18px;
+    }
+
+    .ht-results-heading h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #0A2540;
+    }
+
+    .ht-results-heading .ht-result-line {
+        height: 3px;
+        width: 50px;
+        background: #008080;
+        border-radius: 10px;
+        margin-top: 7px;
+    }
+
+    /* =========================
+       CLASS CARDS
+       ========================= */
+
+    .ht-class-card {
+        background: #fff;
+        border: 1px solid #dce5ed;
+        border-radius: 16px;
+        padding: 0;
+        margin-bottom: 20px;
+        overflow: hidden;
+
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.055);
+
+        transition: all 0.25s ease;
+    }
+
+    .ht-class-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.09);
+    }
+
+    .ht-class-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+
+        padding: 18px 22px;
+
+        background: linear-gradient(
+            135deg,
+            #f8fafc,
+            #eef6f7
+        );
+
+        border-bottom: 1px solid #e5edf2;
+    }
+
+    .ht-class-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ht-class-icon {
+        width: 40px;
+        height: 40px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+        background: rgba(0, 128, 128, 0.10);
+        color: #008080;
+
+        flex-shrink: 0;
+    }
+
+    .ht-class-card h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #0A2540 !important;
+    }
+
+    .ht-class-label {
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+        font-weight: 700;
+    }
+
+    /* =========================
+       TABLE
+       ========================= */
+
+    .ht-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ht-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 500px;
+    }
+
+    .ht-table th,
+    .ht-table td {
+        text-align: left;
+        padding: 13px 20px;
+        border-bottom: 1px solid #eef1f5;
+        font-size: 14px;
+    }
+
+    .ht-table th {
+        color: #64748b;
+        background: #fafcfd;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        font-weight: 800;
+    }
+
+    .ht-table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    .ht-table tbody tr:hover {
+        background: #f8fbfc;
+    }
+
+    .ht-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .ht-rank {
+        font-weight: 800;
+        color: #008080;
+        width: 90px;
+    }
+
+    .ht-student {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .ht-average {
+        font-weight: 800;
+        color: #0A2540;
+    }
+
+    .ht-position-badge {
+        display: inline-flex;
+        min-width: 32px;
+        height: 28px;
+        padding: 0 8px;
+        align-items: center;
+        justify-content: center;
+
+        background: #e8f7f7;
+        color: #007373;
+
+        border-radius: 7px;
+        font-weight: 800;
+        font-size: 13px;
+    }
+
+    .ht-average-badge {
+        display: inline-block;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        padding: 5px 10px;
+        font-weight: 800;
+        color: #0A2540;
+    }
+
+    /* =========================
+       EMPTY / INFO MESSAGES
+       ========================= */
+
+    .ht-message {
+        background: #fff;
+        border: 1px solid #dce5ed;
+        border-radius: 16px;
+        padding: 45px 25px;
+        text-align: center;
+        color: #64748b;
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .ht-message-icon {
+        width: 58px;
+        height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #eef6f7;
+        color: #008080;
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+
+    .ht-message p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    /* =========================
+       LARGE SCREENS
+       ========================= */
+
+    @media (min-width: 1400px) {
+        .ht-page {
+            padding-left: 4%;
+            padding-right: 4%;
+        }
+
+        .ht-class-card h2 {
+            font-size: 19px;
+        }
+
+        .ht-table th,
+        .ht-table td {
+            padding: 15px 24px;
+        }
+    }
+
+    /* =========================
+       TABLET
+       ========================= */
+
+    @media (max-width: 900px) {
+
+        .ht-page {
+            padding: 20px 18px 35px;
+        }
+
+        .ht-filter-bar {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .ht-filter-bar button,
+        .ht-download {
+            width: 100%;
+        }
+
+        .ht-results-heading {
+            margin-top: 5px;
+        }
+    }
+
+    /* =========================
+       MOBILE
+       ========================= */
+
+    @media (max-width: 600px) {
+
+        .ht-page {
+            padding: 12px 10px 30px;
+        }
+
+        .ht-header {
+            padding: 22px 18px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+        }
+
+        .ht-header h1 {
+            font-size: 23px;
+        }
+
+        .ht-header p {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .ht-header-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 8px;
+        }
+
+        .ht-filter-bar {
+            display: block;
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+        }
+
+        .ht-filter-field {
+            margin-bottom: 13px;
+        }
+
+        .ht-filter-bar button,
+        .ht-download {
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        .ht-download {
+            margin-left: 0;
+            margin-top: 10px;
+        }
+
+        .ht-results-heading {
+            display: block;
+            margin-bottom: 13px;
+        }
+
+        .ht-results-heading h3 {
+            font-size: 17px;
+        }
+
+        .ht-class-card {
+            border-radius: 13px;
+            margin-bottom: 15px;
+        }
+
+        .ht-class-header {
+            padding: 14px 15px;
+        }
+
+        .ht-class-card h2 {
+            font-size: 16px;
+        }
+
+        .ht-class-icon {
+            width: 36px;
+            height: 36px;
+        }
+
+        .ht-table {
+            min-width: 0;
+        }
+
+        .ht-table th,
+        .ht-table td {
+            padding: 11px 12px;
+            font-size: 13px;
+        }
+
+        .ht-table th {
+            font-size: 10px;
+        }
+
+        .ht-rank {
+            width: 55px;
+        }
+
+        .ht-position-badge {
+            min-width: 27px;
+            height: 25px;
+            font-size: 12px;
+        }
+
+        .ht-average-badge {
+            padding: 4px 7px;
+            font-size: 12px;
+        }
+    }
+
+    /* =========================
+       VERY SMALL PHONES
+       ========================= */
+
+    @media (max-width: 380px) {
+
+        .ht-page {
+            padding-left: 7px;
+            padding-right: 7px;
+        }
+
+        .ht-header h1 {
+            font-size: 20px;
+        }
+
+        .ht-header p {
+            font-size: 12px;
+        }
+
+        .ht-class-header {
+            padding: 12px;
+        }
+
+        .ht-table th,
+        .ht-table td {
+            padding: 9px 8px;
+            font-size: 12px;
+        }
+
+        .ht-table th {
+            font-size: 9px;
+        }
+    }
+</style>
+
+
+<div class="ht-page">
+
+    <div class="ht-wrapper">
+
+        <!-- =========================
+             PAGE HEADER
+             ========================= -->
+
+        <div class="ht-header">
+            <div class="ht-header-content">
+
+                <h1>
+                    <span class="ht-header-icon">
+                        <i class="fas fa-award"></i>
+                    </span>
+                    Headteacher's List
+                </h1>
+
+                <p>
+                    View the top-performing students by class for a selected academic year and term.
+                </p>
+
+            </div>
+        </div>
+
+
+        <!-- =========================
+             FILTER BAR
+             ========================= -->
+
+        <form method="GET" class="ht-filter-bar">
+
+            <div class="ht-filter-field">
+                <label for="academic_year">
+                    Academic Year
+                </label>
+
+                <select name="academic_year" id="academic_year">
+                    <option value="">-- Select --</option>
+
+                    {% for year in available_years %}
+                        <option value="{{ year }}"
+                                {% if year == academic_year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+
+            <div class="ht-filter-field">
+                <label for="term">
+                    Term
+                </label>
+
+                <select name="term" id="term">
+                    <option value="">-- Select --</option>
+
+                    {% for value, label in available_terms %}
+                        <option value="{{ value }}"
+                                {% if value == term %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+
+            <button type="submit">
+                <i class="fas fa-search mr-1"></i>
+                View Results
+            </button>
+
+
+            {% if class_results %}
+                <a href="{% url 'students_app:headteachers_list_pdf' %}?academic_year={{ academic_year }}&term={{ term }}"
+                   class="ht-download">
+
+                    <i class="fas fa-file-pdf mr-2"></i>
+                    Download PDF
+
+                </a>
+            {% endif %}
+
+        </form>
+
+
+        <!-- =========================
+             RESULTS
+             ========================= -->
+
+        {% if academic_year and term %}
+
+            {% if class_results %}
+
+                <div class="ht-results-heading">
+                    <div>
+                        <h3>
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Performance Results
+                        </h3>
+
+                        <div class="ht-result-line"></div>
+                    </div>
+                </div>
+
+
+                {% for class_data in class_results %}
+
+                    <div class="ht-class-card">
+
+                        <!-- Class Header -->
+                        <div class="ht-class-header">
+
+                            <div class="ht-class-title">
+
+                                <div class="ht-class-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+
+                                <div>
+                                    <div class="ht-class-label">
+                                        Class
+                                    </div>
+
+                                    <h2>
+                                        {{ class_data.class_name }}
+                                    </h2>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Student Table -->
+                        <div class="ht-table-wrapper">
+
+                            <table class="ht-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Student</th>
+                                        <th>Average</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    {% for entry in class_data.top_students %}
+
+                                        <tr>
+
+                                            <td class="ht-rank">
+                                                <span class="ht-position-badge">
+                                                    {{ entry.position }}
+                                                </span>
+                                            </td>
+
+                                            <td class="ht-student">
+                                                {{ entry.student.first_name }}
+                                                {{ entry.student.surname }}
+                                            </td>
+
+                                            <td class="ht-average">
+                                                <span class="ht-average-badge">
+                                                    {{ entry.average }}%
+                                                </span>
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="ht-message">
+
+                    <div class="ht-message-icon">
+                        <i class="fas fa-info"></i>
+                    </div>
+
+                    <p>
+                        No grades recorded yet for this year and term.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        {% else %}
+
+            <div class="ht-message">
+
+                <div class="ht-message-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+
+                <p>
+                    Select an academic year and term above to view the list.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}
