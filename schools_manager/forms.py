@@ -41,3 +41,32 @@ class SchoolRegistrationForm(forms.ModelForm):
             raise forms.ValidationError("This subdomain is reserved.")
 
         return subdomain
+
+
+import re
+from django import forms
+from .models import DemoVideo
+
+
+class DemoVideoForm(forms.ModelForm):
+    class Meta:
+        model = DemoVideo
+        fields = ['title', 'category', 'youtube_url', 'description', 'order', 'is_published']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def clean_youtube_url(self):
+        url = self.cleaned_data.get('youtube_url')
+
+        # Regex to catch various YouTube URL formats (watch?v=, embed/, youtu.be/)
+        regex = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
+        match = re.search(regex, url)
+
+        if not match:
+            raise forms.ValidationError("Could not extract a valid YouTube ID. Please paste a standard YouTube link.")
+
+        # Attach the extracted ID directly to the model instance so it saves automatically
+        self.instance.youtube_id = match.group(1)
+
+        return url

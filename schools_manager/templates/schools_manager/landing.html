@@ -1,3 +1,4 @@
+
 {# schools_manager/templates/schools_manager/landing.html #}
 {% extends 'schools_manager/base_public.html' %}
 
@@ -615,6 +616,58 @@
     </section>
 
 
+
+    <!-- ========================================================= -->
+    <!-- PROMOTIONAL BANNER SECTION (AUTOMATED)                    -->
+    <!-- ========================================================= -->
+    {% if active_promo %}
+        <section class="container my-5">
+            <div class="saas-card p-4 p-md-5 overflow-hidden position-relative"
+                 style="background: linear-gradient(135deg, rgba(91, 76, 246, 0.05) 0%, rgba(10, 37, 64, 0.02) 100%); border: 2px solid var(--primary-teal);">
+
+                <div class="row align-items-center g-4 g-lg-5">
+                    <!-- Column 1: Clickable Graphic/Image -->
+                    <div class="col-md-6 text-center">
+                        <a href="{{ active_promo.target_link }}" class="d-block text-decoration-none overflow-hidden rounded-4 shadow-sm">
+                            <img src="{{ active_promo.image.url }}"
+                                 alt="{{ active_promo.title }}"
+                                 class="img-fluid w-100 object-fit-cover promo-img-hover"
+                                 style="max-height: 320px; transition: transform 0.4s ease;">
+                        </a>
+                    </div>
+
+                    <!-- Column 2: Promo Content & Button -->
+                    <div class="col-md-6 text-center text-md-start">
+                        <span class="badge rounded-pill px-3 py-2 mb-3 fw-bold"
+                              style="background-color: var(--primary-teal); color: #ffffff; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">
+                            Limited Time Offer
+                        </span>
+
+                        <h2 class="fw-bold mb-3 fs-3" style="color: var(--dark-blue);">
+                            {{ active_promo.title }}
+                        </h2>
+
+                        <p class="text-muted lh-lg mb-4 fs-6">
+                            {{ active_promo.description }}
+                        </p>
+
+                        <a href="{{ active_promo.target_link }}" class="btn-edusphere d-inline-flex align-items-center gap-2">
+                            {{ active_promo.button_text }}
+                            <i class="fas fa-arrow-right small"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <style>
+            .promo-img-hover:hover {
+                transform: scale(1.03);
+            }
+        </style>
+    {% endif %}
+
     <!-- ========================================================= -->
     <!-- 6. ABOUT TEASER SECTION                                   -->
     <!-- ========================================================= -->
@@ -743,3 +796,4 @@
     </section>
 
 {% endblock %}
+```

@@ -348,3 +348,57 @@ class HeroBannerAdmin(admin.ModelAdmin):
     list_filter = ('is_active', 'created_at')
     search_fields = ('title', 'caption')
     list_editable = ('is_active',)
+
+
+
+# vedeos
+
+from django.contrib import admin
+from .models import DemoVideo
+from .forms import DemoVideoForm
+
+
+@admin.register(DemoVideo, site=tenant_admin_site)
+class DemoVideoAdmin(admin.ModelAdmin):
+    # Use our custom form to extract the YouTube ID
+    form = DemoVideoForm
+
+    # What columns to show in the admin list view
+    list_display = ('title', 'category', 'order', 'is_published', 'created_at')
+
+    # Add filters on the right sidebar
+    list_filter = ('category', 'is_published')
+
+    # Add a search bar for the admin
+    search_fields = ('title', 'description')
+
+    # Allow quick editing of order and status directly from the list page
+    list_editable = ('order', 'is_published')
+
+
+from django.contrib import admin
+from django.utils import timezone
+from .models import PromoBlock
+
+
+# Make sure your custom tenant_admin_site is imported here
+
+@admin.register(PromoBlock, site=tenant_admin_site)
+class PromoBlockAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'start_time', 'end_time', 'is_active')
+    list_filter = ('is_active',)
+    list_editable = ('is_active',)
+    search_fields = ('title', 'description')
+
+    def status(self, obj):
+        """Displays a clear status indicator in the admin list."""
+        now = timezone.now()
+        if not obj.is_active:
+            return "Manually Disabled"
+        if now < obj.start_time:
+            return "Scheduled (Future)"
+        if now > obj.end_time:
+            return "Expired"
+        return "🟢 LIVE"
+
+    status.short_description = "Current Status"

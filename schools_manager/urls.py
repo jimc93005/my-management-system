@@ -29,4 +29,8 @@ urlpatterns = [
     path('renewals/<int:pk>/reject/', views.reject_renewal, name='reject_renewal'),
     path('subscription-expired/', views.subscription_expired_view, name='subscription_expired'),
 
+
+    # VIDEOS URLS
+# Platform Admin Video Management URLs
+    path('demo/', views.demo_hub, name='demo_hub')
 ]

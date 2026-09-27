@@ -1,0 +1,122 @@
+{% extends 'schools_manager/base_public.html' %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Header & Search Section -->
+    <div class="row mb-5 justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="mb-3">Platform Demos & Tutorials</h1>
+
+            <p class="text-muted mb-4">
+                Learn how to make the most out of your school management system.
+            </p>
+
+            <form method="GET" action="{% url 'demo_hub' %}" class="d-flex">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    class="form-control me-2"
+                    placeholder="Search for tutorials (e.g., timetable, billing...)"
+                >
+
+                <button type="submit" class="btn btn-primary">
+                    Search
+                </button>
+
+                {% if query %}
+                    <!-- Show a clear button if a search is active -->
+                    <a
+                        href="{% url 'demo_hub' %}"
+                        class="btn btn-outline-secondary ms-2"
+                    >
+                        Clear
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Video Grid -->
+    <div class="row g-4">
+
+        {% for video in videos %}
+
+        <div class="col-md-6 col-lg-4">
+
+            <div class="card h-100 shadow-sm border-0">
+
+                <!-- YouTube Video / Missing ID Message -->
+                <div class="ratio ratio-16x9 bg-dark rounded-top">
+
+                    {% if video.youtube_id %}
+
+                        <iframe
+                            src="https://www.youtube.com/embed/{{ video.youtube_id }}"
+                            title="{{ video.title }}"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+
+                    {% else %}
+
+                        <div class="d-flex align-items-center justify-content-center text-white">
+                            <p class="mb-0">
+                                Video unavailable (Missing ID)
+                            </p>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Video Information -->
+                <div class="card-body">
+
+                    <span class="badge bg-info text-dark mb-2">
+                        {{ video.get_category_display }}
+                    </span>
+
+                    <h5 class="card-title">
+                        {{ video.title }}
+                    </h5>
+
+                    {% if video.description %}
+                        <p class="card-text text-muted small">
+                            {{ video.description }}
+                        </p>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <!-- Empty State -->
+        <div class="col-12 text-center py-5">
+
+            <h4 class="text-muted">
+                No demo videos found.
+            </h4>
+
+            {% if query %}
+                <p>Try adjusting your search terms.</p>
+            {% else %}
+                <p>Check back soon for new tutorials!</p>
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+{% endblock %}

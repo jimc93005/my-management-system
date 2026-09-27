@@ -3,6 +3,8 @@
 
 import secrets
 import string
+from django.utils import timezone
+from .models import PromoBlock
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
@@ -257,6 +259,14 @@ def public_landing_page(request):
 
     # 4. Fetch Active Client Tenants (excluding the public schema)
     schools = School.objects.exclude(schema_name='public').prefetch_related('domains')
+    now = timezone.now()
+
+    # Fetch the latest active promotion within the valid date window
+    active_promo = PromoBlock.objects.filter(
+        is_active=True,
+        start_time__lte=now,
+        end_time__gte=now
+    ).first()
 
     # 5. Build Context
     context = {
@@ -270,6 +280,7 @@ def public_landing_page(request):
         # 'legal_links': legal_links,  # <-- Added to context
         # 'social_links': social_links,  # <-- Added to context
         'schools': schools,
+        'active_promo': active_promo,
     }
 
     return render(request, 'schools_manager/landing.html', context)
@@ -680,3 +691,60 @@ def subscription_expired_view(request):
             'payment_methods': payment_methods,
         }
     )
+
+
+
+# VIDEOS VIEW
+from django.shortcuts import render
+from django.db.models import Q
+from .models import DemoVideo
+
+
+def demo_hub(request):
+    """Public view for landing page visitors to search and watch demo videos."""
+    query = request.GET.get('q', '').strip()
+    selected_category = request.GET.get('category', '').strip()
+
+    # Fetch published videos in the order defined by the model
+    videos = DemoVideo.objects.filter(is_published=True)
+
+    # Text search across title, description, and category
+    if query:
+        videos = videos.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(category__icontains=query)
+        )
+
+    # Exact filter when clicking a specific category button
+    if selected_category:
+        videos = videos.filter(category=selected_category)
+
+    return render(request, 'videos/demo_hub.html', {
+        'videos': videos,
+        'query': query,
+        'selected_category': selected_category,
+        'categories': DemoVideo.CATEGORY_CHOICES,  # Passes category list to template for buttons
+    })
+
+#
+# from django.shortcuts import render
+# from django.utils import timezone
+# from .models import PromoBlock  # Adjust import path if needed
+#
+#
+# def public_landing(request):
+#     now = timezone.now()
+#
+#     # Fetch the latest active promotion within the valid date window
+#     active_promo = PromoBlock.objects.filter(
+#         is_active=True,
+#         start_time__lte=now,
+#         end_time__gte=now
+#     ).first()
+#
+#     context = {
+#         'active_promo': active_promo,
+#         # ... your existing context variables (config, hero_banners, features, etc.) ...
+#     }
+#     return render(request, 'schools_manager/landing.html', context)

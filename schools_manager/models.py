@@ -498,6 +498,38 @@ class SubscriptionRenewal(models.Model):
 
 
 
+
+# DEMO VIDEOS MODLE
+from django.db import models
+
+class DemoVideo(models.Model):
+    CATEGORY_CHOICES = [
+        ('getting_started', 'Getting Started'),
+        ('academics', 'Academics & Grading'),
+        ('finance', 'Finance & Billing'),
+        ('portal', 'Parent & Student Portal'),
+        ('settings', 'System Settings'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, help_text="Searchable description for users.")
+    youtube_url = models.URLField(help_text="Paste the full YouTube video link (e.g., https://www.youtube.com/watch?v=...)")
+    youtube_id = models.CharField(max_length=20, blank=True, editable=False)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='getting_started')
+    order = models.PositiveIntegerField(default=0, help_text="Order in which the video appears.")
+    is_published = models.BooleanField(default=True, help_text="Toggle off to hide without deleting.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name = 'Demo Video'
+        verbose_name_plural = 'Demo Videos'
+
+    def __str__(self):
+        return self.title
+
+
 from django.db import models
 
 class HeroBanner(models.Model):
@@ -514,3 +546,40 @@ class HeroBanner(models.Model):
 
     def __str__(self):
         return self.title
+
+
+
+# ADDS MODLES
+from django.db import models
+from django.utils import timezone
+
+
+class PromoBlock(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    image = models.ImageField(upload_to='promos/', help_text="Upload the promotional graphic here.")
+
+    # The crucial link that both the image and button will use
+    target_link = models.CharField(max_length=255,
+                                   help_text="Enter a URL (e.g., https://example.com) or a path (e.g., /apply/)")
+    button_text = models.CharField(max_length=50, default="Learn More", help_text="Text for the CTA button.")
+
+    # Time-bound automation
+    start_time = models.DateTimeField(help_text="When should this promotion start appearing?")
+    end_time = models.DateTimeField(help_text="When should this promotion automatically disappear?")
+    is_active = models.BooleanField(default=True,
+                                    help_text="Uncheck to hide this promotion manually without deleting it.")
+
+    class Meta:
+        verbose_name = "Promotional Block"
+        verbose_name_plural = "Promotional Blocks"
+        ordering = ['-start_time']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_currently_running(self):
+        """Checks if the promo is active AND within the scheduled dates."""
+        now = timezone.now()
+        return self.is_active and self.start_time <= now <= self.end_time
