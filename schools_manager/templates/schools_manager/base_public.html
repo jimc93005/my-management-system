@@ -47,10 +47,21 @@
             text-decoration: none;
             opacity: 0.75;
             transition: opacity 0.2s ease;
+            padding: 0.5rem 0; /* Added for better mobile tap targets */
+            display: inline-block;
         }
         .nav-link-soft:hover {
             opacity: 1;
             color: var(--primary-teal);
+        }
+        /* Style for the hamburger icon */
+        .navbar-toggler {
+            border: none;
+            padding: 0.25rem 0.5rem;
+        }
+        .navbar-toggler:focus {
+            box-shadow: none;
+            outline: none;
         }
 
         /* --- Buttons --- */
@@ -63,6 +74,8 @@
             border-radius: 50px;
             box-shadow: 0 4px 14px rgba(0,128,128,0.3);
             transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-edusphere:hover {
             transform: translateY(-2px);
@@ -127,8 +140,9 @@
             color: rgba(10,37,64,0.5);
         }
 
-        @media (max-width: 576px) {
-            .btn-edusphere { width: 100%; text-align: center; }
+        @media (max-width: 991px) {
+            .btn-edusphere { width: 100%; text-align: center; margin-top: 1rem; }
+            .nav-link-soft { display: block; padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
         }
 
         {% block extra_css %}{% endblock %}
@@ -138,17 +152,28 @@
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="container">
+            <!-- Brand -->
             <a class="navbar-brand" href="{% url 'schools_manager:public_landing' %}">
                 {{ config.site_name|default:"Edusphere" }}<span class="brand-dot">.</span>
             </a>
-            <div class="d-flex align-items-center gap-4">
-                <a href="{% url 'schools_manager:pricing' %}" class="nav-link-soft d-none d-md-inline">Pricing</a>
-                <a href="{% url 'schools_manager:payment_methods' %}" class="nav-link-soft d-none d-md-inline">Payment</a>
-                <a href="{% url 'schools_manager:faq' %}" class="nav-link-soft d-none d-md-inline">FAQ</a>
-                <a href="{% url 'schools_manager:about' %}" class="nav-link-soft d-none d-md-inline">About</a>
-                <a href="{% url 'schools_manager:team' %}" class="nav-link-soft d-none d-md-inline">Team</a>
-                <a href="{% url 'schools_manager:register' %}" class="btn-edusphere">Join Us</a>
+
+            <!-- Mobile Toggler Button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Collapsible Content -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- ms-auto pushes this to the right side of the screen on desktop -->
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-4">
+                    <a href="{% url 'schools_manager:pricing' %}" class="nav-link-soft">Pricing</a>
+                    <a href="{% url 'schools_manager:payment_methods' %}" class="nav-link-soft">Payment</a>
+                    <a href="{% url 'schools_manager:faq' %}" class="nav-link-soft">FAQ</a>
+                    <a href="{% url 'schools_manager:about' %}" class="nav-link-soft">About</a>
+                    <a href="{% url 'schools_manager:team' %}" class="nav-link-soft">Team</a>
+                    <a href="{% url 'schools_manager:register' %}" class="btn-edusphere ms-lg-2">Join Us</a>
+                </div>
             </div>
         </div>
     </nav>
