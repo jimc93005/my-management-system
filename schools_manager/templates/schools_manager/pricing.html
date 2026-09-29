@@ -3,18 +3,32 @@
 {% block content %}
 <div class="container py-5">
     <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-primary">Simple, Transparent Pricing</h1>
+        <h1 class="display-4 fw-bold" style="color: var(--dark-blue);">Simple, Transparent Pricing</h1>
         <p class="lead text-muted">Choose the perfect plan for your school. Upgrade or downgrade anytime.</p>
 
-        <!-- Billing Cycle Toggle -->
-        <div class="d-flex justify-content-center align-items-center gap-3 mt-4">
-            <span class="fw-semibold text-dark" id="monthlyLabel">Monthly Billing</span>
-            <div class="form-check form-switch fs-4 mb-0">
-                <input class="form-check-input" type="checkbox" role="switch" id="billingToggle" onchange="toggleBillingCycle()">
+        <!-- 4-Way Billing Cycle Pill Switcher -->
+        <div class="d-flex justify-content-center mt-4">
+            <div class="btn-group p-1 rounded-pill bg-white border shadow-sm flex-wrap" role="group" aria-label="Billing Cycle">
+                <input type="radio" class="btn-check" name="billing_cycle" id="cycleMonthly" value="monthly" checked onchange="switchCycle('monthly')">
+                <label class="btn btn-outline-primary rounded-pill px-3 py-2 border-0 fw-semibold" for="cycleMonthly">
+                    Monthly
+                </label>
+
+                <input type="radio" class="btn-check" name="billing_cycle" id="cycleQuarterly" value="quarterly" onchange="switchCycle('quarterly')">
+                <label class="btn btn-outline-primary rounded-pill px-3 py-2 border-0 fw-semibold" for="cycleQuarterly">
+                    Quarterly <span class="small opacity-75">(3 Mo)</span>
+                </label>
+
+                <input type="radio" class="btn-check" name="billing_cycle" id="cycleTerm" value="term" onchange="switchCycle('term')">
+                <label class="btn btn-outline-primary rounded-pill px-3 py-2 border-0 fw-semibold" for="cycleTerm">
+                    Term <span class="small opacity-75">(4 Mo)</span>
+                </label>
+
+                <input type="radio" class="btn-check" name="billing_cycle" id="cycleAnnual" value="annual" onchange="switchCycle('annual')">
+                <label class="btn btn-outline-primary rounded-pill px-3 py-2 border-0 fw-semibold" for="cycleAnnual">
+                    Annual <span class="badge bg-success-subtle text-success ms-1">Save ~17%</span>
+                </label>
             </div>
-            <span class="fw-semibold text-muted" id="annualLabel">
-                Annual Billing <span class="badge bg-success-subtle text-success fs-6">Save ~20%</span>
-            </span>
         </div>
     </div>
 
@@ -22,23 +36,25 @@
     <div class="row row-cols-1 row-cols-md-3 g-4 justify-content-center">
         {% for plan in plans %}
         <div class="col">
-            <div class="card h-100 shadow-sm border-2 {% if plan.is_highlighted %}border-primary shadow{% else %}border-light-subtle{% endif %}">
+            <div class="card h-100 shadow-sm border-2 rounded-4 {% if plan.is_highlighted %}border-primary shadow-lg{% else %}border-light-subtle{% endif %}">
                 {% if plan.is_highlighted %}
-                <div class="card-header bg-primary text-white text-center fw-bold py-2">
+                <div class="card-header bg-primary text-white text-center fw-bold py-2 rounded-top-4">
                     MOST POPULAR
                 </div>
                 {% endif %}
 
                 <div class="card-body p-4 d-flex flex-column">
-                    <h3 class="card-title fw-bold text-center">{{ plan.name }}</h3>
+                    <h3 class="card-title fw-bold text-center mb-2" style="color: var(--dark-blue);">{{ plan.name }}</h3>
                     <p class="text-muted text-center small mb-4">{{ plan.description }}</p>
 
                     <!-- Price Display -->
                     <div class="text-center mb-4">
                         <span class="display-5 fw-bold price-amount"
-                              data-monthly="{{ plan.monthly_price }}"
-                              data-annual="{{ plan.annual_price }}">
-                            ${{ plan.monthly_price }}
+                              data-monthly="{{ plan.monthly_price|floatformat:2 }}"
+                              data-quarterly="{% if plan.quarterly_price %}{{ plan.quarterly_price|floatformat:2 }}{% endif %}"
+                              data-term="{% if plan.four_month_price %}{{ plan.four_month_price|floatformat:2 }}{% endif %}"
+                              data-annual="{{ plan.annual_price|floatformat:2 }}">
+                            MWK {{ plan.monthly_price|floatformat:2 }}
                         </span>
                         <span class="text-muted fs-6 billing-text">/ month</span>
                     </div>
@@ -47,7 +63,7 @@
                     <ul class="list-unstyled mb-4 flex-grow-1">
                         {% for feature in plan.features.all %}
                         <li class="mb-2 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <i class="fas fa-check-circle text-success me-2"></i>
                             <span>{{ feature.feature_text }}</span>
                         </li>
                         {% empty %}
@@ -58,7 +74,7 @@
                     <!-- Get Started Button -->
                     <div class="mt-auto">
                         <a href="{% url 'schools_manager:register' %}?plan={{ plan.slug }}&cycle=monthly"
-                           class="btn get-started-btn w-100 py-2 fw-semibold {% if plan.is_highlighted %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                           class="btn get-started-btn w-100 py-2 rounded-pill fw-semibold {% if plan.is_highlighted %}btn-primary{% else %}btn-outline-primary{% endif %}"
                            data-slug="{{ plan.slug }}">
                             Select {{ plan.name }}
                         </a>
@@ -70,33 +86,41 @@
     </div>
 </div>
 
-<!-- JavaScript for Live Toggle -->
+<!-- JavaScript for Live Multi-Cycle Switcher -->
 <script>
-function toggleBillingCycle() {
-    const isAnnual = document.getElementById('billingToggle').checked;
+function switchCycle(cycle) {
     const priceAmounts = document.querySelectorAll('.price-amount');
     const billingTexts = document.querySelectorAll('.billing-text');
     const ctaButtons = document.querySelectorAll('.get-started-btn');
     const registerUrlBase = "{% url 'schools_manager:register' %}";
 
-    // Toggle label colors
-    document.getElementById('monthlyLabel').className = isAnnual ? 'fw-semibold text-muted' : 'fw-semibold text-dark';
-    document.getElementById('annualLabel').className = isAnnual ? 'fw-semibold text-dark' : 'fw-semibold text-muted';
+    const config = {
+        'monthly':   { attr: 'data-monthly',   text: '/ month' },
+        'quarterly': { attr: 'data-quarterly', text: '/ quarter (3 mo)' },
+        'term':      { attr: 'data-term',      text: '/ term (4 mo)' },
+        'annual':    { attr: 'data-annual',    text: '/ year' }
+    };
+
+    const selected = config[cycle];
 
     priceAmounts.forEach((el, index) => {
-        const monthly = el.getAttribute('data-monthly');
-        const annual = el.getAttribute('data-annual');
+        const val = el.getAttribute(selected.attr);
         const btn = ctaButtons[index];
         const slug = btn.getAttribute('data-slug');
 
-        if (isAnnual) {
-            el.textContent = '$' + annual;
-            billingTexts[index].textContent = '/ year';
-            btn.href = `${registerUrlBase}?plan=${slug}&cycle=annual`;
+        if (val && val.trim() !== '') {
+            el.textContent = 'MWK ' + val;
+            billingTexts[index].textContent = selected.text;
+            btn.classList.remove('disabled');
+            btn.style.pointerEvents = 'auto';
+            btn.href = `${registerUrlBase}?plan=${slug}&cycle=${cycle}`;
         } else {
-            el.textContent = '$' + monthly;
-            billingTexts[index].textContent = '/ month';
-            btn.href = `${registerUrlBase}?plan=${slug}&cycle=monthly`;
+            // Graceful fallback if optional fields (quarterly/term) are left blank in Django Admin
+            el.textContent = 'N/A';
+            billingTexts[index].textContent = '(Not offered)';
+            btn.classList.add('disabled');
+            btn.style.pointerEvents = 'none';
+            btn.href = '#';
         }
     });
 }

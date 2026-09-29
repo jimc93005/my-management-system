@@ -131,20 +131,29 @@ class SchoolRegistrationRequestAdmin(admin.ModelAdmin):
 
 
 
-
-
 class PlanFeatureInline(admin.TabularInline):
     model = PlanFeature
-    extra = 3  # Gives you 3 empty rows to add features quickly
-
+    extra = 3
 
 @admin.register(SubscriptionPlan, site=tenant_admin_site)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'monthly_price', 'annual_price', 'is_active', 'is_highlighted')
+    list_display = ('name', 'monthly_price', 'quarterly_price', 'four_month_price', 'annual_price', 'is_active', 'is_highlighted')
+    list_editable = ('is_active', 'is_highlighted')
     prepopulated_fields = {'slug': ('name',)}
     inlines = [PlanFeatureInline]
 
-
+    fieldsets = (
+        ('Plan Details', {
+            'fields': ('name', 'slug', 'description', 'is_active', 'is_highlighted')
+        }),
+        ('Pricing Options (MWK)', {
+            'fields': (
+                ('monthly_price', 'quarterly_price'),
+                ('four_month_price', 'annual_price')
+            ),
+            'description': 'Configure prices for different billing intervals. Leave quarterly or 4-month blank if not applicable.'
+        }),
+    )
 
 from django.contrib import admin
 from .models import (
