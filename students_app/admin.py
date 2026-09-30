@@ -17,7 +17,7 @@ from .models import AttendanceWarning
 from .models import GradeBoundary
 from .models import GradingSystem
 from .models import CalendarEvent
-from .models import Footer, FooterDocument
+from .models import Footer, FooterDocument, CarouselEvent
 
 
 
@@ -38,6 +38,7 @@ admin.site.register(AttendanceWarning)
 admin.site.register(GradeBoundary)
 admin.site.register(GradingSystem)
 admin.site.register(CalendarEvent)
+admin.site.register(CarouselEvent)
 
 # users/admin.py
 
