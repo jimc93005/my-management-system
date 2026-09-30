@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid p-0">
 
-    <!-- HERO SECTION (Unchanged) -->
+    <!-- HERO SECTION -->
     <div class="hero-section d-flex align-items-center text-center"
          style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
 
@@ -38,11 +38,14 @@
             <div class="mx-auto mt-4 preview-slider-container" style="max-width: 500px; cursor: pointer;" data-toggle="modal" data-target="#galleryModal" title="Click to view full gallery">
                 <p class="small font-weight-bold text-uppercase mb-2 preview-slider-label"><i class="fas fa-camera mr-1"></i> Campus Highlights (Click to expand)</p>
                 <div id="smallCarousel" class="carousel slide overflow-hidden preview-slider" data-ride="carousel">
-                    <div class="carousel-inner">
+                    <div class="carousel-inner" style="background-color: #0e1730;">
                         {% for event in carousel_events %}
                         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Highlight" style="height: 250px; object-fit: cover;">
-                            <div class="carousel-caption d-none d-md-block p-2 preview-slider-caption">
+                            <!-- FIX 1: Set object-fit: contain & dynamic height to display full image without cropping -->
+                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Highlight" style="height: auto; max-height: 320px; object-fit: contain;">
+
+                            <!-- FIX 2: Changed 'd-none d-md-block' to 'd-block' so caption shows on mobile -->
+                            <div class="carousel-caption d-block p-2 preview-slider-caption">
                                 <h6 class="mb-0 font-weight-bold text-white text-truncate">{{ event.title|default:"Campus Event" }}</h6>
                             </div>
                         </div>
@@ -54,7 +57,7 @@
         </div>
     </div>
 
-    <!-- FEATURE STRIP (Unchanged) -->
+    <!-- FEATURE STRIP -->
     <div class="container feature-strip">
         <div class="row justify-content-center">
             <div class="col-md-4 mb-4">
@@ -77,8 +80,6 @@
             </div>
         </div>
     </div>
-
-    <!-- ================= NEW CMS SECTIONS ================= -->
 
     <!-- 1. ANNOUNCEMENTS SECTION -->
     {% if announcements %}
@@ -103,7 +104,6 @@
                             "{{ announcement.content|truncatewords:30 }}"
                         </p>
 
-                        <!-- ADDED: Link to read the full announcement -->
                         <a href="{% url 'students_app:announcement_detail' announcement.pk %}" class="btn mt-3" style="background-color: transparent; border: 1px solid var(--brass-light); color: var(--brass-light); border-radius: 30px; padding: 8px 24px;">
                             Read Full Announcement
                         </a>
@@ -143,12 +143,10 @@
                         </div>
                     {% endif %}
 
-                    <!-- UPDATED: Flex classes added here to push the button to the bottom -->
                     <div class="card-body d-flex flex-column">
                         <div class="small text-muted mb-2">{{ article.publish_date|date:"M d, Y" }}</div>
 
                         <h5 class="feature-title fs-6 mb-3" style="line-height: 1.4;">
-                            <!-- ADDED: Clickable Title -->
                             <a href="{% url 'students_app:news_detail' article.pk %}" class="text-decoration-none" style="color: var(--ink);">
                                 {{ article.headline }}
                             </a>
@@ -156,7 +154,6 @@
 
                         <p class="feature-text small flex-grow-1">{{ article.summary|truncatewords:15 }}</p>
 
-                        <!-- ADDED: Read More Button pinned to the bottom -->
                         <a href="{% url 'students_app:news_detail' article.pk %}" class="btn btn-sm mt-3 w-100" style="background-color: var(--brass-light); color: var(--ink-deep); font-weight: 600;">
                             Read More <i class="fas fa-arrow-right ml-1"></i>
                         </a>
@@ -168,7 +165,7 @@
     </div>
     {% endif %}
 
-    <!-- 3. LEADERSHIP SECTION (Unchanged) -->
+    <!-- 3. LEADERSHIP SECTION -->
     {% if leaders %}
     <div class="py-5" style="background-color: #fcfbf8;">
         <div class="container">
@@ -204,7 +201,7 @@
 
 </div>
 
-<!-- GALLERY MODAL (Unchanged) -->
+<!-- GALLERY MODAL -->
 {% if carousel_events %}
 <div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
@@ -222,7 +219,7 @@
                             <img src="{{ event.image.url }}" class="d-block w-100" alt="Event photo" style="height: 70vh; min-height: 500px; object-fit: contain; background-color: #000;">
 
                             {% if event.title or event.description %}
-                            <div class="carousel-caption d-none d-md-block rounded shadow-lg modal-caption">
+                            <div class="carousel-caption d-block rounded shadow-lg modal-caption">
                                 <h3 class="font-weight-bold text-white mb-2">{{ event.title }}</h3>
                                 <p class="text-light mb-0" style="font-size: 1.15rem; font-weight: 300;">{{ event.description }}</p>
                             </div>
@@ -246,7 +243,6 @@
 {% endif %}
 
 <style>
-    /* ============ FACULTY REGISTRY THEME ============ */
     :root {
         --ink: #16213e;
         --ink-deep: #0e1730;
@@ -256,7 +252,6 @@
 
     body, html { margin: 0; padding: 0; }
 
-    /* Hero Styles (Unchanged) */
     .hero-section {
         background-size: cover;
         background-position: center;
@@ -308,13 +303,12 @@
         border-radius: 0.625rem; border: 2px solid rgba(184,145,47,0.55);
         box-shadow: 0 14px 34px rgba(0,0,0,0.3);
     }
-    .preview-slider-caption { background: rgba(14, 23, 48, 0.75); bottom: 0; left: 0; right: 0; }
+    .preview-slider-caption { background: rgba(14, 23, 48, 0.85); bottom: 0; left: 0; right: 0; }
     .modal-caption {
         background: rgba(14, 23, 48, 0.92); padding: 20px 30px; bottom: 30px;
         border-top: 3px solid var(--brass); max-width: 80%; margin: 0 auto;
     }
 
-    /* Feature Strip Styles (Unchanged) */
     .feature-strip { margin-top: 50px; position: relative; z-index: 10; }
     .feature-card {
         background: #fffdf8; border: 1px solid #e4ddc9; border-radius: 0.625rem;
@@ -338,7 +332,6 @@
     }
     .feature-text { color: #5b6472; font-size: 0.9rem; line-height: 1.6; margin-bottom: 0; }
 
-    /* ============ NEW CMS STYLES ============ */
     .section-heading {
         font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
         font-weight: 600; color: var(--ink); font-size: 2.5rem;
@@ -347,7 +340,6 @@
         height: 3px; width: 60px; background-color: var(--brass); margin-top: 15px;
     }
 
-    /* Announcements */
     .announcement-section {
         background: linear-gradient(135deg, var(--ink) 0%, var(--ink-deep) 100%);
         color: white; padding: 60px 0;
@@ -359,12 +351,10 @@
         display: inline-block; margin-bottom: 15px; border-radius: 20px;
     }
 
-    /* News */
     .news-img {
         height: 220px; object-fit: cover; width: 100%; border-radius: 0.625rem 0.625rem 0 0;
     }
 
-    /* Leadership */
     .leader-card-header {
         background-color: var(--brass); color: var(--ink-deep);
         font-family: 'IBM Plex Mono', 'Courier New', monospace; font-weight: 700;
@@ -373,7 +363,10 @@
         letter-spacing: 0.05em;
     }
     .leader-img {
-        height: 300px; object-fit: cover; width: 100%;
+        height: 300px;
+        object-fit: cover;
+        object-position: top;
+        width: 100%;
         border-bottom: 3px solid var(--brass-light);
     }
 

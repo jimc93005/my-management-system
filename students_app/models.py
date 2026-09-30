@@ -226,7 +226,7 @@ class Students(models.Model):
     class_level = models.ForeignKey(ClassLevel, on_delete=models.CASCADE)
     year_enrolled = models.IntegerField(null=True, blank=True, choices=YEAR_CHOICES)
     gender = models.CharField(max_length=20,choices=GENDER_CHOICES)
-    disability = models.CharField(max_length=20)
+    disability = models.CharField(max_length=20, null=True, blank=True)
     parental_contact = models.CharField(max_length=20, null=True, blank=True)
     address = models.CharField(max_length=30, null=True, blank=True)
     orphanhood = models.CharField(max_length=20, null=True, blank=True, choices=ORPHANHOOD_CHOICES)
