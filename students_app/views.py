@@ -3421,3 +3421,96 @@ def headteachers_list_pdf_view(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     return response
+
+
+# PDF FOR STUDENTS IN ClassLevel
+import base64
+import datetime
+
+
+
+def get_image_data_uri(image_field):
+    """Helper function to convert an ImageField file into a base64 Data URI."""
+    if image_field and hasattr(image_field, 'file'):
+        try:
+            image_field.open()
+            encoded = base64.b64encode(image_field.read()).decode('utf-8')
+            mime_type = 'image/png' if image_field.name.endswith('.png') else 'image/jpeg'
+            return f"data:{mime_type};base64,{encoded}"
+        except Exception:
+            return None
+    return None
+
+
+def export_class_list_pdf(request, class_level):
+    if not request.user.has_perm('students_app.view_classlevel'):
+        messages.warning(request, "🔒 You don't have permission to download this document.")
+        return redirect('students_app:dashboard')
+
+    class_obj = get_object_or_404(ClassLevel, class_level=class_level)
+    class_name_str = str(class_obj.class_level)
+
+    # 1. Fetch Students
+    students = Students.objects.filter(
+        class_level=class_obj,
+        status='Active'
+    ).order_by('surname', 'first_name')
+
+    # 2. Auto-Detect Current Year & Term
+    latest_grade = Grade.objects.filter(
+        student__class_level=class_obj,
+        class_level_snapshot=class_name_str
+    ).order_by('-academic_year', '-term').first()
+
+    if latest_grade:
+        current_year = latest_grade.academic_year
+        current_term = latest_grade.term
+    else:
+        current_year = str(datetime.date.today().year)
+        current_term = '1'
+
+    # 3. Fetch School Profile & Assets
+    school_profile = SchoolProfile.objects.first()
+
+    school_logo_uri = get_image_data_uri(getattr(school_profile, 'logo', None))
+    head_sig_uri = get_image_data_uri(getattr(school_profile, 'headteacher_signature', None))
+
+    # Class teacher signature if present on user model or profile
+    teacher_sig_uri = None
+    if class_obj.form_teacher and hasattr(class_obj.form_teacher, 'signature'):
+        teacher_sig_uri = get_image_data_uri(class_obj.form_teacher.signature)
+
+    stamp_base64 = None
+    if hasattr(school_profile, 'stamp') and school_profile.stamp:
+        try:
+            school_profile.stamp.open()
+            stamp_base64 = base64.b64encode(school_profile.stamp.read()).decode('utf-8')
+        except Exception:
+            pass
+
+    # 4. Render HTML Context
+    context = {
+        'class_obj': class_obj,
+        'students': students,
+        'total_students': students.count(),
+        'current_year': current_year,
+        'current_term': current_term,
+        'school_profile': school_profile,
+        'school_logo_uri': school_logo_uri,
+        'head_sig_uri': head_sig_uri,
+        'teacher_sig_uri': teacher_sig_uri,
+        'stamp_base64': stamp_base64,
+    }
+
+    html_string = render_to_string('students_app/class_list_pdf.html', context)
+
+    # 5. Generate PDF
+    pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+
+    filename = f"Class_Roster_{class_name_str.replace(' ', '_')}_{current_year}_Term{current_term}.pdf"
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+

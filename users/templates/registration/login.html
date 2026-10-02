@@ -1,127 +1,245 @@
-{% extends 'students_app/base.html' %} {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
+{% extends 'students_app/base.html' %}
 
-            {% if messages %}
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div class="lg-page">
+    <div class="lg-bg" style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');"></div>
+
+    <div class="container lg-wrap">
+
+        {% if messages %}
+            <div class="lg-messages">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded text-center">
-                        {{ message }}
-                    </div>
+                    <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded text-center">{{ message }}</div>
                 {% endfor %}
-            {% endif %}
+            </div>
+        {% endif %}
 
-            <div class="card border-0 shadow-lg rounded-lg overflow-hidden">
-                <div class="card-header bg-primary text-white text-center py-4 border-0">
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
-                        <i class="fas fa-school"></i>
-                    </div>
-                    <h3 class="mb-0 font-weight-bold" id="form-title">Staff Portal</h3>
-                    <p class="mb-0 text-white-50 small" id="form-subtitle">Enter your credentials to continue</p>
-                </div>
+        <div class="lg-card">
 
-                <div class="card-body p-4 p-md-5 bg-light">
-
-                    <div id="standardLoginForm">
-
-                        {% if form.errors %}
-                            <div class="alert alert-danger shadow-sm border-0 small mb-4 rounded">
-                                <strong>⚠️ Login Failed:</strong>
-                                <ul class="mb-0 mt-1">
-                                    {% for error in form.non_field_errors %}
-                                        <li>{{ error }}</li>
-                                    {% endfor %}
-                                    {% for field, errors in form.errors.items %}
-                                        {% for error in errors %}
-                                            <li><strong>{{ field|title }}:</strong> {{ error }}</li>
-                                        {% endfor %}
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
-
-                        <form method="POST" action="{% url 'users:login' %}"> {% csrf_token %}
-                            <div class="form-group mb-4">
-                                <label class="font-weight-bold text-secondary small text-uppercase">Username</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend"><span class="input-group-text bg-white border-right-0"><i class="fas fa-user text-muted"></i></span></div>
-                                    <input type="text" name="username" class="form-control border-left-0" required placeholder="Enter username">
-                                </div>
-                            </div>
-
-                            <div class="form-group mb-4">
-                                <label class="font-weight-bold text-secondary small text-uppercase">Password</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend"><span class="input-group-text bg-white border-right-0"><i class="fas fa-lock text-muted"></i></span></div>
-                                    <input type="password" name="password" class="form-control border-left-0" required placeholder="Enter password">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-block btn-lg rounded-pill shadow font-weight-bold mb-3">
-                                <i class="fas fa-sign-in-alt mr-2"></i> Log In
-                            </button>
-                        </form>
-
-                        <div class="text-center mt-4">
-                            <hr>
-                            <p class="text-muted small mb-2">Given a temporary password by the Admin?</p>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="toggleForms()">
-                                First Time Login Setup <i class="fas fa-arrow-right ml-1"></i>
-                            </button>
-                        </div>
-                    </div>
-
-
-                    <div id="resetPasswordForm" class="d-none">
-                        <form method="POST" action="{% url 'students_app:change_temp_password' %}">
-                            {% csrf_token %}
-
-                            <div class="form-group mb-3">
-                                <input type="text" name="username" class="form-control" required placeholder="Your Username">
-                            </div>
-                            <div class="form-group mb-4">
-                                <input type="password" name="old_password" class="form-control" required placeholder="Temporary Password">
-                            </div>
-
-                            <hr>
-                            <h6 class="text-dark font-weight-bold mb-3">Create New Password</h6>
-
-                            <div class="form-group mb-3">
-                                <input type="password" id="newPass" name="new_password" class="form-control" required placeholder="New Password">
-                            </div>
-                            <div class="form-group mb-3">
-                                <input type="password" id="confirmPass" name="confirm_password" class="form-control" required placeholder="Confirm New Password">
-                            </div>
-
-                            <div class="bg-white p-3 rounded border mb-4">
-                                <small class="font-weight-bold d-block mb-2 text-dark">Password Requirements:</small>
-                                <ul class="list-unstyled small text-muted mb-0" id="passwordReqs">
-                                    <li id="reqLength"><i class="fas fa-times text-danger mr-2"></i> At least 8 characters</li>
-                                    <li id="reqUpper"><i class="fas fa-times text-danger mr-2"></i> One uppercase letter</li>
-                                    <li id="reqNumber"><i class="fas fa-times text-danger mr-2"></i> One number</li>
-                                    <li id="reqSpecial"><i class="fas fa-times text-danger mr-2"></i> One special character (@$!%*?&)</li>
-                                    <li id="reqMatch"><i class="fas fa-times text-danger mr-2"></i> Passwords match</li>
-                                </ul>
-                            </div>
-
-                            <button type="submit" id="submitResetBtn" class="btn btn-success btn-block btn-lg rounded-pill shadow font-weight-bold mb-3" disabled>
-                                <i class="fas fa-check-circle mr-2"></i> Save & Log In
-                            </button>
-                        </form>
-
-                        <div class="text-center mt-3">
-                            <button type="button" class="btn btn-link text-muted small" onclick="toggleForms()">
-                                <i class="fas fa-arrow-left mr-1"></i> Back to Standard Login
-                            </button>
-                        </div>
-                    </div>
-
+            <!-- LEFT: IMAGE PANEL -->
+            <div class="lg-visual d-none d-md-flex" style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80{% endif %}');">
+                <div class="lg-visual-shade"></div>
+                <div class="lg-visual-copy">
+                    <h2>Where learning moves forward</h2>
+                    <p>Manage classes, grades and report cards in one place. Sign in to pick up where you left off.</p>
+                    <a href="/" class="lg-btn lg-btn-dark">Back to home</a>
                 </div>
             </div>
 
+            <!-- RIGHT: FORM PANEL -->
+            <div class="lg-panel">
+                <div class="lg-brand">
+                    <i class="fas fa-school"></i>
+                    <span>{{ request.tenant.name|default:request.tenant.schema_name|title }}</span>
+                </div>
+
+                <h3 class="lg-title" id="form-title">Staff Portal</h3>
+                <p class="lg-sub" id="form-subtitle">Enter your credentials to continue</p>
+
+                <!-- STANDARD LOGIN -->
+                <div id="standardLoginForm">
+
+                    {% if form.errors %}
+                        <div class="lg-alert" role="alert">
+                            <strong>Login failed</strong>
+                            <ul class="mb-0 mt-1 pl-3">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" action="{% url 'users:login' %}"> {% csrf_token %}
+                        <div class="lg-field">
+                            <label for="id_username">Username</label>
+                            <input type="text" id="id_username" name="username" class="lg-input" required placeholder="Enter username" autocomplete="username">
+                        </div>
+
+                        <div class="lg-field">
+                            <label for="id_password">Password</label>
+                            <input type="password" id="id_password" name="password" class="lg-input" required placeholder="Enter password" autocomplete="current-password">
+                            <div class="text-right mt-2">
+                                <a href="{% url 'password_reset' %}" class="lg-forgot small text-decoration-none font-weight-bold">
+                                    Forgot Password?
+                                </a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="lg-btn lg-btn-light lg-block">Log in</button>
+                    </form>
+
+                    <div class="lg-or"><span>or</span></div>
+
+                    <button type="button" class="lg-btn lg-btn-ghost lg-block" onclick="toggleForms()">
+                        First-time login setup
+                    </button>
+                    <p class="lg-hint">Use this if the admin gave you a temporary password.</p>
+                </div>
+
+                <!-- FIRST-TIME SETUP -->
+                <div id="resetPasswordForm" class="d-none">
+                    <form method="POST" action="{% url 'students_app:change_temp_password' %}">
+                        {% csrf_token %}
+
+                        <div class="lg-field">
+                            <label for="resetUser">Username</label>
+                            <input type="text" id="resetUser" name="username" class="lg-input" required placeholder="Your username" autocomplete="username">
+                        </div>
+                        <div class="lg-field">
+                            <label for="resetOld">Temporary password</label>
+                            <input type="password" id="resetOld" name="old_password" class="lg-input" required placeholder="Temporary password" autocomplete="current-password">
+                        </div>
+
+                        <div class="lg-field">
+                            <label for="newPass">New password</label>
+                            <input type="password" id="newPass" name="new_password" class="lg-input" required placeholder="New password" autocomplete="new-password">
+                        </div>
+                        <div class="lg-field">
+                            <label for="confirmPass">Confirm new password</label>
+                            <input type="password" id="confirmPass" name="confirm_password" class="lg-input" required placeholder="Confirm new password" autocomplete="new-password">
+                        </div>
+
+                        <div class="lg-reqs">
+                            <small>Password requirements</small>
+                            <ul class="list-unstyled mb-0" id="passwordReqs">
+                                <li id="reqLength" class="text-muted"><i class="fas fa-times text-danger mr-2"></i> At least 8 characters</li>
+                                <li id="reqUpper" class="text-muted"><i class="fas fa-times text-danger mr-2"></i> One uppercase letter</li>
+                                <li id="reqNumber" class="text-muted"><i class="fas fa-times text-danger mr-2"></i> One number</li>
+                                <li id="reqSpecial" class="text-muted"><i class="fas fa-times text-danger mr-2"></i> One special character (@$!%*?&)</li>
+                                <li id="reqMatch" class="text-muted"><i class="fas fa-times text-danger mr-2"></i> Passwords match</li>
+                            </ul>
+                        </div>
+
+                        <button type="submit" id="submitResetBtn" class="lg-btn lg-btn-light lg-block" disabled>
+                            Save and log in
+                        </button>
+                    </form>
+
+                    <button type="button" class="lg-back" onclick="toggleForms()">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to standard login
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    .lg-page {
+        --lg-blue: #0c3f78;
+        --lg-blue-deep: #0a3262;
+        --lg-field: #eaeff6;
+        position: relative; min-height: calc(100vh - 56px); display: flex; align-items: center;
+        padding: 3rem 0; overflow: hidden; font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        background: #1c2b4a;
+    }
+    .lg-bg {
+        position: absolute; inset: -40px; background-size: cover; background-position: center;
+        filter: blur(18px) saturate(1.15); transform: scale(1.05);
+    }
+    .lg-bg::after { content: ''; position: absolute; inset: 0; background: rgba(10,25,60,.25); }
+    .lg-wrap { position: relative; z-index: 2; max-width: 940px; }
+    .lg-messages { max-width: 460px; margin: 0 auto 1rem; }
+
+    /* Card */
+    .lg-card {
+        display: flex; min-height: 540px; border-radius: 14px; overflow: hidden;
+        box-shadow: 0 30px 70px rgba(0,0,0,.4);
+    }
+    .lg-visual {
+        position: relative; flex: 1 1 50%; background-size: cover; background-position: center;
+        align-items: flex-end;
+    }
+    .lg-visual-shade {
+        position: absolute; inset: 0;
+        background: linear-gradient(to top, rgba(6,18,45,.92) 5%, rgba(6,18,45,.25) 60%, rgba(6,18,45,.1));
+    }
+    .lg-visual-copy { position: relative; padding: 2.25rem; color: #fff; }
+    .lg-visual-copy h2 {
+        font-weight: 800; font-size: 1.9rem; line-height: 1.15; text-transform: uppercase;
+        letter-spacing: .01em; margin-bottom: .9rem;
+    }
+    .lg-visual-copy p { font-size: .88rem; line-height: 1.65; color: rgba(255,255,255,.85); margin-bottom: 1.4rem; max-width: 32em; }
+
+    .lg-panel {
+        flex: 1 1 50%; background: var(--lg-blue); color: #fff; padding: 2.5rem 2.5rem 2.25rem;
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .lg-brand { display: flex; align-items: center; justify-content: center; gap: .6rem; font-weight: 800; font-size: 1.05rem; margin-bottom: 1.5rem; }
+    .lg-brand i { font-size: 1.3rem; color: #f3d98b; }
+    .lg-title { text-align: center; font-weight: 700; font-size: 1.15rem; margin-bottom: .25rem; }
+    .lg-sub { text-align: center; font-size: .85rem; color: rgba(255,255,255,.7); margin-bottom: 1.5rem; }
+
+    /* Fields */
+    .lg-field { margin-bottom: 1rem; }
+    .lg-field label { display: block; font-size: .75rem; font-weight: 700; margin-bottom: .35rem; color: rgba(255,255,255,.92); }
+    .lg-input {
+        width: 100%; height: 42px; padding: 0 .9rem; border: 2px solid transparent; border-radius: 6px;
+        background: var(--lg-field); color: #14213d; font-size: .9rem; font-family: inherit;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .lg-input::placeholder { color: #8591a8; }
+    .lg-input:focus { outline: none; border-color: #f3d98b; box-shadow: 0 0 0 3px rgba(243,217,139,.25); }
+
+    /* Buttons */
+    .lg-btn {
+        display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 1.5rem;
+        border-radius: 6px; font-weight: 700; font-size: .9rem; font-family: inherit; cursor: pointer;
+        border: 1.5px solid transparent; text-decoration: none !important;
+        transition: background-color .2s ease, color .2s ease, border-color .2s ease, opacity .2s ease;
+    }
+    .lg-block { width: 100%; }
+    .lg-btn-light { background: #fff; color: var(--lg-blue); margin-top: .5rem; }
+    .lg-btn-light:hover:not(:disabled) { background: #f3d98b; color: var(--lg-blue-deep); }
+    .lg-btn-light:disabled { opacity: .45; cursor: not-allowed; }
+    .lg-btn-ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.5); }
+    .lg-btn-ghost:hover { background: rgba(255,255,255,.12); border-color: #fff; color: #fff; }
+    .lg-btn-dark { background: var(--lg-blue); color: #fff; height: 38px; padding: 0 1.6rem; }
+    .lg-btn-dark:hover { background: #fff; color: var(--lg-blue); }
+    .lg-btn:focus-visible, .lg-back:focus-visible { outline: 3px solid #f3d98b; outline-offset: 2px; }
+
+    .lg-forgot { color: #f3d98b; font-size: .8rem; }
+    .lg-forgot:hover { color: #fff; text-decoration: underline !important; }
+    .lg-forgot:focus-visible { outline: 3px solid #f3d98b; outline-offset: 2px; border-radius: 2px; }
+
+    .lg-or { position: relative; text-align: center; margin: 1.1rem 0; font-size: .75rem; color: rgba(255,255,255,.7); }
+    .lg-or::before, .lg-or::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: rgba(255,255,255,.25); }
+    .lg-or::before { left: 0; } .lg-or::after { right: 0; }
+    .lg-hint { text-align: center; font-size: .75rem; color: rgba(255,255,255,.65); margin: .75rem 0 0; }
+
+    .lg-alert {
+        background: rgba(220,53,69,.18); border: 1px solid rgba(255,140,150,.55); color: #ffe3e6;
+        border-radius: 6px; padding: .75rem 1rem; font-size: .82rem; margin-bottom: 1rem;
+    }
+
+    /* Password requirements */
+    .lg-reqs { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: .85rem 1rem; margin: .25rem 0 .75rem; }
+    .lg-reqs small { display: block; font-weight: 700; margin-bottom: .45rem; color: #fff; }
+    .lg-reqs li { font-size: .8rem; margin-bottom: .15rem; }
+    .lg-reqs li.text-muted { color: rgba(255,255,255,.7) !important; }
+    .lg-reqs li.text-success { color: #8ff0b5 !important; }
+    .lg-reqs .text-danger { color: #ff9aa5 !important; }
+    .lg-reqs .text-success { color: #8ff0b5 !important; }
+
+    .lg-back { display: block; margin: 1rem auto 0; background: none; border: 0; color: rgba(255,255,255,.75); font-size: .82rem; cursor: pointer; font-family: inherit; }
+    .lg-back:hover { color: #fff; }
+
+    @media (max-width: 767px) {
+        .lg-page { padding: 1.5rem 0; }
+        .lg-card { min-height: 0; }
+        .lg-panel { padding: 2rem 1.5rem; }
+    }
+</style>
 
 <script>
     // 1. Toggle between the two forms
@@ -150,7 +268,6 @@
         const confirmPass = document.getElementById("confirmPass");
         const submitBtn = document.getElementById("submitResetBtn");
 
-        // UI List Items
         const reqLength = document.getElementById("reqLength");
         const reqUpper = document.getElementById("reqUpper");
         const reqNumber = document.getElementById("reqNumber");
@@ -173,26 +290,17 @@
             const val = newPass.value;
             const confirmVal = confirmPass.value;
 
-            // Regex Checks
             const isLength = updateIcon(reqLength, val.length >= 8);
             const isUpper = updateIcon(reqUpper, /[A-Z]/.test(val));
             const isNumber = updateIcon(reqNumber, /[0-9]/.test(val));
             const isSpecial = updateIcon(reqSpecial, /[@$!%*?&]/.test(val));
-
-            // Match Check
             const isMatch = updateIcon(reqMatch, val !== "" && val === confirmVal);
 
-            // Enable submit button ONLY if everything is true
-            if (isLength && isUpper && isNumber && isSpecial && isMatch) {
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.disabled = true;
-            }
+            submitBtn.disabled = !(isLength && isUpper && isNumber && isSpecial && isMatch);
         }
 
-        // Listen for typing in either password box
-        newPass.addEventListener("keyup", validatePassword);
-        confirmPass.addEventListener("keyup", validatePassword);
+        newPass.addEventListener("input", validatePassword);
+        confirmPass.addEventListener("input", validatePassword);
     });
 </script>
 {% endblock %}

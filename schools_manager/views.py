@@ -727,24 +727,58 @@ def demo_hub(request):
         'categories': DemoVideo.CATEGORY_CHOICES,  # Passes category list to template for buttons
     })
 
-#
-# from django.shortcuts import render
-# from django.utils import timezone
-# from .models import PromoBlock  # Adjust import path if needed
-#
-#
-# def public_landing(request):
-#     now = timezone.now()
-#
-#     # Fetch the latest active promotion within the valid date window
-#     active_promo = PromoBlock.objects.filter(
-#         is_active=True,
-#         start_time__lte=now,
-#         end_time__gte=now
-#     ).first()
-#
-#     context = {
-#         'active_promo': active_promo,
-#         # ... your existing context variables (config, hero_banners, features, etc.) ...
-#     }
-#     return render(request, 'schools_manager/landing.html', context)
+
+
+# RESERT PASSOWRDS VIEWS
+
+# schools_manager/views.py
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django_tenants.utils import tenant_context
+
+
+@staff_member_required
+def emergency_password_reset(request, pk):
+    """
+    Generates a 1-time password reset link for the primary superuser
+    of a specific school tenant without requiring email access.
+    """
+    school_tenant = get_object_or_404(School, pk=pk)
+
+    # Do not allow resetting the master public schema this way
+    if school_tenant.schema_name == 'public':
+        messages.error(request, "Cannot use this tool for the Master schema.")
+        return redirect('tenant_admin_site:schools_manager_school_changelist')
+
+    domain_obj = school_tenant.domains.first()
+    if not domain_obj:
+        messages.error(request, "No domain associated with this tenant.")
+        return redirect('tenant_admin_site:schools_manager_school_changelist')
+
+    # Switch context to the specific school to find their admin
+    with tenant_context(school_tenant):
+        User = get_user_model()
+        # Grab the first superuser (usually the primary school admin created during provisioning)
+        admin_user = User.objects.filter(is_superuser=True).first()
+
+        if not admin_user:
+            messages.error(request, f"No superuser found for {school_tenant.name}.")
+            return redirect('tenant_admin_site:schools_manager_school_changelist')
+
+        # Generate the secure tokens required by Django's built-in reset system
+        uid = urlsafe_base64_encode(force_bytes(admin_user.pk))
+        token = default_token_generator.make_token(admin_user)
+
+        # Construct the full tenant-specific URL
+        protocol = "https" if request.is_secure() else "http"
+        reset_link = f"{protocol}://{domain_obj.domain}/password-reset-confirm/{uid}/{token}/"
+
+        # Push the link to the Master Admin screen via a flash message
+        messages.success(request, format_html(
+            f"✅ <b>Emergency Link Generated for {school_tenant.name}</b> (User: {admin_user.email})<br><br>"
+            f"Copy and send this link securely. It will expire in 24 hours or immediately after use:<br>"
+            f"<a href='{reset_link}' target='_blank' style='color: #2563eb; font-family: monospace;'>{reset_link}</a>"
+        ))
+
+    return redirect('tenant_admin_site:schools_manager_school_changelist')

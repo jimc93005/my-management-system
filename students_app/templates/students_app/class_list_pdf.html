@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        /* PDF Page Setup */
+        @page {
+            size: A4;
+            margin: 16mm 12mm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #1a436d;
+            --secondary: #4a7ab5;
+            --light-blue: #f2f7fb;
+            --border-color: #d1d9e6;
+        }
+
+        /* ========= WATERMARK ========= */
+        #watermark {
+            position: fixed;
+            top: 25%;
+            left: 10%;
+            width: 80%;
+            opacity: 0.05;
+            z-index: -1000;
+            text-align: center;
+        }
+        #watermark img { width: 400px; }
+
+        /* ========= HEADER LAYOUT ========= */
+        .header-container {
+            width: 100%;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+
+        .header-table { width: 100%; border: none; }
+        .header-table td { border: none; vertical-align: middle; padding: 0; }
+        .logo-cell { width: 70pt; }
+        .logo-img { height: 55pt; width: auto; }
+
+        .school-info { text-align: center; }
+        .school-info h1 {
+            font-size: 20pt;
+            color: var(--primary);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .motto { font-style: italic; font-size: 9pt; color: #555; margin: 1pt 0; }
+        .contact-info { font-size: 8.5pt; margin: 1pt 0; }
+
+        /* ========= SUMMARY STRIP ========= */
+        .summary-box {
+            background-color: var(--light-blue);
+            padding: 6pt;
+            border-radius: 4px;
+            margin-bottom: 10pt;
+            border: 1px solid var(--border-color);
+        }
+        .summary-table { width: 100%; border: none; }
+        .summary-table td { border: none; padding: 1pt 4pt; font-size: 9.5pt; }
+        .label {
+            font-weight: bold;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-size: 8pt;
+        }
+
+        /* ========= DATA TABLE ========= */
+        h3 {
+            font-size: 11pt;
+            color: var(--primary);
+            margin-bottom: 5pt;
+            margin-top: 0;
+            text-transform: uppercase;
+            border-left: 5px solid var(--primary);
+            padding-left: 8pt;
+        }
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 0; }
+        .results-table th {
+            background-color: var(--primary);
+            color: white;
+            text-transform: uppercase;
+            font-size: 9pt;
+            padding: 6pt;
+            text-align: left;
+            border: 1px solid var(--primary);
+        }
+        .results-table td {
+            border: 1px solid var(--border-color);
+            padding: 6pt 8pt;
+            font-size: 9.5pt;
+        }
+        .results-table tr:nth-child(even) { background-color: #fafafa; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+
+        /* ========= FOOTER / SIGNATURES ========= */
+        .footer-table {
+            width: 100%;
+            margin-top: 25pt;
+            border: none;
+            page-break-inside: avoid;
+        }
+        .footer-table td {
+            border: none;
+            width: 33%;
+            text-align: center;
+            vertical-align: bottom;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 80%;
+            margin: 0 auto 3pt auto;
+        }
+        .signature-box {
+            height: 35pt;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 2pt;
+        }
+        .signature-img {
+            max-height: 30pt;
+            max-width: 120pt;
+            object-fit: contain;
+        }
+        .stamp {
+            height: 55pt;
+            opacity: 0.8;
+            margin-bottom: 5pt;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="watermark">
+      {% if school_logo_uri %}
+        <img src="{{ school_logo_uri }}">
+      {% endif %}
+    </div>
+
+    <!-- Header Section -->
+    <div class="header-container">
+        <table class="header-table">
+            <tr>
+                <td class="logo-cell">
+                   {% if school_logo_uri %}
+                       <img src="{{ school_logo_uri }}" class="logo-img">
+                    {% endif %}
+                </td>
+                <td class="school-info">
+                    <h1>{{ school_profile.name }}</h1>
+                    {% if school_profile.motto %}
+                        <p class="motto">"{{ school_profile.motto }}"</p>
+                    {% endif %}
+                    <p class="contact-info">
+                        <strong>Tel:</strong> {{ school_profile.contact }}
+                        {% if school_profile.email %} | <strong>Email:</strong> {{ school_profile.email }}{% endif %}
+                    </p>
+                    <p class="contact-info"><strong>Headteacher:</strong> {{ school_profile.headteacher_name }}</p>
+                </td>
+                <td class="logo-cell"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Class Metadata Summary Strip -->
+    <div class="summary-box">
+        <table class="summary-table">
+            <tr>
+                <td><span class="label">Class:</span><br><strong>{{ class_obj.class_level }}</strong></td>
+                <td><span class="label">Class Teacher:</span><br><strong>{{ class_obj.form_teacher.get_full_name|default:"Not Assigned" }}</strong></td>
+                <td><span class="label">Academic Year:</span><br><strong>{{ current_year }}</strong></td>
+                <td><span class="label">Term:</span><br><strong>Term {{ current_term }}</strong></td>
+            </tr>
+            <tr>
+                <td><span class="label">Total Students:</span><br><strong>{{ total_students }}</strong></td>
+                <td><span class="label">Generated Date:</span><br><strong>{% now "d F Y" %}</strong></td>
+                <td colspan="2"><span class="label">Document Type:</span><br><strong>Official Class Roster</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <h3>Class Student List</h3>
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th width="8%" class="text-center">#</th>
+                <th width="22%">Student ID</th>
+                <th width="40%">Full Name</th>
+                <th width="15%" class="text-center">Gender</th>
+                <th width="15%" class="text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td class="text-center bold">{{ forloop.counter }}</td>
+                <td class="bold">{{ student.student_id }}</td>
+                <td>{{ student.surname.upper }}, {{ student.first_name }}</td>
+                <td class="text-center">{{ student.gender|default:"-" }}</td>
+                <td class="text-center">{{ student.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No active students found for this class.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Footer Signatures -->
+    <table class="footer-table">
+        <tr>
+            <td>
+                <div class="signature-box">
+                    {% if teacher_sig_uri %}
+                        <img src="{{ teacher_sig_uri }}" class="signature-img">
+                    {% endif %}
+                </div>
+                <div class="signature-line"></div>
+                <strong style="font-size: 9pt;">Class Teacher</strong>
+                <br>
+                <small style="font-size: 8pt;">{{ class_obj.form_teacher.get_full_name|default:"" }}</small>
+            </td>
+
+            <td>
+                {% if stamp_base64 %}
+                    <img src="data:image/png;base64,{{ stamp_base64 }}" class="stamp">
+                {% endif %}
+            </td>
+
+            <td>
+                <div class="signature-box">
+                    {% if head_sig_uri %}
+                        <img src="{{ head_sig_uri }}" class="signature-img">
+                    {% endif %}
+                </div>
+                <div class="signature-line"></div>
+                <strong style="font-size: 9pt;">Headteacher</strong>
+                <br>
+                <small style="font-size: 8pt;">{{ school_profile.headteacher_name|default:"" }}</small>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

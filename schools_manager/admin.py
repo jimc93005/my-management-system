@@ -25,8 +25,35 @@ class TenantAdminSite(admin.AdminSite):
 tenant_admin_site = TenantAdminSite(name="tenant_admin_site")
 
 # 3. Register your models to THIS custom site
-tenant_admin_site.register(School)
+# tenant_admin_site.register(School)
+
 tenant_admin_site.register(Domain)
+
+# schools_manager/admin.py
+from django.utils.html import format_html
+from django.urls import reverse
+
+
+@admin.register(School, site=tenant_admin_site)
+class SchoolAdmin(admin.ModelAdmin):
+    list_display = ('name', 'schema_name', 'status', 'subscription_end_date', 'admin_actions')
+    search_fields = ('name', 'schema_name')
+    list_filter = ('status',)
+
+    def admin_actions(self, obj):
+        # We don't want to generate links for the public master schema
+        if obj.schema_name == 'public':
+            return ""
+
+        emergency_url = reverse('schools_manager:emergency_reset', args=[obj.pk])
+        return format_html(
+            '<a class="button" style="background-color: #f59e0b; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold;" href="{}">'
+            'Generate Emergency Reset Link'
+            '</a>',
+            emergency_url
+        )
+
+    admin_actions.short_description = "Emergency Action"
 
 
 # 4. The Magic Registration Dashboard

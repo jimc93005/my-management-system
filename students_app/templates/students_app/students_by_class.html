@@ -5,220 +5,260 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    :root {
-        --primary: #4f46e5;
-        --secondary: #64748b;
-        --bg-soft: #f8fafc;
-        --border-color: #e2e8f0;
-        --text-dark: #0f172a;
+    /* Everything here is namespaced (cl-) and uses its own flex/gap/spacing,
+       so it renders the same whether the base template uses Bootstrap 4 or 5. */
+    .cl-page {
+        --cl-primary: #4f46e5;
+        --cl-secondary: #64748b;
+        --cl-bg: #f8fafc;
+        --cl-border: #e2e8f0;
+        --cl-text: #0f172a;
+        background: var(--cl-bg);
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color: var(--cl-text);
+        padding: 2.5rem 0 3rem;
+        min-height: 70vh;
+    }
+    .cl-page *, .cl-page *::before, .cl-page *::after { box-sizing: border-box; }
+    .cl-page i[class*="fa-"] { width: 1em; text-align: center; flex-shrink: 0; }
+
+    /* Header */
+    .cl-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.25rem; margin-bottom: 1.5rem; }
+    .cl-crumbs { display: flex; align-items: center; gap: .55rem; font-size: .85rem; color: var(--cl-secondary); margin-bottom: .6rem; }
+    .cl-crumbs a { color: var(--cl-secondary); text-decoration: none; }
+    .cl-crumbs a:hover { color: var(--cl-primary); }
+    .cl-crumbs i { font-size: .65rem; opacity: .7; }
+    .cl-crumbs span { color: var(--cl-primary); font-weight: 600; }
+    .cl-title { display: flex; align-items: center; gap: .75rem; margin: 0; font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+    .cl-title-icon {
+        width: 44px; height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 12px; background: rgba(79,70,229,.1); color: var(--cl-primary); font-size: 1.1rem;
     }
 
-    body { background-color: var(--bg-soft); font-family: 'Inter', sans-serif; }
+    /* Action buttons */
+    .cl-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+    .cl-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        min-height: 40px; padding: .5rem 1.1rem; border-radius: 999px; border: 1px solid transparent;
+        font-family: inherit; font-size: .85rem; font-weight: 600; line-height: 1.2; text-align: center;
+        text-decoration: none !important; cursor: pointer; white-space: nowrap;
+        transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .cl-btn:focus-visible { outline: 3px solid rgba(79,70,229,.45); outline-offset: 2px; }
+    .cl-btn-green { background: #16a34a; color: #fff; }
+    .cl-btn-green:hover { background: #15803d; color: #fff; }
+    .cl-btn-teal { background: #0891b2; color: #fff; }
+    .cl-btn-teal:hover { background: #0e7490; color: #fff; }
+    .cl-btn-indigo { background: var(--cl-primary); color: #fff; }
+    .cl-btn-indigo:hover { background: #4338ca; color: #fff; }
+    .cl-btn-ghost { background: #fff; color: #334155; border-color: #cbd5e1; }
+    .cl-btn-ghost:hover { background: #f1f5f9; color: var(--cl-text); }
+    .cl-btn-soft { background: #fff; color: #334155; border-color: var(--cl-border); min-height: 34px; padding: .35rem 1rem; }
+    .cl-btn-soft:hover { border-color: var(--cl-primary); color: var(--cl-primary); }
 
-    .student-card {
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    /* Search */
+    .cl-search {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+        background: #fff; border: 1px solid var(--cl-border); border-radius: 12px; padding: .9rem 1.1rem; margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15,23,42,.04);
+    }
+    .cl-search-field { position: relative; flex: 1 1 260px; max-width: 450px; min-width: 0; }
+    .cl-search-field i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--cl-secondary); pointer-events: none; }
+    .cl-search-input {
+        width: 100%; height: 40px; padding: 0 .9rem 0 2.6rem; border: 1px solid var(--cl-border); border-radius: 8px;
+        font-family: inherit; font-size: .9rem; background: #fff; color: var(--cl-text); transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .cl-search-input:focus { outline: none; border-color: var(--cl-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .cl-search .cl-btn { border-radius: 8px; }
+
+    /* Card + table */
+    .cl-card { background: #fff; border: 1px solid var(--cl-border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); }
+    .cl-table-wrap { overflow-x: auto; }
+    .cl-table { width: 100%; border-collapse: collapse; margin: 0; }
+    .cl-table thead th {
+        background: #f8fafc; color: var(--cl-secondary); font-size: .72rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .05em; padding: .95rem 1.25rem; text-align: left;
+        border-bottom: 1px solid var(--cl-border); white-space: nowrap;
+    }
+    .cl-table tbody td { padding: 1rem 1.25rem; vertical-align: middle; border-bottom: 1px solid var(--cl-border); }
+    .cl-table tbody tr:last-child td { border-bottom: 0; }
+    .cl-table tbody tr:hover { background: #fafbff; }
+    .cl-th-center, .cl-td-status { text-align: center !important; }
+    .cl-th-right, .cl-td-action { text-align: right !important; }
+
+    .cl-student { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+    .cl-avatar {
+        width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        background: var(--cl-primary); color: #fff; border-radius: 10px; font-weight: 700; font-size: .85rem; text-transform: uppercase;
+    }
+    .cl-student-name { display: block; font-weight: 600; color: var(--cl-text); line-height: 1.3; }
+    .cl-student-sub { display: block; font-size: .78rem; color: var(--cl-secondary); }
+
+    .cl-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .7rem; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+    .cl-chip-light { background: #f1f5f9; color: #334155; border: 1px solid var(--cl-border); }
+    .cl-chip-done { background: #dcfce7; color: #166534; }
+    .cl-chip-muted { background: #f1f5f9; color: var(--cl-secondary); border: 1px solid var(--cl-border); }
+    .cl-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; color: var(--cl-secondary); }
+
+    .cl-progress { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; }
+    .cl-bar { width: 100px; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+    .cl-bar span { display: block; height: 100%; border-radius: 999px; }
+    .cl-bar-high span { background: var(--cl-primary); }
+    .cl-bar-mid span { background: #f59e0b; }
+    .cl-bar-low span { background: #ef4444; }
+    .cl-count { font-size: .82rem; font-weight: 600; color: var(--cl-secondary); }
+
+    /* Pagination */
+    .cl-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.25rem; border-top: 1px solid var(--cl-border); }
+    .cl-pager-info { font-size: .875rem; color: var(--cl-secondary); }
+    .cl-pager-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cl-pg {
+        min-width: 36px; height: 36px; padding: 0 .75rem; display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--cl-border); border-radius: 8px; font-size: .875rem; font-weight: 500;
+        color: var(--cl-text); text-decoration: none !important; background: #fff; transition: all .2s ease;
+    }
+    a.cl-pg:hover { background: var(--cl-bg); border-color: var(--cl-primary); color: var(--cl-primary); }
+    .cl-pg-active { background: var(--cl-primary); color: #fff; border-color: var(--cl-primary); }
+    .cl-pg-disabled { color: #cbd5e1; background: #f8fafc; cursor: not-allowed; }
+
+    /* Empty state */
+    .cl-empty { text-align: center; padding: 3.5rem 1.5rem; }
+    .cl-empty > i { font-size: 2.5rem; color: #94a3b8; margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto; }
+    .cl-empty h4 { font-size: 1.15rem; font-weight: 700; margin: 0 0 .4rem; }
+    .cl-empty p { color: var(--cl-secondary); margin: 0 0 1rem; }
+
+    /* Tablet */
+    @media (max-width: 991.98px) {
+        .cl-header { align-items: flex-start; }
+        .cl-actions { width: 100%; }
     }
 
-    /* Search Bar Styles */
-    .search-area {
-        background: white;
-        padding: 1rem 1.5rem;
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+    /* Mobile */
+    @media (max-width: 767.98px) {
+        .cl-page { padding: 1.5rem 0 2rem; }
+        .cl-title { font-size: 1.3rem; }
+        .cl-title-icon { width: 38px; height: 38px; }
+
+        .cl-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+        .cl-btn { white-space: normal; padding: .55rem .75rem; border-radius: 12px; font-size: .82rem; }
+
+        .cl-search { padding: .8rem; }
+        .cl-search-field { flex: 1 1 100%; max-width: none; }
+        .cl-search .cl-btn { flex: 1 1 auto; }
+
+        /* Table rows become cards */
+        .cl-table thead { display: none; }
+        .cl-table, .cl-table tbody, .cl-table tr, .cl-table td { display: block; width: 100%; }
+        .cl-table tbody tr { padding: 1rem; border-bottom: 1px solid var(--cl-border); }
+        .cl-table tbody tr:last-child { border-bottom: 0; }
+        .cl-table tbody td { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .4rem 0; border: 0; text-align: right !important; }
+        .cl-table tbody td[data-label]::before {
+            content: attr(data-label); flex-shrink: 0; font-size: .72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .05em; color: var(--cl-secondary); text-align: left;
+        }
+        .cl-table tbody td.cl-td-name { padding-bottom: .75rem; margin-bottom: .35rem; border-bottom: 1px dashed var(--cl-border); justify-content: flex-start; text-align: left !important; }
+        .cl-table tbody td.cl-td-action { padding-top: .75rem; }
+        .cl-td-action .cl-btn { width: 100%; }
+        .cl-progress { justify-content: flex-end; }
+        .cl-bar { width: 80px; }
+
+        .cl-pager { flex-direction: column; align-items: center; text-align: center; }
+        .cl-hide-sm { display: none !important; }
     }
 
-    .search-group {
-        position: relative;
-        max-width: 450px;
-    }
-
-    .search-group i {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--secondary);
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 10px 15px 10px 45px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.9rem;
-        transition: border 0.2s;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-
-    /* Table Styles */
-    .table thead th {
-        background: #f8fafc;
-        color: var(--secondary);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .table tbody td {
-        padding: 1.1rem 1.5rem;
-        vertical-align: middle;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .avatar {
-        width: 38px; height: 38px;
-        background: var(--primary);
-        color: white;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 10px;
-        font-weight: 700; margin-right: 12px;
-    }
-
-    /* Pagination Styles */
-    .pagination-footer {
-        padding: 1rem 1.5rem;
-        background: #ffffff;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .pagination-info { font-size: 0.875rem; color: var(--secondary); }
-    .pagination-nav { display: flex; gap: 6px; }
-
-    .page-btn {
-        padding: 6px 14px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        text-decoration: none;
-        color: var(--text-dark);
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-
-    .page-btn:hover:not(.disabled) {
-        background: var(--bg-soft);
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .page-btn.disabled { color: #cbd5e1; background: #f8fafc; cursor: not-allowed; }
+    @media (prefers-reduced-motion: reduce) { .cl-btn, .cl-pg, .cl-search-input { transition: none; } }
 </style>
 
-<div class="container py-5">
-    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+<div class="cl-page">
+<div class="container">
+
+    <header class="cl-header">
         <div>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-2">
-                    <li class="breadcrumb-item"><a href="{% url 'students_app:class_list' %}" class="text-decoration-none text-muted">Classes</a></li>
-                    <li class="breadcrumb-item active text-primary fw-semibold">{{ class_level }}</li>
-                </ol>
+            <nav class="cl-crumbs" aria-label="breadcrumb">
+                <a href="{% url 'students_app:class_list' %}">Classes</a>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                <span>{{ class_level }}</span>
             </nav>
-            <h2 class="fw-bold m-0" style="color: var(--text-dark);">
-                <i class="fas fa-users-rectangle text-primary me-2"></i> {{ class_level }} Students
+            <h2 class="cl-title">
+                <span class="cl-title-icon"><i class="fas fa-users-rectangle" aria-hidden="true"></i></span>
+                {{ class_level }} Students
             </h2>
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'students_app:download_class_reports_zip' class_obj.id current_year current_term %}" class="btn btn-success text-white px-4 rounded-pill shadow-sm fw-bold">
-                <i class="fas fa-file-archive me-2"></i> Download Reports (ZIP)
+        <div class="cl-actions">
+            <a href="{% url 'students_app:download_class_reports_zip' class_obj.id current_year current_term %}" class="cl-btn cl-btn-green">
+                <i class="fas fa-file-archive" aria-hidden="true"></i> <span>Download Reports (ZIP)</span>
             </a>
-
-            <a href="{% url 'students_app:promote_students' %}?class_filter={{ class_level.id }}" class="btn btn-info text-white px-4 rounded-pill shadow-sm fw-bold">
-                <i class="fas fa-level-up-alt me-2"></i> Promote Class
+            <a href="{% url 'students_app:promote_students' %}?class_filter={{ class_level.id }}" class="cl-btn cl-btn-teal">
+                <i class="fas fa-level-up-alt" aria-hidden="true"></i> <span>Promote Class</span>
             </a>
-            <a href="{% url 'students_app:class_list' %}" class="btn btn-outline-secondary px-4 rounded-pill shadow-sm fw-bold">
-                <i class="fas fa-arrow-left me-2"></i> Back to Classes
+            <a href="{% url 'students_app:export_class_list_pdf' class_level=class_level %}" class="cl-btn cl-btn-indigo" target="_blank" rel="noopener">
+                <i class="fas fa-file-pdf" aria-hidden="true"></i> <span>Class List (PDF)</span>
+            </a>
+            <a href="{% url 'students_app:class_list' %}" class="cl-btn cl-btn-ghost">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> <span>Back to Classes</span>
             </a>
         </div>
-    </div>
+    </header>
 
-    <div class="search-area shadow-sm">
-        <form method="GET" action="" class="d-flex align-items-center gap-2">
-            <div class="search-group flex-grow-1">
-                <i class="fas fa-search"></i>
-                <input type="text" name="q" value="{{ query|default:'' }}" class="search-input" placeholder="Search by name or student ID...">
-            </div>
-            <button type="submit" class="btn btn-primary px-4 rounded-8" style="border-radius: 8px; font-weight: 600;">
-                Search
-            </button>
-            {% if query %}
-                <a href="?" class="btn btn-light border text-muted px-3" style="border-radius: 8px;">Clear</a>
-            {% endif %}
-        </form>
-    </div>
+    <form method="GET" action="" class="cl-search">
+        <div class="cl-search-field">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input type="text" name="q" value="{{ query|default:'' }}" class="cl-search-input" placeholder="Search by name or student ID..." aria-label="Search students">
+        </div>
+        <button type="submit" class="cl-btn cl-btn-indigo">Search</button>
+        {% if query %}
+            <a href="?" class="cl-btn cl-btn-ghost">Clear</a>
+        {% endif %}
+    </form>
 
-    <div class="student-card">
+    <div class="cl-card">
         {% if page_obj %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+        <div class="cl-table-wrap">
+            <table class="cl-table">
                 <thead>
                     <tr>
                         <th>Student Name</th>
                         <th>Age</th>
                         <th>Student ID</th>
-                        <th class="text-center">Grading Status (Term {{ current_term }})</th>
-                        <th class="text-end">Action</th>
+                        <th class="cl-th-center">Grading Status (Term {{ current_term }})</th>
+                        <th class="cl-th-right">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for student in page_obj %}
                     <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">{{ student.first_name|first }}{{ student.surname|first }}</div>
+                        <td class="cl-td-name">
+                            <div class="cl-student">
+                                <div class="cl-avatar">{{ student.first_name|first }}{{ student.surname|first }}</div>
                                 <div>
-                                    <span class="d-block fw-bold text-dark">{{ student.first_name }} {{ student.surname }}</span>
-                                    <small class="text-muted">Enrolled</small>
+                                    <span class="cl-student-name">{{ student.first_name }} {{ student.surname }}</span>
+                                    <span class="cl-student-sub">Enrolled</span>
                                 </div>
                             </div>
                         </td>
-                        <td><span class="badge bg-light text-dark border">{{ student.age }} yrs</span></td>
-                        <td><code class="text-muted" style="font-size: 0.9rem;">#{{ student.student_id }}</code></td>
+                        <td data-label="Age"><span class="cl-chip cl-chip-light">{{ student.age }} yrs</span></td>
+                        <td data-label="Student ID"><span class="cl-id">#{{ student.student_id }}</span></td>
 
-                        <!-- NEW GRADING STATUS COLUMN -->
-                        <td class="text-center align-middle" style="width: 25%;">
+                        <td class="cl-td-status" data-label="Grading">
                             {% if student.expected_grades == 0 %}
-                                <span class="badge bg-light text-secondary border px-2 py-1">
-                                    <i class="fas fa-exclamation-circle me-1"></i> No Subjects
-                                </span>
+                                <span class="cl-chip cl-chip-muted"><i class="fas fa-exclamation-circle" aria-hidden="true"></i> No Subjects</span>
                             {% elif student.is_completed %}
-                                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm fw-bold">
-                                    <i class="fas fa-check-circle me-1"></i> Completed ({{ student.entered_grades }}/{{ student.expected_grades }})
-                                </span>
+                                <span class="cl-chip cl-chip-done"><i class="fas fa-check-circle" aria-hidden="true"></i> Completed ({{ student.entered_grades }}/{{ student.expected_grades }})</span>
                             {% else %}
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <div class="progress shadow-sm me-2" style="height: 8px; width: 100px; border-radius: 10px; background-color: #e2e8f0;">
-                                        <div class="progress-bar {% if student.grade_progress > 75 %}bg-primary{% elif student.grade_progress > 25 %}bg-warning{% else %}bg-danger{% endif %} progress-bar-striped progress-bar-animated"
-                                             role="progressbar"
-                                             style="width: {{ student.grade_progress }}%;">
-                                        </div>
+                                <div class="cl-progress">
+                                    <div class="cl-bar {% if student.grade_progress > 75 %}cl-bar-high{% elif student.grade_progress > 25 %}cl-bar-mid{% else %}cl-bar-low{% endif %}"
+                                         role="progressbar" aria-valuenow="{{ student.grade_progress }}" aria-valuemin="0" aria-valuemax="100">
+                                        <span style="width: {{ student.grade_progress }}%;"></span>
                                     </div>
-                                    <small class="fw-bold text-muted" style="font-size: 0.85rem;">{{ student.entered_grades }}/{{ student.expected_grades }}</small>
+                                    <span class="cl-count">{{ student.entered_grades }}/{{ student.expected_grades }}</span>
                                 </div>
                             {% endif %}
                         </td>
 
-                        <td class="text-end">
-                             <a href="{% url 'students_app:student_profile' student.id %}"
-                               class="btn btn-sm btn-light border rounded-pill px-3">
-                               View
+                        <td class="cl-td-action">
+                            <a href="{% url 'students_app:student_profile' student.id %}" class="cl-btn cl-btn-soft">
+                                View <i class="fas fa-arrow-right" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>
@@ -227,44 +267,47 @@
             </table>
         </div>
 
-        <div class="pagination-footer">
-            <div class="pagination-info">
+        <div class="cl-pager">
+            <div class="cl-pager-info">
                 Showing <strong>{{ page_obj.start_index }}</strong> to <strong>{{ page_obj.end_index }}</strong> of <strong>{{ count }}</strong>
             </div>
 
-            <nav class="pagination-nav">
+            <nav class="cl-pager-nav" aria-label="Pagination">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="cl-pg" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
                 {% else %}
-                    <span class="page-btn disabled"><i class="fas fa-chevron-left"></i></span>
+                    <span class="cl-pg cl-pg-disabled"><i class="fas fa-chevron-left"></i></span>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
-                        <span class="page-btn active">{{ num }}</span>
+                        <span class="cl-pg cl-pg-active" aria-current="page">{{ num }}</span>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}" class="page-btn">{{ num }}</a>
+                        <a href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="cl-pg cl-hide-sm">{{ num }}</a>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="cl-pg" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
                 {% else %}
-                    <span class="page-btn disabled"><i class="fas fa-chevron-right"></i></span>
+                    <span class="cl-pg cl-pg-disabled"><i class="fas fa-chevron-right"></i></span>
                 {% endif %}
             </nav>
         </div>
 
         {% else %}
-        <div class="empty-state text-center py-5">
-            <i class="fas fa-search fa-3x text-muted mb-3"></i>
-            <h4 class="fw-bold">No results found</h4>
-            <p class="text-muted">We couldn't find any students matching "{{ query }}".</p>
+        <div class="cl-empty">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <h4>No results found</h4>
             {% if query %}
-                <a href="?" class="btn btn-outline-primary btn-sm mt-2">Clear Search</a>
+                <p>We couldn't find any students matching "{{ query }}".</p>
+                <a href="?" class="cl-btn cl-btn-soft">Clear Search</a>
+            {% else %}
+                <p>There are no students in this class yet.</p>
             {% endif %}
         </div>
         {% endif %}
     </div>
+</div>
 </div>
 {% endblock %}

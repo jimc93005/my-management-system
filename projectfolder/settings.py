@@ -198,6 +198,8 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='')
 
+PASSWORD_RESET_TIMEOUT = 86400
+
 
 # WhiteNoise production storage configuration
 STORAGES = {
