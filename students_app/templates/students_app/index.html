@@ -3,320 +3,1494 @@
 {% block content %}
 <div class="container-fluid p-0">
 
+    <!-- ========================================================= -->
+    <!-- HERO SECTION - UPDATED DESIGN -->
+    <!-- ========================================================= -->
+
     <div class="hero-section d-flex align-items-center"
          style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
 
         <div class="container">
-            <!-- Centered Row -->
+
+            <!-- CENTERED HERO CONTENT -->
             <div class="row justify-content-center">
                 <div class="col-lg-9 col-md-11 text-center">
+
                     <div class="hero-glass-card animate__animated animate__fadeInUp">
-                        <span class="hero-eyebrow mx-auto d-block">School Management Portal</span>
-                        <h1 class="hero-title mb-3">Welcome to <br>{{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
-                        <p class="hero-subtitle mb-4 mx-auto" style="max-width: 700px;">
-                            Empowering excellence in education. Our digital management portal streamlines administration, enhances collaboration, and tracks success.
+
+                        <span class="hero-eyebrow mx-auto d-block">
+                            School Management Portal
+                        </span>
+
+                        <h1 class="hero-title mb-3">
+                            Welcome to <br>
+                            {{ request.tenant.name|default:request.tenant.schema_name|title }}
+                        </h1>
+
+                        <p class="hero-subtitle mb-4 mx-auto">
+                            Empowering excellence in education. Our digital management portal
+                            streamlines administration, enhances collaboration, and tracks success.
                         </p>
-                        <!-- Centered Buttons -->
+
+                        <!-- LOGIN / DASHBOARD BUTTON -->
                         <div class="d-flex justify-content-center gap-3 flex-wrap">
+
                             {% if user.is_authenticated %}
-                                <a href="{% url 'students_app:dashboard' %}" class="btn btn-hero btn-lg px-5">
-                                    <i class="fas fa-chart-line mr-2"></i> Go to Dashboard
+
+                                <a href="{% url 'students_app:dashboard' %}"
+                                   class="btn btn-hero btn-lg px-5">
+
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    Go to Dashboard
+
                                 </a>
+
                             {% else %}
-                                <a href="{% url 'users:login' %}" class="btn btn-hero btn-lg px-5">
-                                    <i class="fas fa-sign-in-alt mr-2"></i> Login to Portal
+
+                                <a href="{% url 'users:login' %}"
+                                   class="btn btn-hero btn-lg px-5">
+
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    Login to Portal
+
                                 </a>
+
                             {% endif %}
+
                         </div>
+
                     </div>
+
                 </div>
             </div>
+
         </div>
+
     </div>
+
+
+    <!-- ========================================================= -->
+    <!-- CAMPUS HIGHLIGHTS - UPDATED INFINITE MARQUEE -->
+    <!-- ========================================================= -->
 
     {% if carousel_events %}
+
     <div class="campus-highlights-wrapper">
+
         <div class="container mb-3">
+
             <div class="d-flex align-items-center justify-content-between">
-                <h6 class="highlights-label mb-0"><i class="fas fa-camera-retro mr-2"></i> CAMPUS HIGHLIGHTS</h6>
-                <span class="small text-muted font-italic">Live Gallery</span>
+
+                <h6 class="highlights-label mb-0">
+                    <i class="fas fa-camera-retro mr-2"></i>
+                    CAMPUS HIGHLIGHTS
+                </h6>
+
+                <span class="small text-muted font-italic">
+                    Live Gallery
+                </span>
+
             </div>
+
         </div>
+
+
+        <!-- INFINITE SCROLLING GALLERY -->
 
         <div class="marquee-container">
+
             <div class="marquee-content">
+
                 {% for event in carousel_events %}
-                <div class="marquee-item" data-toggle="modal" data-target="#galleryModal" data-slide-to="{{ forloop.counter0 }}">
-                    <img src="{{ event.image.url }}" alt="Campus Event">
+
+                <div class="marquee-item"
+                     data-toggle="modal"
+                     data-target="#galleryModal"
+                     data-slide-to="{{ forloop.counter0 }}">
+
+                    <img src="{{ event.image.url }}"
+                         alt="Campus Event">
+
                     <div class="item-overlay">
-                        <span class="small">{{ event.title|truncatechars:20 }}</span>
+
+                        <span class="small">
+                            {{ event.title|truncatechars:20 }}
+                        </span>
+
                     </div>
+
                 </div>
+
                 {% endfor %}
+
+
+                <!-- DUPLICATE SET FOR SEAMLESS INFINITE LOOP -->
+
                 {% for event in carousel_events %}
-                <div class="marquee-item" data-toggle="modal" data-target="#galleryModal" data-slide-to="{{ forloop.counter0 }}">
-                    <img src="{{ event.image.url }}" alt="Campus Event">
+
+                <div class="marquee-item"
+                     data-toggle="modal"
+                     data-target="#galleryModal"
+                     data-slide-to="{{ forloop.counter0 }}">
+
+                    <img src="{{ event.image.url }}"
+                         alt="Campus Event">
+
                     <div class="item-overlay">
-                        <span class="small">{{ event.title|truncatechars:20 }}</span>
+
+                        <span class="small">
+                            {{ event.title|truncatechars:20 }}
+                        </span>
+
                     </div>
+
                 </div>
+
                 {% endfor %}
+
             </div>
+
         </div>
+
     </div>
+
     {% endif %}
 
+
+    <!-- ========================================================= -->
+    <!-- FEATURE STRIP -->
+    <!-- KEEPING YOUR ORIGINAL EXPERT STAFF / MODERN PLATFORM -->
+    <!-- ========================================================= -->
+
     <div class="container feature-strip">
+
         <div class="row justify-content-center">
+
+            <!-- EXPERT STAFF -->
+
             <div class="col-md-4 mb-4">
+
                 <div class="feature-card h-100">
+
                     <div class="feature-icon">
+
                         <i class="fas fa-chalkboard-teacher"></i>
+
                     </div>
-                    <h5 class="feature-title">Expert Staff</h5>
-                    <p class="feature-text">Dedicated educators committed to nurturing the next generation of leaders.</p>
+
+                    <h5 class="feature-title">
+                        Expert Staff
+                    </h5>
+
+                    <p class="feature-text">
+                        Dedicated educators committed to nurturing the next generation of leaders.
+                    </p>
+
                 </div>
+
             </div>
+
+
+            <!-- MODERN PLATFORM -->
+
             <div class="col-md-4 mb-4">
+
                 <div class="feature-card h-100">
+
                     <div class="feature-icon">
+
                         <i class="fas fa-laptop-code"></i>
+
                     </div>
-                    <h5 class="feature-title">Modern Platform</h5>
-                    <p class="feature-text">Real-time grades, instant report cards, and seamless digital administration.</p>
+
+                    <h5 class="feature-title">
+                        Modern Platform
+                    </h5>
+
+                    <p class="feature-text">
+                        Real-time grades, instant report cards, and seamless digital administration.
+                    </p>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
+
+    <!-- ========================================================= -->
+    <!-- ANNOUNCEMENTS SECTION -->
+    <!-- EVERYTHING BELOW HERE REMAINS FROM YOUR ORIGINAL TEMPLATE -->
+    <!-- ========================================================= -->
+
+    {% if announcements %}
+
+    <div class="announcement-section mt-5">
+
+        <div class="container text-center text-md-left">
+
+            <h6 class="text-uppercase mb-4 font-weight-bold"
+                style="color: var(--brass-light); letter-spacing: 2px;">
+
+                <i class="fas fa-bullhorn mr-2"></i>
+                Official Announcements
+
+            </h6>
+
+
+            <div id="announcementCarousel"
+                 class="carousel slide"
+                 data-ride="carousel">
+
+                <div class="carousel-inner px-md-5 text-center">
+
+                    {% for announcement in announcements %}
+
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+
+                        <h3 class="feature-title text-white mb-3">
+                            {{ announcement.title }}
+                        </h3>
+
+
+                        <div class="small mb-3"
+                             style="color: var(--brass-light);">
+
+                            <i class="far fa-clock mr-1"></i>
+
+                            {{ announcement.date_posted|date:"F j, Y" }}
+
+                        </div>
+
+
+                        {% if announcement.category %}
+
+                            <div class="announcement-category text-uppercase">
+                                {{ announcement.category }}
+                            </div>
+
+                        {% endif %}
+
+
+                        <p class="lead font-italic mx-auto"
+                           style="max-width: 800px; color: rgba(247,244,237,0.9);">
+
+                            "{{ announcement.content|truncatewords:30 }}"
+
+                        </p>
+
+
+                        <a href="{% url 'students_app:announcement_detail' announcement.pk %}"
+                           class="btn mt-3"
+                           style="background-color: transparent;
+                                  border: 1px solid var(--brass-light);
+                                  color: var(--brass-light);
+                                  border-radius: 30px;
+                                  padding: 8px 24px;">
+
+                            Read Full Announcement
+
+                        </a>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <a class="carousel-control-prev"
+                   href="#announcementCarousel"
+                   role="button"
+                   data-slide="prev">
+
+                    <span class="carousel-control-prev-icon"
+                          aria-hidden="true"></span>
+
+                    <span class="sr-only">
+                        Previous
+                    </span>
+
+                </a>
+
+
+                <a class="carousel-control-next"
+                   href="#announcementCarousel"
+                   role="button"
+                   data-slide="next">
+
+                    <span class="carousel-control-next-icon"
+                          aria-hidden="true"></span>
+
+                    <span class="sr-only">
+                        Next
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- ========================================================= -->
+    <!-- RECENT NEWS SECTION -->
+    <!-- ========================================================= -->
+
+    {% if news_articles %}
+
+    <div class="container py-5 mt-4">
+
+        <div class="text-center mb-5">
+
+            <h2 class="section-heading">
+                Campus News
+            </h2>
+
+            <div class="heading-underline mx-auto"></div>
+
+        </div>
+
+
+        <div class="row">
+
+            {% for article in news_articles %}
+
+            <div class="col-md-6 col-lg-3 mb-4">
+
+                <div class="card h-100 feature-card p-0 border-0 shadow-sm text-left">
+
+                    {% if article.featured_image %}
+
+                        <img src="{{ article.featured_image.url }}"
+                             class="card-img-top news-img"
+                             alt="{{ article.headline }}">
+
+                    {% else %}
+
+                        <div class="news-img d-flex align-items-center justify-content-center"
+                             style="background: var(--ink-deep);
+                                    color: var(--brass-light);">
+
+                            <i class="fas fa-newspaper fa-3x"></i>
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <div class="card-body d-flex flex-column">
+
+                        <div class="small text-muted mb-2">
+
+                            {{ article.publish_date|date:"M d, Y" }}
+
+                        </div>
+
+
+                        <h5 class="feature-title fs-6 mb-3"
+                            style="line-height: 1.4;">
+
+                            <a href="{% url 'students_app:news_detail' article.pk %}"
+                               class="text-decoration-none"
+                               style="color: var(--ink);">
+
+                                {{ article.headline }}
+
+                            </a>
+
+                        </h5>
+
+
+                        <p class="feature-text small flex-grow-1">
+
+                            {{ article.summary|truncatewords:15 }}
+
+                        </p>
+
+
+                        <a href="{% url 'students_app:news_detail' article.pk %}"
+                           class="btn btn-sm mt-3 w-100"
+                           style="background-color: var(--brass-light);
+                                  color: var(--ink-deep);
+                                  font-weight: 600;">
+
+                            Read More
+                            <i class="fas fa-arrow-right ml-1"></i>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- ========================================================= -->
+    <!-- LEADERSHIP SECTION -->
+    <!-- ========================================================= -->
+
+    {% if leaders %}
+
+    <div class="py-5"
+         style="background-color: #fcfbf8;">
+
+        <div class="container">
+
+            <div class="text-center mb-5">
+
+                <h2 class="section-heading">
+                    School Leadership
+                </h2>
+
+                <div class="heading-underline mx-auto"></div>
+
+            </div>
+
+
+            <div class="row justify-content-center">
+
+                {% for leader in leaders %}
+
+                <div class="col-md-6 col-lg-3 mb-4">
+
+                    <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden"
+                         style="border-radius: 0.625rem;">
+
+
+                        <div class="leader-card-header">
+
+                            {{ leader.role }}
+
+                        </div>
+
+
+                        {% if leader.photo %}
+
+                            <img src="{{ leader.photo.url }}"
+                                 class="leader-img"
+                                 alt="{{ leader.name }}">
+
+                        {% else %}
+
+                            <div class="leader-img d-flex align-items-center justify-content-center"
+                                 style="background: #eee;
+                                        color: #aaa;">
+
+                                <i class="fas fa-user-tie fa-4x"></i>
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="card-body text-center py-3">
+
+                            <h5 class="feature-title mb-0"
+                                style="font-size: 1.1rem;">
+
+                                {{ leader.name }}
+
+                            </h5>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
 </div>
+
+
+
+<!-- ========================================================= -->
+<!-- GALLERY MODAL -->
+<!-- ========================================================= -->
 
 {% if carousel_events %}
-<div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+
+<div class="modal fade"
+     id="galleryModal"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-xl"
+         role="document">
+
         <div class="modal-content bg-transparent border-0">
+
+
             <div class="modal-header border-0 pb-0 justify-content-end">
-                <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close" style="opacity: 1; font-size: 2.5rem;">
-                    <span aria-hidden="true">&times;</span>
+
+                <button type="button"
+                        class="close text-white shadow-none"
+                        data-dismiss="modal"
+                        aria-label="Close"
+                        style="opacity: 1;
+                               font-size: 2.5rem;
+                               text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+
+                    <span aria-hidden="true">
+                        &times;
+                    </span>
+
                 </button>
+
             </div>
+
+
             <div class="modal-body p-0">
-                <div id="largeCarousel" class="carousel slide shadow-lg rounded-lg overflow-hidden" data-ride="carousel">
-                    <div class="carousel-inner bg-dark">
+
+                <div id="largeCarousel"
+                     class="carousel slide shadow-lg rounded-lg overflow-hidden"
+                     data-ride="carousel">
+
+
+                    <div class="carousel-inner bg-dark rounded-lg">
+
                         {% for event in carousel_events %}
+
                         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img src="{{ event.image.url }}" class="d-block w-100" style="height: 75vh; object-fit: contain; background: #000;">
-                            <div class="carousel-caption d-block modal-caption">
-                                <h4 class="text-white">{{ event.title }}</h4>
-                                <p>{{ event.description }}</p>
+
+                            <img src="{{ event.image.url }}"
+                                 class="d-block w-100"
+                                 alt="Event photo"
+                                 style="height: 70vh;
+                                        min-height: 500px;
+                                        object-fit: contain;
+                                        background-color: #000;">
+
+
+                            {% if event.title or event.description %}
+
+                            <div class="carousel-caption d-block rounded shadow-lg modal-caption">
+
+                                <h3 class="font-weight-bold text-white mb-2">
+
+                                    {{ event.title }}
+
+                                </h3>
+
+                                <p class="text-light mb-0"
+                                   style="font-size: 1.15rem;
+                                          font-weight: 300;">
+
+                                    {{ event.description }}
+
+                                </p>
+
                             </div>
+
+                            {% endif %}
+
                         </div>
+
                         {% endfor %}
+
                     </div>
-                    <a class="carousel-control-prev" href="#largeCarousel" role="button" data-slide="prev">
-                        <span class="carousel-control-prev-icon"></span>
+
+
+                    <a class="carousel-control-prev"
+                       href="#largeCarousel"
+                       role="button"
+                       data-slide="prev">
+
+                        <span class="carousel-control-prev-icon"
+                              aria-hidden="true"
+                              style="width: 3.5rem;
+                                     height: 3.5rem;"></span>
+
+                        <span class="sr-only">
+                            Previous
+                        </span>
+
                     </a>
-                    <a class="carousel-control-next" href="#largeCarousel" role="button" data-slide="next">
-                        <span class="carousel-control-next-icon"></span>
+
+
+                    <a class="carousel-control-next"
+                       href="#largeCarousel"
+                       role="button"
+                       data-slide="next">
+
+                        <span class="carousel-control-next-icon"
+                              aria-hidden="true"
+                              style="width: 3.5rem;
+                                     height: 3.5rem;"></span>
+
+                        <span class="sr-only">
+                            Next
+                        </span>
+
                     </a>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
+
 {% endif %}
 
+
+
+<!-- ========================================================= -->
+<!-- STYLES -->
+<!-- ========================================================= -->
+
 <style>
+
     :root {
+
         --ink: #16213e;
         --ink-deep: #0e1730;
         --brass: #b8912f;
         --brass-light: #f3e6c4;
+
     }
 
-    /* HERO REFINEMENT */
+
+    body,
+    html {
+
+        margin: 0;
+        padding: 0;
+
+    }
+
+
+    /* ========================================================= */
+    /* HERO */
+    /* ========================================================= */
+
     .hero-section {
+
         background-size: cover;
         background-position: center;
         min-height: 85vh;
         position: relative;
+
     }
 
-    /* UPDATED: Centered and highly transparent */
+
+    .hero-section::before {
+
+        content: '';
+
+        position: absolute;
+
+        inset: 0;
+
+        background: rgba(255,255,255,0.12);
+
+        z-index: 0;
+
+    }
+
+
+    .hero-section .container {
+
+        position: relative;
+        z-index: 2;
+
+    }
+
+
+    /* ========================================================= */
+    /* GLASS HERO CARD */
+    /* ========================================================= */
+
     .hero-glass-card {
-        background: rgba(255, 255, 255, 0.03); /* Almost entirely transparent */
-        backdrop-filter: blur(4px); /* Very light blur so the image underneath is clear */
+
+        background: rgba(255, 255, 255, 0.03);
+
+        backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
+
         padding: 4rem 2.5rem;
+
         border-radius: 1.5rem;
+
         border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+
+        box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.15);
+
     }
 
-    .hero-title {
-        font-family: 'Fraunces', serif;
-        font-weight: 700;
-        font-size: 3.5rem;
-        color: var(--ink-deep);
-        line-height: 1.2;
-        text-shadow: 0 2px 4px rgba(255,255,255,0.7); /* Added stronger text shadow for readability against raw images */
-    }
 
-    .hero-subtitle {
-        font-size: 1.25rem;
-        color: #1a252f;
-        font-weight: 600;
-        text-shadow: 0 1px 3px rgba(255,255,255,0.6);
-    }
+    /* ========================================================= */
+    /* HERO EYEBROW */
+    /* ========================================================= */
 
     .hero-eyebrow {
-        font-family: 'IBM Plex Mono', monospace;
+
+        font-family:
+            'IBM Plex Mono',
+            'Courier New',
+            monospace;
+
         font-size: 0.85rem;
+
         font-weight: 700;
+
         letter-spacing: 0.2em;
+
         text-transform: uppercase;
+
         color: var(--ink-deep);
+
         margin-bottom: 1rem;
+
     }
 
-    /* INFINITE MARQUEE */
-    .campus-highlights-wrapper {
-        padding: 40px 0;
-        background: #fff;
-        overflow: hidden;
-    }
 
-    .highlights-label {
+    /* ========================================================= */
+    /* HERO TITLE */
+    /* ========================================================= */
+
+    .hero-title {
+
+        font-family:
+            'Fraunces',
+            'Playfair Display',
+            Georgia,
+            serif;
+
         font-weight: 700;
-        letter-spacing: 2px;
-        color: var(--brass);
+
+        font-size: 3.5rem;
+
+        color: var(--ink-deep);
+
+        line-height: 1.2;
+
+        text-shadow:
+            0 2px 4px rgba(255,255,255,0.7);
+
     }
 
-    .marquee-container {
-        display: flex;
-        overflow: hidden;
-        user-select: none;
-        mask-image: linear-gradient(to right, hsl(0 0% 0% / 0), hsl(0 0% 0% / 1) 10%, hsl(0 0% 0% / 1) 90%, hsl(0 0% 0% / 0));
-    }
 
-    .marquee-content {
-        display: flex;
-        flex-shrink: 0;
-        gap: 20px;
-        counter-reset: item;
-        animation: scroll 40s linear infinite;
-    }
+    /* ========================================================= */
+    /* HERO SUBTITLE */
+    /* ========================================================= */
 
-    .marquee-content:hover {
-        animation-play-state: paused;
-    }
+    .hero-subtitle {
 
-    @keyframes scroll {
-        from { transform: translateX(0); }
-        to { transform: translateX(calc(-50% - 10px)); }
-    }
+        font-size: 1.25rem;
 
-    .marquee-item {
-        width: 300px;
-        height: 200px;
-        flex-shrink: 0;
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-        border: 1px solid #eee;
-    }
+        color: #1a252f;
 
-    .marquee-item:hover {
-        transform: scale(1.05);
-        z-index: 5;
-    }
-
-    .marquee-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .item-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(transparent, rgba(0,0,0,0.7));
-        padding: 10px;
-        color: white;
-    }
-
-    /* BUTTONS */
-    .btn-hero {
-        background: var(--ink-deep);
-        color: #fff;
-        border-radius: 50px;
         font-weight: 600;
-        padding: 12px 30px;
-        border: 2px solid var(--ink-deep);
-        transition: all 0.3s ease;
+
+        text-shadow:
+            0 1px 3px rgba(255,255,255,0.6);
+
     }
+
+
+    /* ========================================================= */
+    /* HERO BUTTON */
+    /* ========================================================= */
+
+    .btn-hero {
+
+        background: var(--ink-deep);
+
+        color: #fff;
+
+        border-radius: 50px;
+
+        font-weight: 600;
+
+        padding: 12px 30px;
+
+        border: 2px solid var(--ink-deep);
+
+        transition: all 0.3s ease;
+
+    }
+
 
     .btn-hero:hover {
+
         background: #ffffff;
+
         color: var(--ink-deep);
+
+        transform: translateY(-2px);
+
+        box-shadow:
+            0 10px 25px rgba(0,0,0,0.15);
+
     }
 
-    /* FEATURE STRIP */
-    .feature-strip {
-        margin-top: -20px;
-        position: relative;
-        z-index: 10;
+
+    /* ========================================================= */
+    /* CAMPUS HIGHLIGHTS */
+    /* ========================================================= */
+
+    .campus-highlights-wrapper {
+
+        padding: 40px 0;
+
+        background: #fff;
+
+        overflow: hidden;
+
     }
+
+
+    .highlights-label {
+
+        font-weight: 700;
+
+        letter-spacing: 2px;
+
+        color: var(--brass);
+
+    }
+
+
+    /* ========================================================= */
+    /* MARQUEE */
+    /* ========================================================= */
+
+    .marquee-container {
+
+        display: flex;
+
+        overflow: hidden;
+
+        user-select: none;
+
+        mask-image:
+            linear-gradient(
+                to right,
+                hsl(0 0% 0% / 0),
+                hsl(0 0% 0% / 1) 10%,
+                hsl(0 0% 0% / 1) 90%,
+                hsl(0 0% 0% / 0)
+            );
+
+        -webkit-mask-image:
+            linear-gradient(
+                to right,
+                transparent,
+                black 10%,
+                black 90%,
+                transparent
+            );
+
+    }
+
+
+    .marquee-content {
+
+        display: flex;
+
+        flex-shrink: 0;
+
+        gap: 20px;
+
+        animation:
+            scroll 40s linear infinite;
+
+    }
+
+
+    .marquee-content:hover {
+
+        animation-play-state: paused;
+
+    }
+
+
+    @keyframes scroll {
+
+        from {
+
+            transform: translateX(0);
+
+        }
+
+        to {
+
+            transform:
+                translateX(calc(-50% - 10px));
+
+        }
+
+    }
+
+
+    /* ========================================================= */
+    /* MARQUEE IMAGE CARDS */
+    /* ========================================================= */
+
+    .marquee-item {
+
+        width: 300px;
+
+        height: 200px;
+
+        flex-shrink: 0;
+
+        position: relative;
+
+        border-radius: 12px;
+
+        overflow: hidden;
+
+        cursor: pointer;
+
+        transition:
+            transform 0.3s ease;
+
+        border: 1px solid #eee;
+
+    }
+
+
+    .marquee-item:hover {
+
+        transform: scale(1.05);
+
+        z-index: 5;
+
+    }
+
+
+    .marquee-item img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+        transition:
+            transform 0.5s ease;
+
+    }
+
+
+    .marquee-item:hover img {
+
+        transform: scale(1.08);
+
+    }
+
+
+    /* ========================================================= */
+    /* IMAGE OVERLAY */
+    /* ========================================================= */
+
+    .item-overlay {
+
+        position: absolute;
+
+        bottom: 0;
+
+        left: 0;
+
+        right: 0;
+
+        background:
+            linear-gradient(
+                transparent,
+                rgba(0,0,0,0.7)
+            );
+
+        padding: 10px;
+
+        color: white;
+
+    }
+
+
+    /* ========================================================= */
+    /* FEATURE STRIP */
+    /* ========================================================= */
+
+    .feature-strip {
+
+        margin-top: -20px;
+
+        position: relative;
+
+        z-index: 10;
+
+    }
+
+
+    /* ========================================================= */
+    /* FEATURE CARD */
+    /* ========================================================= */
 
     .feature-card {
+
         background: #ffffff;
+
         border: 1px solid #eef0f2;
+
         border-radius: 1rem;
+
         padding: 2.5rem 1.5rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
+
+        box-shadow:
+            0 10px 30px rgba(0,0,0,0.05);
+
+        transition:
+            all 0.3s ease;
+
+        position: relative;
+
+        overflow: hidden;
+
     }
+
+
+    .feature-card::before {
+
+        content: '';
+
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        height: 3px;
+
+        background: var(--brass);
+
+        transform: scaleX(0);
+
+        transform-origin: left;
+
+        transition:
+            transform 0.3s ease;
+
+    }
+
 
     .feature-card:hover {
+
         transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+        box-shadow:
+            0 20px 40px rgba(0,0,0,0.1);
+
     }
+
+
+    .feature-card:hover::before {
+
+        transform: scaleX(1);
+
+    }
+
+
+    /* ========================================================= */
+    /* FEATURE ICON */
+    /* ========================================================= */
 
     .feature-icon {
+
         background: var(--brass-light);
+
         color: var(--brass);
+
         width: 60px;
+
         height: 60px;
+
         border-radius: 15px;
+
         display: flex;
+
         align-items: center;
+
         justify-content: center;
+
         margin: 0 auto 1.5rem;
+
         font-size: 1.5rem;
+
     }
+
+
+    /* ========================================================= */
+    /* FEATURE TITLE */
+    /* ========================================================= */
+
+    .feature-title {
+
+        font-family:
+            'Fraunces',
+            'Playfair Display',
+            Georgia,
+            serif;
+
+        font-weight: 600;
+
+        color: var(--ink);
+
+        margin-bottom: 0.5rem;
+
+    }
+
+
+    /* ========================================================= */
+    /* FEATURE TEXT */
+    /* ========================================================= */
+
+    .feature-text {
+
+        color: #5b6472;
+
+        font-size: 0.9rem;
+
+        line-height: 1.6;
+
+        margin-bottom: 0;
+
+    }
+
+
+    /* ========================================================= */
+    /* ANNOUNCEMENTS */
+    /* ========================================================= */
+
+    .announcement-section {
+
+        background:
+            linear-gradient(
+                135deg,
+                var(--ink) 0%,
+                var(--ink-deep) 100%
+            );
+
+        color: white;
+
+        padding: 60px 0;
+
+        box-shadow:
+            inset 0 5px 15px rgba(0,0,0,0.2);
+
+    }
+
+
+    .announcement-category {
+
+        background-color:
+            rgba(184, 145, 47, 0.2);
+
+        border:
+            1px solid var(--brass);
+
+        color: var(--brass-light);
+
+        padding: 4px 12px;
+
+        font-size: 0.75rem;
+
+        display: inline-block;
+
+        margin-bottom: 15px;
+
+        border-radius: 20px;
+
+    }
+
+
+    /* ========================================================= */
+    /* SECTION HEADINGS */
+    /* ========================================================= */
+
+    .section-heading {
+
+        font-family:
+            'Fraunces',
+            'Playfair Display',
+            Georgia,
+            serif;
+
+        font-weight: 600;
+
+        color: var(--ink);
+
+        font-size: 2.5rem;
+
+    }
+
+
+    .heading-underline {
+
+        height: 3px;
+
+        width: 60px;
+
+        background-color: var(--brass);
+
+        margin-top: 15px;
+
+    }
+
+
+    /* ========================================================= */
+    /* NEWS */
+    /* ========================================================= */
+
+    .news-img {
+
+        height: 220px;
+
+        object-fit: cover;
+
+        width: 100%;
+
+        border-radius:
+            0.625rem 0.625rem 0 0;
+
+    }
+
+
+    /* ========================================================= */
+    /* LEADERSHIP */
+    /* ========================================================= */
+
+    .leader-card-header {
+
+        background-color: var(--brass);
+
+        color: var(--ink-deep);
+
+        font-family:
+            'IBM Plex Mono',
+            'Courier New',
+            monospace;
+
+        font-weight: 700;
+
+        min-height: 60px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        text-align: center;
+
+        padding: 10px;
+
+        font-size: 0.85rem;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.05em;
+
+    }
+
+
+    .leader-img {
+
+        height: 300px;
+
+        object-fit: cover;
+
+        object-position: top;
+
+        width: 100%;
+
+        border-bottom:
+            3px solid var(--brass-light);
+
+    }
+
+
+    /* ========================================================= */
+    /* GALLERY MODAL */
+    /* ========================================================= */
 
     .modal-caption {
-        background: rgba(0,0,0,0.8);
-        padding: 15px;
-        border-radius: 8px;
-        bottom: 20px;
+
+        background:
+            rgba(14, 23, 48, 0.92);
+
+        padding:
+            20px 30px;
+
+        bottom: 30px;
+
+        border-top:
+            3px solid var(--brass);
+
+        max-width: 80%;
+
+        margin: 0 auto;
+
     }
+
+
+    /* ========================================================= */
+    /* RESPONSIVE */
+    /* ========================================================= */
 
     @media (max-width: 991px) {
-        .hero-title { font-size: 2.5rem; }
-        .hero-glass-card { padding: 2rem; margin: 0 15px; }
-        .marquee-item { width: 220px; height: 150px; }
+
+        .hero-title {
+
+            font-size: 2.5rem;
+
+        }
+
+        .hero-glass-card {
+
+            padding: 2rem;
+
+            margin: 0 15px;
+
+        }
+
+        .marquee-item {
+
+            width: 220px;
+
+            height: 150px;
+
+        }
+
     }
+
+
+    @media (max-width: 767px) {
+
+        .hero-section {
+
+            min-height: 75vh;
+
+        }
+
+        .hero-title {
+
+            font-size: 2rem;
+
+        }
+
+        .hero-subtitle {
+
+            font-size: 1rem;
+
+        }
+
+        .hero-glass-card {
+
+            padding: 2rem 1.25rem;
+
+            border-radius: 1rem;
+
+        }
+
+        .section-heading {
+
+            font-size: 2rem;
+
+        }
+
+        .marquee-item {
+
+            width: 200px;
+
+            height: 135px;
+
+        }
+
+    }
+
 </style>
 
+
+
+<!-- ========================================================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================================================= -->
+
 <script>
+
+    /*
+     * When a campus highlight is clicked,
+     * open the gallery modal at the corresponding image.
+     */
+
     $('.marquee-item').on('click', function() {
+
         var slideTo = $(this).data('slide-to');
-        $('#largeCarousel').carousel(parseInt(slideTo));
+
+        $('#largeCarousel').carousel(
+            parseInt(slideTo)
+        );
+
     });
+
+
+    /*
+     * Stop the marquee while the user is interacting
+     * with the gallery area.
+     */
+
+    $('.marquee-container').on('mouseenter', function() {
+
+        $('.marquee-content').css(
+            'animation-play-state',
+            'paused'
+        );
+
+    });
+
+
+    $('.marquee-container').on('mouseleave', function() {
+
+        $('.marquee-content').css(
+            'animation-play-state',
+            'running'
+        );
+
+    });
+
 </script>
+
 {% endblock %}
