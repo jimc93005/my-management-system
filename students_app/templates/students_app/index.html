@@ -3,61 +3,69 @@
 {% block content %}
 <div class="container-fluid p-0">
 
-    <!-- HERO SECTION -->
-    <div class="hero-section d-flex align-items-center text-center"
+    <div class="hero-section d-flex align-items-center"
          style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
 
-        <div class="hero-overlay"></div>
-
-        <div class="container hero-content text-white mt-5">
-            <div class="mb-4">
-                <div class="hero-seal">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-            </div>
-
-            <span class="hero-eyebrow">School Management Portal</span>
-            <h1 class="hero-title mb-3">Welcome to {{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
-            <p class="hero-subtitle mb-5 mx-auto">
-                Empowering excellence in education. Our digital management portal streamlines administration, enhances teacher collaboration, and tracks student success every step of the way.
-            </p>
-
-            <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
-                {% if user.is_authenticated %}
-                    <a href="{% url 'students_app:dashboard' %}" class="btn btn-hero btn-lg px-5 py-3 mx-2">
-                        <i class="fas fa-chart-line mr-2"></i> Go to Dashboard
-                    </a>
-                {% else %}
-                    <a href="{% url 'users:login' %}" class="btn btn-hero btn-lg px-5 py-3 mx-2">
-                        <i class="fas fa-sign-in-alt mr-2"></i> Login to Portal
-                    </a>
-                {% endif %}
-            </div>
-
-            {% if carousel_events %}
-            <div class="mx-auto mt-4 preview-slider-container" style="max-width: 500px; cursor: pointer;" data-toggle="modal" data-target="#galleryModal" title="Click to view full gallery">
-                <p class="small font-weight-bold text-uppercase mb-2 preview-slider-label"><i class="fas fa-camera mr-1"></i> Campus Highlights (Click to expand)</p>
-                <div id="smallCarousel" class="carousel slide overflow-hidden preview-slider" data-ride="carousel">
-                    <div class="carousel-inner" style="background-color: #0e1730;">
-                        {% for event in carousel_events %}
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <!-- FIX 1: Set object-fit: contain & dynamic height to display full image without cropping -->
-                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Highlight" style="height: auto; max-height: 320px; object-fit: contain;">
-
-                            <!-- FIX 2: Changed 'd-none d-md-block' to 'd-block' so caption shows on mobile -->
-                            <div class="carousel-caption d-block p-2 preview-slider-caption">
-                                <h6 class="mb-0 font-weight-bold text-white text-truncate">{{ event.title|default:"Campus Event" }}</h6>
-                            </div>
+        <div class="container">
+            <!-- Centered Row -->
+            <div class="row justify-content-center">
+                <div class="col-lg-9 col-md-11 text-center">
+                    <div class="hero-glass-card animate__animated animate__fadeInUp">
+                        <span class="hero-eyebrow mx-auto d-block">School Management Portal</span>
+                        <h1 class="hero-title mb-3">Welcome to <br>{{ request.tenant.name|default:request.tenant.schema_name|title }}</h1>
+                        <p class="hero-subtitle mb-4 mx-auto" style="max-width: 700px;">
+                            Empowering excellence in education. Our digital management portal streamlines administration, enhances collaboration, and tracks success.
+                        </p>
+                        <!-- Centered Buttons -->
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'students_app:dashboard' %}" class="btn btn-hero btn-lg px-5">
+                                    <i class="fas fa-chart-line mr-2"></i> Go to Dashboard
+                                </a>
+                            {% else %}
+                                <a href="{% url 'users:login' %}" class="btn btn-hero btn-lg px-5">
+                                    <i class="fas fa-sign-in-alt mr-2"></i> Login to Portal
+                                </a>
+                            {% endif %}
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
 
-    <!-- FEATURE STRIP -->
+    {% if carousel_events %}
+    <div class="campus-highlights-wrapper">
+        <div class="container mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <h6 class="highlights-label mb-0"><i class="fas fa-camera-retro mr-2"></i> CAMPUS HIGHLIGHTS</h6>
+                <span class="small text-muted font-italic">Live Gallery</span>
+            </div>
+        </div>
+
+        <div class="marquee-container">
+            <div class="marquee-content">
+                {% for event in carousel_events %}
+                <div class="marquee-item" data-toggle="modal" data-target="#galleryModal" data-slide-to="{{ forloop.counter0 }}">
+                    <img src="{{ event.image.url }}" alt="Campus Event">
+                    <div class="item-overlay">
+                        <span class="small">{{ event.title|truncatechars:20 }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% for event in carousel_events %}
+                <div class="marquee-item" data-toggle="modal" data-target="#galleryModal" data-slide-to="{{ forloop.counter0 }}">
+                    <img src="{{ event.image.url }}" alt="Campus Event">
+                    <div class="item-overlay">
+                        <span class="small">{{ event.title|truncatechars:20 }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="container feature-strip">
         <div class="row justify-content-center">
             <div class="col-md-4 mb-4">
@@ -81,159 +89,35 @@
         </div>
     </div>
 
-    <!-- 1. ANNOUNCEMENTS SECTION -->
-    {% if announcements %}
-    <div class="announcement-section mt-5">
-        <div class="container text-center text-md-left">
-            <h6 class="text-uppercase mb-4 font-weight-bold" style="color: var(--brass-light); letter-spacing: 2px;">
-                <i class="fas fa-bullhorn mr-2"></i> Official Announcements
-            </h6>
-
-            <div id="announcementCarousel" class="carousel slide" data-ride="carousel">
-                <div class="carousel-inner px-md-5 text-center">
-                    {% for announcement in announcements %}
-                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        <h3 class="feature-title text-white mb-3">{{ announcement.title }}</h3>
-                        <div class="small mb-3" style="color: var(--brass-light);">
-                            <i class="far fa-clock mr-1"></i> {{ announcement.date_posted|date:"F j, Y" }}
-                        </div>
-                        {% if announcement.category %}
-                            <div class="announcement-category text-uppercase">{{ announcement.category }}</div>
-                        {% endif %}
-                        <p class="lead font-italic mx-auto" style="max-width: 800px; color: rgba(247,244,237,0.9);">
-                            "{{ announcement.content|truncatewords:30 }}"
-                        </p>
-
-                        <a href="{% url 'students_app:announcement_detail' announcement.pk %}" class="btn mt-3" style="background-color: transparent; border: 1px solid var(--brass-light); color: var(--brass-light); border-radius: 30px; padding: 8px 24px;">
-                            Read Full Announcement
-                        </a>
-                    </div>
-                    {% endfor %}
-                </div>
-                <a class="carousel-control-prev" href="#announcementCarousel" role="button" data-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Previous</span>
-                </a>
-                <a class="carousel-control-next" href="#announcementCarousel" role="button" data-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Next</span>
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 2. RECENT NEWS SECTION -->
-    {% if news_articles %}
-    <div class="container py-5 mt-4">
-        <div class="text-center mb-5">
-            <h2 class="section-heading">Campus News</h2>
-            <div class="heading-underline mx-auto"></div>
-        </div>
-
-        <div class="row">
-            {% for article in news_articles %}
-            <div class="col-md-6 col-lg-3 mb-4">
-                <div class="card h-100 feature-card p-0 border-0 shadow-sm text-left">
-                    {% if article.featured_image %}
-                        <img src="{{ article.featured_image.url }}" class="card-img-top news-img" alt="{{ article.headline }}">
-                    {% else %}
-                        <div class="news-img d-flex align-items-center justify-content-center" style="background: var(--ink-deep); color: var(--brass-light);">
-                            <i class="fas fa-newspaper fa-3x"></i>
-                        </div>
-                    {% endif %}
-
-                    <div class="card-body d-flex flex-column">
-                        <div class="small text-muted mb-2">{{ article.publish_date|date:"M d, Y" }}</div>
-
-                        <h5 class="feature-title fs-6 mb-3" style="line-height: 1.4;">
-                            <a href="{% url 'students_app:news_detail' article.pk %}" class="text-decoration-none" style="color: var(--ink);">
-                                {{ article.headline }}
-                            </a>
-                        </h5>
-
-                        <p class="feature-text small flex-grow-1">{{ article.summary|truncatewords:15 }}</p>
-
-                        <a href="{% url 'students_app:news_detail' article.pk %}" class="btn btn-sm mt-3 w-100" style="background-color: var(--brass-light); color: var(--ink-deep); font-weight: 600;">
-                            Read More <i class="fas fa-arrow-right ml-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 3. LEADERSHIP SECTION -->
-    {% if leaders %}
-    <div class="py-5" style="background-color: #fcfbf8;">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-heading">School Leadership</h2>
-                <div class="heading-underline mx-auto"></div>
-            </div>
-
-            <div class="row justify-content-center">
-                {% for leader in leaders %}
-                <div class="col-md-6 col-lg-3 mb-4">
-                    <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden" style="border-radius: 0.625rem;">
-                        <div class="leader-card-header">
-                            {{ leader.role }}
-                        </div>
-                        {% if leader.photo %}
-                            <img src="{{ leader.photo.url }}" class="leader-img" alt="{{ leader.name }}">
-                        {% else %}
-                            <div class="leader-img d-flex align-items-center justify-content-center" style="background: #eee; color: #aaa;">
-                                <i class="fas fa-user-tie fa-4x"></i>
-                            </div>
-                        {% endif %}
-                        <div class="card-body text-center py-3">
-                            <h5 class="feature-title mb-0" style="font-size: 1.1rem;">{{ leader.name }}</h5>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
 </div>
 
-<!-- GALLERY MODAL -->
 {% if carousel_events %}
 <div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
         <div class="modal-content bg-transparent border-0">
             <div class="modal-header border-0 pb-0 justify-content-end">
-                <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close" style="opacity: 1; font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close" style="opacity: 1; font-size: 2.5rem;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body p-0">
                 <div id="largeCarousel" class="carousel slide shadow-lg rounded-lg overflow-hidden" data-ride="carousel">
-                    <div class="carousel-inner bg-dark rounded-lg">
+                    <div class="carousel-inner bg-dark">
                         {% for event in carousel_events %}
                         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img src="{{ event.image.url }}" class="d-block w-100" alt="Event photo" style="height: 70vh; min-height: 500px; object-fit: contain; background-color: #000;">
-
-                            {% if event.title or event.description %}
-                            <div class="carousel-caption d-block rounded shadow-lg modal-caption">
-                                <h3 class="font-weight-bold text-white mb-2">{{ event.title }}</h3>
-                                <p class="text-light mb-0" style="font-size: 1.15rem; font-weight: 300;">{{ event.description }}</p>
+                            <img src="{{ event.image.url }}" class="d-block w-100" style="height: 75vh; object-fit: contain; background: #000;">
+                            <div class="carousel-caption d-block modal-caption">
+                                <h4 class="text-white">{{ event.title }}</h4>
+                                <p>{{ event.description }}</p>
                             </div>
-                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                     <a class="carousel-control-prev" href="#largeCarousel" role="button" data-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true" style="width: 3.5rem; height: 3.5rem;"></span>
-                        <span class="sr-only">Previous</span>
+                        <span class="carousel-control-prev-icon"></span>
                     </a>
                     <a class="carousel-control-next" href="#largeCarousel" role="button" data-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true" style="width: 3.5rem; height: 3.5rem;"></span>
-                        <span class="sr-only">Next</span>
+                        <span class="carousel-control-next-icon"></span>
                     </a>
                 </div>
             </div>
@@ -250,139 +134,189 @@
         --brass-light: #f3e6c4;
     }
 
-    body, html { margin: 0; padding: 0; }
-
+    /* HERO REFINEMENT */
     .hero-section {
         background-size: cover;
         background-position: center;
-        background-attachment: fixed;
-        min-height: 100vh;
+        min-height: 85vh;
         position: relative;
-        padding-top: 60px;
-        padding-bottom: 60px;
     }
-    .hero-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(to bottom, rgba(14, 23, 48, 0.88), rgba(14, 23, 48, 0.78));
-        z-index: 1;
+
+    /* UPDATED: Centered and highly transparent */
+    .hero-glass-card {
+        background: rgba(255, 255, 255, 0.03); /* Almost entirely transparent */
+        backdrop-filter: blur(4px); /* Very light blur so the image underneath is clear */
+        -webkit-backdrop-filter: blur(4px);
+        padding: 4rem 2.5rem;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
     }
-    .hero-content { position: relative; z-index: 2; }
-    .hero-seal {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 84px; height: 84px; border-radius: 50%;
-        background: var(--ink); border: 2px solid var(--brass);
-        color: var(--brass-light); font-size: 2.25rem;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-    }
-    .hero-eyebrow {
-        display: inline-block; font-family: 'IBM Plex Mono', 'Courier New', monospace;
-        font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em;
-        text-transform: uppercase; color: #d4b45f; margin-bottom: 0.75rem;
-    }
+
     .hero-title {
-        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-        font-weight: 600; font-size: 3rem; letter-spacing: -0.01em;
-        text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        font-family: 'Fraunces', serif;
+        font-weight: 700;
+        font-size: 3.5rem;
+        color: var(--ink-deep);
+        line-height: 1.2;
+        text-shadow: 0 2px 4px rgba(255,255,255,0.7); /* Added stronger text shadow for readability against raw images */
     }
+
     .hero-subtitle {
-        font-weight: 400; font-size: 1.15rem; max-width: 700px;
-        color: rgba(247,244,237,0.88);
-    }
-    .btn-hero {
-        background: var(--brass); color: var(--ink-deep); font-weight: 700;
-        border: none; border-radius: 50px; box-shadow: 0 12px 28px rgba(184,145,47,0.4);
-        transition: all 0.25s ease;
-    }
-    .btn-hero:hover {
-        transform: translateY(-2px); background: #cba53d;
-        box-shadow: 0 16px 34px rgba(184,145,47,0.45); color: var(--ink-deep);
-    }
-    .preview-slider-container:hover { transform: scale(1.02); transition: transform 0.3s ease; }
-    .preview-slider-label { color: #d4b45f; letter-spacing: 0.06em; }
-    .preview-slider {
-        border-radius: 0.625rem; border: 2px solid rgba(184,145,47,0.55);
-        box-shadow: 0 14px 34px rgba(0,0,0,0.3);
-    }
-    .preview-slider-caption { background: rgba(14, 23, 48, 0.85); bottom: 0; left: 0; right: 0; }
-    .modal-caption {
-        background: rgba(14, 23, 48, 0.92); padding: 20px 30px; bottom: 30px;
-        border-top: 3px solid var(--brass); max-width: 80%; margin: 0 auto;
+        font-size: 1.25rem;
+        color: #1a252f;
+        font-weight: 600;
+        text-shadow: 0 1px 3px rgba(255,255,255,0.6);
     }
 
-    .feature-strip { margin-top: 50px; position: relative; z-index: 10; }
-    .feature-card {
-        background: #fffdf8; border: 1px solid #e4ddc9; border-radius: 0.625rem;
-        box-shadow: 0 2px 10px rgba(22,33,62,0.08); text-align: center;
-        padding: 2rem 1.75rem; transition: all 0.3s ease; position: relative; overflow: hidden;
-    }
-    .feature-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-        background: var(--brass); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease;
-    }
-    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(22,33,62,0.14); }
-    .feature-card:hover::before { transform: scaleX(1); }
-    .feature-icon {
-        width: 56px; height: 56px; margin: 0 auto 1rem; border-radius: 50%;
-        background: var(--brass-light); color: var(--brass); display: flex;
-        align-items: center; justify-content: center; font-size: 1.375rem;
-    }
-    .feature-title {
-        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-        font-weight: 600; color: var(--ink); margin-bottom: 0.5rem;
-    }
-    .feature-text { color: #5b6472; font-size: 0.9rem; line-height: 1.6; margin-bottom: 0; }
-
-    .section-heading {
-        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-        font-weight: 600; color: var(--ink); font-size: 2.5rem;
-    }
-    .heading-underline {
-        height: 3px; width: 60px; background-color: var(--brass); margin-top: 15px;
+    .hero-eyebrow {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--ink-deep);
+        margin-bottom: 1rem;
     }
 
-    .announcement-section {
-        background: linear-gradient(135deg, var(--ink) 0%, var(--ink-deep) 100%);
-        color: white; padding: 60px 0;
-        box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
-    }
-    .announcement-category {
-        background-color: rgba(184, 145, 47, 0.2); border: 1px solid var(--brass);
-        color: var(--brass-light); padding: 4px 12px; font-size: 0.75rem;
-        display: inline-block; margin-bottom: 15px; border-radius: 20px;
+    /* INFINITE MARQUEE */
+    .campus-highlights-wrapper {
+        padding: 40px 0;
+        background: #fff;
+        overflow: hidden;
     }
 
-    .news-img {
-        height: 220px; object-fit: cover; width: 100%; border-radius: 0.625rem 0.625rem 0 0;
+    .highlights-label {
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: var(--brass);
     }
 
-    .leader-card-header {
-        background-color: var(--brass); color: var(--ink-deep);
-        font-family: 'IBM Plex Mono', 'Courier New', monospace; font-weight: 700;
-        min-height: 60px; display: flex; align-items: center; justify-content: center;
-        text-align: center; padding: 10px; font-size: 0.85rem; text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .marquee-container {
+        display: flex;
+        overflow: hidden;
+        user-select: none;
+        mask-image: linear-gradient(to right, hsl(0 0% 0% / 0), hsl(0 0% 0% / 1) 10%, hsl(0 0% 0% / 1) 90%, hsl(0 0% 0% / 0));
     }
-    .leader-img {
-        height: 300px;
-        object-fit: cover;
-        object-position: top;
+
+    .marquee-content {
+        display: flex;
+        flex-shrink: 0;
+        gap: 20px;
+        counter-reset: item;
+        animation: scroll 40s linear infinite;
+    }
+
+    .marquee-content:hover {
+        animation-play-state: paused;
+    }
+
+    @keyframes scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(calc(-50% - 10px)); }
+    }
+
+    .marquee-item {
+        width: 300px;
+        height: 200px;
+        flex-shrink: 0;
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        border: 1px solid #eee;
+    }
+
+    .marquee-item:hover {
+        transform: scale(1.05);
+        z-index: 5;
+    }
+
+    .marquee-item img {
         width: 100%;
-        border-bottom: 3px solid var(--brass-light);
+        height: 100%;
+        object-fit: cover;
     }
 
-    @media (max-width: 767px) {
-        .hero-title { font-size: 2rem; }
-        .hero-section { padding-top: 40px; padding-bottom: 40px; }
-        .section-heading { font-size: 2rem; }
+    .item-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        padding: 10px;
+        color: white;
+    }
+
+    /* BUTTONS */
+    .btn-hero {
+        background: var(--ink-deep);
+        color: #fff;
+        border-radius: 50px;
+        font-weight: 600;
+        padding: 12px 30px;
+        border: 2px solid var(--ink-deep);
+        transition: all 0.3s ease;
+    }
+
+    .btn-hero:hover {
+        background: #ffffff;
+        color: var(--ink-deep);
+    }
+
+    /* FEATURE STRIP */
+    .feature-strip {
+        margin-top: -20px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .feature-card {
+        background: #ffffff;
+        border: 1px solid #eef0f2;
+        border-radius: 1rem;
+        padding: 2.5rem 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    .feature-icon {
+        background: var(--brass-light);
+        color: var(--brass);
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 1.5rem;
+    }
+
+    .modal-caption {
+        background: rgba(0,0,0,0.8);
+        padding: 15px;
+        border-radius: 8px;
+        bottom: 20px;
+    }
+
+    @media (max-width: 991px) {
+        .hero-title { font-size: 2.5rem; }
+        .hero-glass-card { padding: 2rem; margin: 0 15px; }
+        .marquee-item { width: 220px; height: 150px; }
     }
 </style>
 
 <script>
-    $('#smallCarousel').on('slide.bs.carousel', function (e) {
-        $('#largeCarousel').carousel(e.to);
-    });
-    $('#largeCarousel').on('slide.bs.carousel', function (e) {
-        $('#smallCarousel').carousel(e.to);
+    $('.marquee-item').on('click', function() {
+        var slideTo = $(this).data('slide-to');
+        $('#largeCarousel').carousel(parseInt(slideTo));
     });
 </script>
 {% endblock %}
