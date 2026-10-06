@@ -210,7 +210,8 @@
             <tr>
                 <td class="text-center bold">{{ forloop.counter }}</td>
                 <td class="bold">{{ student.student_id }}</td>
-                <td>{{ student.surname.upper }}, {{ student.first_name }}</td>
+                <!-- Applied the upper template filter to both surname and first_name -->
+                <td>{{ student.surname|upper   }}   {{ student.first_name|upper }}</td>
                 <td class="text-center">{{ student.gender|default:"-" }}</td>
                 <td class="text-center">{{ student.status }}</td>
             </tr>
