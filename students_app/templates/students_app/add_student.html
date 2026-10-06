@@ -66,6 +66,14 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="p-3 border rounded bg-light">
+                            <!-- Select All Option -->
+                            <div class="form-check mb-3 pb-2 border-bottom" id="selectAllContainer" style="display: none;">
+                                <input class="form-check-input" type="checkbox" id="selectAllSubjects">
+                                <label class="form-check-label font-weight-bold text-primary cursor-pointer" for="selectAllSubjects" style="cursor: pointer;">
+                                    Select All Allowed Subjects
+                                </label>
+                            </div>
+                            <!-- Subject List -->
                             {% bootstrap_field form.subject %}
                         </div>
                     </div>
@@ -96,35 +104,42 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("🟢 Checkbox Filter Script Loaded!");
-
-        // 1. Find the Class dropdown
+        // 1. Find elements
         const classSelect = document.querySelector('[name="class_level"]');
-
-        // 2. Find ALL the Subject Checkboxes instead of a dropdown
         const subjectCheckboxes = document.querySelectorAll('input[name="subject"]');
+        const selectAllCheckbox = document.getElementById('selectAllSubjects');
+        const selectAllContainer = document.getElementById('selectAllContainer');
 
-        console.log("👉 Class Dropdown found:", classSelect);
-        console.log("👉 Total Subject Checkboxes found:", subjectCheckboxes.length);
-
-        // 3. Load the JSON map from Python
+        // 2. Load the JSON map from Python
         const subjectMap = {{ subject_map_json|safe|default:"{}" }};
+
+        // Helper: Check if all enabled subjects are selected to sync the "Select All" checkbox
+        function syncSelectAllState() {
+            const enabledCheckboxes = Array.from(subjectCheckboxes).filter(cb => !cb.disabled);
+            if (enabledCheckboxes.length > 0) {
+                const allChecked = enabledCheckboxes.every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            } else {
+                selectAllCheckbox.checked = false;
+            }
+        }
 
         function filterSubjects() {
             if (!classSelect || subjectCheckboxes.length === 0) return;
 
             const selectedClass = classSelect.value;
             const allowedSubjects = subjectMap[selectedClass] || [];
+            let hasVisibleSubjects = false;
 
             // Loop through every single checkbox
             subjectCheckboxes.forEach(checkbox => {
-                // Find the parent container (Bootstrap uses .form-check) so we hide the text too
                 const container = checkbox.closest('.form-check') || checkbox.parentElement;
 
                 if (allowedSubjects.includes(checkbox.value)) {
                     // It belongs to this class -> SHOW IT
                     container.style.display = '';
                     checkbox.disabled = false;
+                    hasVisibleSubjects = true;
                 } else {
                     // It belongs to a different class -> HIDE IT & UNCHECK IT
                     container.style.display = 'none';
@@ -132,9 +147,38 @@
                     checkbox.checked = false;
                 }
             });
+
+            // Show or hide the Select All button based on if there are subjects to show
+            if (hasVisibleSubjects) {
+                selectAllContainer.style.display = 'block';
+            } else {
+                selectAllContainer.style.display = 'none';
+            }
+
+            // Reset Select All state whenever the class changes
+            selectAllCheckbox.checked = false;
         }
 
-        // Run the filter immediately, and listen for changes
+        // 3. Select All Event Listener
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+
+                subjectCheckboxes.forEach(checkbox => {
+                    // Only apply check to visible/enabled checkboxes
+                    if (!checkbox.disabled) {
+                        checkbox.checked = isChecked;
+                    }
+                });
+            });
+        }
+
+        // 4. Individual Checkbox Event Listener
+        subjectCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', syncSelectAllState);
+        });
+
+        // 5. Run the filter immediately, and listen for changes
         if (classSelect && subjectCheckboxes.length > 0) {
             filterSubjects();
             classSelect.addEventListener('change', filterSubjects);
