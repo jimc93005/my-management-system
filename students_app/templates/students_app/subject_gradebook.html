@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container py-5">
 
-    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary rounded-pill mb-2 font-weight-bold shadow-sm hover-lift">
@@ -18,12 +17,10 @@
         </div>
     </div>
 
-    <!-- GLOBAL CONTROLS (Applies to both tabs) -->
     <div class="card border-0 shadow-sm rounded-lg mb-4" style="background: linear-gradient(to right, #ffffff, #f8fafc);">
         <div class="card-body p-4">
             <div class="row align-items-end">
 
-                <!-- Smart Dropdown 1 -->
                 <div class="col-md-5 select-wrapper position-relative">
                     <label class="font-weight-bold text-secondary small text-uppercase mb-2 transition-color" id="labelYear">Academic Year</label>
                     <select id="globalYear" class="form-control form-control-lg border-0 shadow-sm smart-select">
@@ -34,7 +31,6 @@
                     </select>
                 </div>
 
-                <!-- Smart Dropdown 2 -->
                 <div class="col-md-5 mt-3 mt-md-0 select-wrapper position-relative">
                     <label class="font-weight-bold text-secondary small text-uppercase mb-2 transition-color" id="labelTerm">Academic Term</label>
                     <select id="globalTerm" class="form-control form-control-lg border-0 shadow-sm smart-select">
@@ -45,7 +41,6 @@
                     </select>
                 </div>
 
-                <!-- Status Indicator -->
                 <div class="col-md-2 mt-3 mt-md-0 d-flex justify-content-end">
                     <div id="statusIndicator" class="badge bg-light text-secondary p-3 w-100 text-center shadow-sm border" style="font-size: 0.9rem; transition: all 0.3s ease;">
                         <i class="fas fa-spinner fa-spin d-none mr-2 text-primary" id="loadingSpinner"></i>
@@ -64,7 +59,6 @@
         {% endfor %}
     {% endif %}
 
-    <!-- TABS NAVIGATION (BULLETPROOF CUSTOM JS VERSION) -->
     <div class="d-flex border-0 mb-4">
         <button class="btn font-weight-bold px-4 py-3 border-0 rounded-pill mr-2 shadow-sm custom-tab active" data-target="entry" type="button" style="background-color: #4f46e5; color: white;">
             <i class="fas fa-th mr-2"></i> Bulk Data Entry
@@ -74,10 +68,8 @@
         </button>
     </div>
 
-    <!-- TABS CONTENT -->
     <div class="tab-content" id="gradebookTabsContent">
 
-        <!-- TAB 1: SPREADSHEET ENTRY GRID -->
         <div class="tab-pane fade show active custom-pane" id="entry">
             <form method="POST" action="{% url 'students_app:subject_gradebook' subject.id %}" id="gradeForm">
                 {% csrf_token %}
@@ -94,7 +86,7 @@
                                     <th class="py-3 px-4 text-center" style="width: 25%;">Score (0-100)</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="entryTableBody">
                                 {% for student in students %}
                                 <tr class="spreadsheet-row">
                                     <td class="px-4 py-3 bg-white">
@@ -133,23 +125,29 @@
                         </table>
                     </div>
 
-                    {% if students %}
-                    <div class="card-footer bg-light border-top p-4 d-flex justify-content-end">
-                        <button type="submit" id="saveBtn" class="btn btn-primary rounded-pill px-5 py-2 font-weight-bold shadow-sm hover-lift" disabled style="font-size: 1.05rem;">
-                            <i class="fas fa-save mr-2"></i> Save All Grades
-                        </button>
+                    <div class="card-footer bg-light border-top p-3 d-flex flex-column flex-md-row justify-content-between align-items-center" id="entryPaginationContainer">
+                        <div class="text-muted small mb-3 mb-md-0">
+                            Showing <span id="entryStart" class="font-weight-bold text-dark">0</span> to <span id="entryEnd" class="font-weight-bold text-dark">0</span> of <span id="entryTotal" class="font-weight-bold text-dark">0</span> students
+                        </div>
+                        <div class="d-flex align-items-center flex-wrap justify-content-center">
+                            <nav class="mr-md-3 mb-2 mb-md-0">
+                                <ul class="pagination pagination-sm m-0" id="entryPaginationNav"></ul>
+                            </nav>
+                            {% if students %}
+                            <button type="submit" id="saveBtn" class="btn btn-primary rounded-pill px-4 py-2 font-weight-bold shadow-sm hover-lift" disabled style="font-size: 0.95rem;">
+                                <i class="fas fa-save mr-2"></i> Save All Grades
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% endif %}
                 </div>
             </form>
         </div>
 
-        <!-- TAB 2: RANKED RESULTS -->
         <div class="tab-pane fade custom-pane" id="ranked">
             <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
                 <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
                     <h5 class="font-weight-bold text-dark m-0"><i class="fas fa-list-ol text-warning mr-2"></i> Performance Leaderboard</h5>
-                    <!-- PDF DOWNLOAD BUTTON -->
                     <a href="#" id="downloadPdfBtn" class="btn btn-danger rounded-pill px-4 py-2 font-weight-bold shadow-sm disabled hover-lift">
                         <i class="fas fa-file-pdf mr-2"></i> Download PDF Report
                     </a>
@@ -176,15 +174,21 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="card-footer bg-light border-top p-3 d-flex flex-column flex-md-row justify-content-between align-items-center d-none" id="rankedPaginationContainer">
+                    <div class="text-muted small mb-2 mb-md-0">
+                        Showing <span id="rankedStart" class="font-weight-bold text-dark">0</span> to <span id="rankedEnd" class="font-weight-bold text-dark">0</span> of <span id="rankedTotal" class="font-weight-bold text-dark">0</span> students
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm m-0" id="rankedPaginationNav"></ul>
+                    </nav>
+                </div>
             </div>
         </div>
 
     </div>
 </div>
 
-<!-- ========================================== -->
-<!-- BEAUTIFUL CUSTOM OVERLAY MODAL -->
-<!-- ========================================== -->
 <div id="customWarningOverlay" class="custom-modal-overlay d-none">
     <div class="custom-modal-box shadow-lg rounded-lg border-0 overflow-hidden">
         <div class="bg-warning p-4 text-center">
@@ -254,6 +258,11 @@
         transform: translateY(-30px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .custom-modal-overlay.active .custom-modal-box { transform: translateY(0); }
+
+    /* PAGINATION STYLING */
+    .page-link { color: #4f46e5; font-weight: 600; border-radius: 6px; margin: 0 2px; }
+    .page-item.active .page-link { background-color: #4f46e5; border-color: #4f46e5; color: white; }
+    .page-item.disabled .page-link { color: #cbd5e1; }
 </style>
 
 <script>
@@ -285,7 +294,142 @@
         let previousTerm = "";
 
         // ==========================================
-        // BULLETPROOF TAB SWITCHING (No Bootstrap Required)
+        // PAGINATION CONFIGURATION & STATE
+        // ==========================================
+        const rowsPerPage = 10; // Number of students per page
+        const entryRows = Array.from(document.querySelectorAll('.spreadsheet-row'));
+        let currentEntryPage = 1;
+
+        let fullRankedList = [];
+        let currentRankedPage = 1;
+
+        // Render Page 1 of Entry Grid on Load
+        renderEntryPage(1);
+
+        function renderEntryPage(page) {
+            currentEntryPage = page;
+            const total = entryRows.length;
+
+            if (total === 0) {
+                document.getElementById('entryPaginationContainer').classList.add('d-none');
+                return;
+            }
+
+            const start = (page - 1) * rowsPerPage;
+            const end = Math.min(start + rowsPerPage, total);
+
+            entryRows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('entryStart').innerText = start + 1;
+            document.getElementById('entryEnd').innerText = end;
+            document.getElementById('entryTotal').innerText = total;
+
+            renderPaginationNav('entryPaginationNav', Math.ceil(total / rowsPerPage), page, (newPage) => renderEntryPage(newPage));
+        }
+
+        function renderRankedPage(page) {
+            currentRankedPage = page;
+            const total = fullRankedList.length;
+            const rankedPaginationContainer = document.getElementById('rankedPaginationContainer');
+
+            if (total === 0) {
+                rankedTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-muted bg-white"><div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;"><i class="fas fa-ghost text-secondary fa-2x"></i></div><h5 class="font-weight-bold text-dark">No Data Found</h5><p class="mb-0">No grades have been entered for this term yet.</p></td></tr>`;
+                rankedPaginationContainer.classList.add('d-none');
+                return;
+            }
+
+            rankedPaginationContainer.classList.remove('d-none');
+            const start = (page - 1) * rowsPerPage;
+            const end = Math.min(start + rowsPerPage, total);
+
+            let html = "";
+            for (let i = start; i < end; i++) {
+                const student = fullRankedList[i];
+                const rank = i + 1;
+                let rankClass = "rank-other";
+                if (rank === 1) rankClass = "rank-1";
+                if (rank === 2) rankClass = "rank-2";
+                if (rank === 3) rankClass = "rank-3";
+
+                let scoreColor = "text-success";
+                if (student.score < 50) scoreColor = "text-danger";
+                else if (student.score < 60) scoreColor = "text-warning";
+
+                html += `
+                <tr class="bg-white">
+                    <td class="px-4 py-3">
+                        <div class="rank-badge ${rankClass}">${rank}</div>
+                    </td>
+                    <td class="py-3 font-weight-bold text-dark" style="font-size: 1.1rem;">${student.name}</td>
+                    <td class="py-3 text-center font-weight-bold ${scoreColor}" style="font-size: 1.25rem;">${student.score}%</td>
+                </tr>`;
+            }
+
+            rankedTableBody.innerHTML = html;
+
+            document.getElementById('rankedStart').innerText = start + 1;
+            document.getElementById('rankedEnd').innerText = end;
+            document.getElementById('rankedTotal').innerText = total;
+
+            renderPaginationNav('rankedPaginationNav', Math.ceil(total / rowsPerPage), page, (newPage) => renderRankedPage(newPage));
+        }
+
+        // Reusable Pagination Nav Builder
+        function renderPaginationNav(navId, totalPages, currentPage, onPageClick) {
+            const nav = document.getElementById(navId);
+            if (!nav) return;
+            nav.innerHTML = "";
+
+            if (totalPages <= 1) return;
+
+            // Previous Button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>`;
+            prevLi.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPage > 1) onPageClick(currentPage - 1);
+            });
+            nav.appendChild(prevLi);
+
+            // Numbered Buttons
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        onPageClick(i);
+                    });
+                    nav.appendChild(li);
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = `<span class="page-link">...</span>`;
+                    nav.appendChild(li);
+                }
+            }
+
+            // Next Button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>`;
+            nextLi.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPage < totalPages) onPageClick(currentPage + 1);
+            });
+            nav.appendChild(nextLi);
+        }
+
+        // ==========================================
+        // BULLETPROOF TAB SWITCHING
         // ==========================================
         const tabBtns = document.querySelectorAll('.custom-tab');
         const tabPanes = document.querySelectorAll('.custom-pane');
@@ -296,24 +440,17 @@
                 const targetBtn = e.currentTarget;
                 const targetId = targetBtn.getAttribute('data-target');
 
-                // Reset all buttons
                 tabBtns.forEach(b => {
                     b.classList.remove('active');
                     b.style.backgroundColor = 'white';
                     b.style.color = '#6c757d';
                 });
 
-                // Set active button
                 targetBtn.classList.add('active');
                 targetBtn.style.backgroundColor = '#4f46e5';
                 targetBtn.style.color = 'white';
 
-                // Hide all panes
-                tabPanes.forEach(p => {
-                    p.classList.remove('show', 'active');
-                });
-
-                // Show target pane
+                tabPanes.forEach(p => p.classList.remove('show', 'active'));
                 document.getElementById(targetId).classList.add('show', 'active');
             });
         });
@@ -332,12 +469,10 @@
             const year = globalYear.value;
             const term = globalTerm.value;
 
-            // Sync hidden form inputs
             submitYear.value = year;
             submitTerm.value = term;
 
             if (year && term) {
-                // UI state: Loading
                 statusIndicator.className = "badge bg-warning text-dark p-3 w-100 text-center shadow-sm border border-warning";
                 statusText.innerText = "Checking Database...";
                 loadingSpinner.classList.remove("d-none");
@@ -349,13 +484,11 @@
                         let hasExistingGrades = Object.keys(data.grades).length > 0;
 
                         if (hasExistingGrades) {
-                            // SHOW BEAUTIFUL MODAL
                             pendingData = data;
                             modalTermYear.innerText = `Term ${term}, ${year}`;
                             warningOverlay.classList.remove("d-none");
                             setTimeout(() => warningOverlay.classList.add("active"), 10);
                         } else {
-                            // NO GRADES, LOAD EMPTY GRID INSTANTLY
                             executeGridLoad(data, year, term);
                         }
                     })
@@ -383,7 +516,7 @@
             if(!previousYear || !previousTerm) {
                 resetToDefault();
             } else {
-                statusIndicator.className = "badge bg-success p-3 w-100 text-center shadow-sm border border-success";
+                statusIndicator.className = "badge bg-success text-white p-3 w-100 text-center shadow-sm border border-success";
                 statusText.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Restored previous view`;
                 loadingSpinner.classList.add("d-none");
             }
@@ -426,7 +559,7 @@
 
             downloadPdfBtn.href = `/subject/${subjectId}/gradebook/pdf/?academic_year=${year}&term=${term}`;
             downloadPdfBtn.classList.remove("disabled");
-            saveBtn.disabled = false;
+            if (saveBtn) saveBtn.disabled = false;
 
             loadingSpinner.classList.add("d-none");
             statusIndicator.className = "badge bg-success text-white p-3 w-100 text-center shadow-sm border border-success";
@@ -441,13 +574,12 @@
             previousTerm = term;
         }
 
-        // --- HELPER FUNCTIONS ---
         function lockGrid() {
             gradeInputs.forEach(input => {
                 input.disabled = true;
                 input.parentElement.parentElement.style.backgroundColor = '#f8fafc';
             });
-            saveBtn.disabled = true;
+            if (saveBtn) saveBtn.disabled = true;
         }
 
         function resetToDefault() {
@@ -457,40 +589,14 @@
             statusIndicator.className = "badge bg-light text-secondary p-3 w-100 text-center shadow-sm border";
             statusText.innerText = "Awaiting Selection...";
             loadingSpinner.classList.add("d-none");
-            rankedTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-muted bg-white"><div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;"><i class="fas fa-info text-secondary fa-2x"></i></div><h5 class="font-weight-bold text-dark">Awaiting Selection</h5><p class="mb-0">Select an Academic Year and Term above to generate the leaderboard.</p></td></tr>`;
+
+            fullRankedList = [];
+            renderRankedPage(1);
         }
 
         function buildRankedTable(studentList) {
-            if (studentList.length === 0) {
-                rankedTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-muted bg-white"><div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;"><i class="fas fa-ghost text-secondary fa-2x"></i></div><h5 class="font-weight-bold text-dark">No Data Found</h5><p class="mb-0">No grades have been entered for this term yet.</p></td></tr>`;
-                return;
-            }
-
-            studentList.sort((a, b) => b.score - a.score);
-
-            let html = "";
-            studentList.forEach((student, index) => {
-                const rank = index + 1;
-                let rankClass = "rank-other";
-                if (rank === 1) rankClass = "rank-1";
-                if (rank === 2) rankClass = "rank-2";
-                if (rank === 3) rankClass = "rank-3";
-
-                let scoreColor = "text-success";
-                if (student.score < 50) scoreColor = "text-danger";
-                else if (student.score < 60) scoreColor = "text-warning";
-
-                html += `
-                <tr class="bg-white">
-                    <td class="px-4 py-3">
-                        <div class="rank-badge ${rankClass}">${rank}</div>
-                    </td>
-                    <td class="py-3 font-weight-bold text-dark" style="font-size: 1.1rem;">${student.name}</td>
-                    <td class="py-3 text-center font-weight-bold ${scoreColor}" style="font-size: 1.25rem;">${student.score}%</td>
-                </tr>`;
-            });
-
-            rankedTableBody.innerHTML = html;
+            fullRankedList = studentList.sort((a, b) => b.score - a.score);
+            renderRankedPage(1);
         }
 
         globalYear.addEventListener("change", fetchLiveGrades);

@@ -16,10 +16,10 @@
 
                 <div class="card-header bg-primary text-white p-4 text-center border-0">
                     <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 70px; height: 70px; font-size: 2rem;">
-                        {{ student.first_name|slice:":1" }}{{ student.surname|slice:":1" }}
+                        {{ student.first_name|slice:":1"}}{{ student.surname|slice:":1"}}
                     </div>
                     <h3 class="font-weight-bold mb-1">Enter Grades</h3>
-                    <p class="mb-0 text-white-50">Recording scores for <strong>{{ student.first_name }} {{ student.surname }}</strong></p>
+                    <p class="mb-0 text-white-50">Recording scores for <strong>{{ student.first_name.upper }} {{ student.surname.upper }}</strong></p>
                 </div>
 
                 <div class="card-body p-5 bg-light">
