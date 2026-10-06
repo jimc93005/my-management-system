@@ -149,6 +149,8 @@ def add_student(request):
         return redirect('students_app:dashboard')
         # Bounce them back to the safe dashboard (change this URL if your dashboard has a different name)
         return redirect('students_app:dashboard')
+    last_student = Students.objects.last()  # Or Student.objects.order_by('-id').first()
+    last_student_id = last_student.student_id if last_student else "None"
     if request.method == 'POST':
         form = StudentForm(request.POST)
 
@@ -182,7 +184,8 @@ def add_student(request):
 
     context = {
         'form': form,
-        'subject_map_json': subject_map_json
+        'subject_map_json': subject_map_json,
+        'last_student_id': last_student_id
     }
 
     return render(request, 'students_app/add_student.html', context)

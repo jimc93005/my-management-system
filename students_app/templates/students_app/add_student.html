@@ -41,6 +41,16 @@
                 <div class="row">
                     <div class="col-md-4">
                         {% bootstrap_field form.student_id addon_before='<i class="fas fa-id-badge"></i>' %}
+
+                        <!-- Last Student ID Indicator Badge -->
+                        <div class="mt-1 p-2 rounded bg-light border border-info d-flex align-items-center justify-content-between">
+                            <span class="small text-muted">
+                                <i class="fas fa-info-circle text-info mr-1"></i>Last Registered ID:
+                            </span>
+                            <span class="badge badge-primary font-weight-bold" style="font-size: 0.9rem;">
+                                {{ last_student_id|default:"None registered yet" }}
+                            </span>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         {% bootstrap_field form.class_level addon_before='<i class="fas fa-chalkboard"></i>' %}
