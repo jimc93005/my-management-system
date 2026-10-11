@@ -84,6 +84,8 @@ def index(request):
 
     # 4. Fetch the 4 most recent news articles (fits perfectly in your 4-column grid)
     news_articles = NewsArticle.objects.filter(is_active=True).order_by('-publish_date')[:4]
+    featured_news = news_articles[0] if len(news_articles) > 0 else None
+    secondary_news = news_articles[1:] if len(news_articles) > 1 else []
 
     # 5. Fetch leadership ordered by their assigned display order
     leaders = LeadershipProfile.objects.filter(is_active=True).order_by('display_order')
@@ -95,6 +97,8 @@ def index(request):
         'announcements': announcements,
         'news_articles': news_articles,
         'leaders': leaders,
+        'featured_news': featured_news,
+        'secondary_news': secondary_news,
     }
 
     return render(request, 'students_app/index.html', context)
@@ -254,25 +258,29 @@ def edit_student(request, student_id):
 @login_required()
 def subjects_list(request):
     if not request.user.has_perm('students_app.view_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access the subject list. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(
+            request,
+            "🔒 Oops! You don't have permission to access the subject list. "
+            "Please contact the Headteacher if you need this feature."
+        )
         return redirect('students_app:dashboard')
-    query = request.GET.get('q', '')
 
-    # Use select_related to fetch the ForeignKey data efficiently in one query!
+    query = request.GET.get('q', '').strip()
+
+    # Added 'name' to select_related since it's a ForeignKey to MasterSubject
     subjects = Subject.objects.select_related(
-        'teacher_subject', 'departments', 'target_class'
-    ).order_by('target_class', 'name')
+        'name', 'teacher_subject', 'departments', 'target_class'
+    ).order_by('target_class', 'name__name')
 
     if query:
         subjects = subjects.filter(
-            Q(name__icontains=query) |
-            Q(code__icontains=query) |
-            Q(subject_teacher__icontains=query) |  # Your legacy field
-            Q(teacher_subject__first_name__icontains=query) |  # The new User relation
-            Q(teacher_subject__last_name__icontains=query) |
-            Q(teacher_subject__username__icontains=query)
+            Q(name__name__icontains=query) |  # MasterSubject name lookup
+            Q(code__icontains=query) |  # Subject code
+            Q(target_class__class_level__icontains=query) |  # Search class name (e.g. "Central", "Form 1")
+            Q(departments__departments__icontains=query) |  # Search department name
+            Q(teacher_subject__first_name__icontains=query) |  # Teacher first name
+            Q(teacher_subject__last_name__icontains=query) |  # Teacher last name
+            Q(teacher_subject__username__icontains=query)  # Teacher username
         ).distinct()
 
     paginator = Paginator(subjects, 5)
@@ -280,7 +288,6 @@ def subjects_list(request):
     page_obj = paginator.get_page(page_number)
 
     context = {
-        # We pass page_obj as 'subjects' so the template can loop through it easily
         'subjects': page_obj,
         'page_obj': page_obj,
         'query': query,
@@ -550,10 +557,9 @@ def add_grade(request, student_id):
 @login_required(login_url='login')
 def student_profile(request, student_id):
     if not request.user.has_perm('students_app.change_students'):
-        messages.warning(request, "🔒 Oops! You don't have permission to"
-                                  " access this operation. Please contact"
-                                  " the Headteacher if you need this feature.")
+        messages.warning(request, "🔒 Oops! You don't have permission to access this operation.")
         return redirect('students_app:dashboard')
+
     student = get_object_or_404(Students, id=student_id)
     level_filter = request.GET.get('level')
 
@@ -562,22 +568,41 @@ def student_profile(request, student_id):
         .values_list('class_level_snapshot', flat=True) \
         .distinct()
 
+    # --- ENRICH GRADES WITH CA ASSESSMENT BREAKDOWN ---
+    if term_reports:
+        for year, terms in term_reports.items():
+            for term, data in terms.items():
+                for grade in data.get('grades', []):
+                    # Fetch all assessment grades for this student, subject, year, and term
+                    grade.assessment_breakdown = AssessmentGrade.objects.filter(
+                        student=student,
+                        assessment__term_setup__subject=grade.subject,
+                        assessment__term_setup__academic_year=year,
+                        assessment__term_setup__term=term
+                    ).select_related('assessment')
+
+    # Chart logic
+    chart_labels = []
+    chart_data = []
+
+    if term_reports:
+        for year in sorted(term_reports.keys()):
+            for term in sorted(term_reports[year].keys()):
+                chart_labels.append(f"{year} T{term}")
+                average = term_reports[year][term].get('average', 0)
+                chart_data.append(float(average))
 
     context = {
         'student': student,
         'term_reports': term_reports,
         'total_students': total_students,
-        'historical_levels': historical_levels,  # Pass the levels to the template
-        'current_filter': level_filter,  # Let the template know what is currently selected
+        'historical_levels': historical_levels,
+        'current_filter': level_filter,
+        'chart_labels': json.dumps(chart_labels),
+        'chart_data': json.dumps(chart_data),
     }
 
-    return render(
-        request,
-        "students_app/student_profile.html",
-        context
-    )
-
-
+    return render(request, "students_app/student_profile.html", context)
 
 # DELETE FUNTIONS IN THE STUDENT PROFILE AND EDITING FUNCTION
 
@@ -3123,73 +3148,73 @@ def download_class_reports(request, class_id, academic_year, term):
 # =========================================================
 # 1. MAIN GRADEBOOK VIEW (Grid & Rank Tabs)
 # =========================================================
-@login_required(login_url='login')
-def subject_gradebook(request, subject_id):
-    subject = get_object_or_404(Subject, id=subject_id)
-    user = request.user
-
-    # SECURITY CHECK: Is this user allowed to grade this subject?
-    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
-        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
-    is_subject_teacher = getattr(user, 'is_teacher', False) and subject.teacher_subject == user
-
-    # Optional: Allow HODs to view/edit their department's subjects
-    is_hod = getattr(user, 'is_hod', False) and hasattr(user,
-                                                        'my_headed_department') and user.my_headed_department == subject.departments
-
-    if not (is_admin or is_subject_teacher or is_hod):
-        messages.warning(request, "🔒 You do not have permission to access this subject's gradebook.")
-        return redirect('students_app:dashboard')
-
-    # Fetch all active students taking this specific subject
-    students = Students.objects.filter(subject=subject, status='Active').order_by('surname', 'first_name')
-
-    # Dynamic years for the dropdown
-    current_year = datetime.datetime.now().year
-    years = list(range(current_year - 2, current_year + 5))
-
-    # --- HANDLE FORM SUBMISSION (BULK SAVE) ---
-    if request.method == "POST":
-        academic_year = request.POST.get('academic_year')
-        term = request.POST.get('term')
-
-        if not academic_year or not term:
-            messages.error(request, "Please select an academic year and term.")
-            return redirect('students_app:subject_gradebook', subject_id=subject.id)
-
-        grades_saved = 0
-        # Loop through all students in the class
-        for student in students:
-            # Look for an input field named e.g., 'score_45'
-            score_val = request.POST.get(f'score_{student.id}')
-
-            if score_val and score_val.strip() != '':
-                try:
-                    score = float(score_val)
-                    # Create or update the grade in a single rapid action
-                    Grade.objects.update_or_create(
-                        student=student,
-                        subject=subject,
-                        academic_year=academic_year,
-                        term=term,
-                        defaults={
-                            "score": score,
-                            "class_level_snapshot": str(student.class_level) if student.class_level else "Unassigned"
-                        }
-                    )
-                    grades_saved += 1
-                except ValueError:
-                    pass  # Ignore if they accidentally typed text instead of a number
-
-        messages.success(request, f"Successfully saved {grades_saved} grades for {subject.name}!")
-        return redirect('students_app:subject_gradebook', subject_id=subject.id)
-
-    context = {
-        'subject': subject,
-        'students': students,
-        'years': years,
-    }
-    return render(request, 'students_app/subject_gradebook.html', context)
+# @login_required(login_url='login')
+# def subject_gradebook(request, subject_id):
+#     subject = get_object_or_404(Subject, id=subject_id)
+#     user = request.user
+#
+#     # SECURITY CHECK: Is this user allowed to grade this subject?
+#     is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
+#         name__in=['Headteacher', 'Admin', 'Deputy']).exists()
+#     is_subject_teacher = getattr(user, 'is_teacher', False) and subject.teacher_subject == user
+#
+#     # Optional: Allow HODs to view/edit their department's subjects
+#     is_hod = getattr(user, 'is_hod', False) and hasattr(user,
+#                                                         'my_headed_department') and user.my_headed_department == subject.departments
+#
+#     if not (is_admin or is_subject_teacher or is_hod):
+#         messages.warning(request, "🔒 You do not have permission to access this subject's gradebook.")
+#         return redirect('students_app:dashboard')
+#
+#     # Fetch all active students taking this specific subject
+#     students = Students.objects.filter(subject=subject, status='Active').order_by('surname', 'first_name')
+#
+#     # Dynamic years for the dropdown
+#     current_year = datetime.datetime.now().year
+#     years = list(range(current_year - 2, current_year + 5))
+#
+#     # --- HANDLE FORM SUBMISSION (BULK SAVE) ---
+#     if request.method == "POST":
+#         academic_year = request.POST.get('academic_year')
+#         term = request.POST.get('term')
+#
+#         if not academic_year or not term:
+#             messages.error(request, "Please select an academic year and term.")
+#             return redirect('students_app:subject_gradebook', subject_id=subject.id)
+#
+#         grades_saved = 0
+#         # Loop through all students in the class
+#         for student in students:
+#             # Look for an input field named e.g., 'score_45'
+#             score_val = request.POST.get(f'score_{student.id}')
+#
+#             if score_val and score_val.strip() != '':
+#                 try:
+#                     score = float(score_val)
+#                     # Create or update the grade in a single rapid action
+#                     Grade.objects.update_or_create(
+#                         student=student,
+#                         subject=subject,
+#                         academic_year=academic_year,
+#                         term=term,
+#                         defaults={
+#                             "score": score,
+#                             "class_level_snapshot": str(student.class_level) if student.class_level else "Unassigned"
+#                         }
+#                     )
+#                     grades_saved += 1
+#                 except ValueError:
+#                     pass  # Ignore if they accidentally typed text instead of a number
+#
+#         messages.success(request, f"Successfully saved {grades_saved} grades for {subject.name}!")
+#         return redirect('students_app:subject_gradebook', subject_id=subject.id)
+#
+#     context = {
+#         'subject': subject,
+#         'students': students,
+#         'years': years,
+#     }
+#     return render(request, 'students_app/subject_gradebook.html', context)
 
 
 # =========================================================
@@ -3221,7 +3246,8 @@ def fetch_subject_grades(request, subject_id):
 @login_required
 def export_subject_ranked_pdf(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id)
-    year = request.GET.get('academic_year')
+    # Check both 'academic_year' and 'year' to avoid missing parameter errors
+    year = request.GET.get('academic_year') or request.GET.get('year')
     term = request.GET.get('term')
 
     if not year or not term:
@@ -3248,7 +3274,7 @@ def export_subject_ranked_pdf(request, subject_id):
     pdf_bytes = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    filename = f"{subject.name}_Ranked_Results_Term_{term}_{year.replace('/', '-')}.pdf"
+    filename = f"{subject.name}_Ranked_Results_Term_{term}_{str(year).replace('/', '-')}.pdf"
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
 
@@ -3517,3 +3543,872 @@ def export_class_list_pdf(request, class_level):
     return response
 
 
+
+
+
+
+import json
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Subject, Students, SubjectTermSetup, Assessment, AssessmentGrade, Grade
+from .utils import recalculate_student_subject_grade  # or internal import
+
+
+@login_required
+def subject_assessment_setup_view(request, subject_id):
+    """
+    Allows teachers to set the CA/Exam weight percentages (e.g. 40/60)
+    and create individual papers/tests (e.g., Paper 1, Paper 2, Mid-Term).
+    """
+    subject = get_object_or_404(Subject, pk=subject_id)
+    academic_year = request.GET.get('year') or request.POST.get('academic_year')
+    term = request.GET.get('term') or request.POST.get('term')
+
+    setup = None
+    if academic_year and term:
+        setup, _ = SubjectTermSetup.objects.get_or_create(
+            subject=subject,
+            academic_year=academic_year,
+            term=term,
+            defaults={'ca_weight_percentage': 40.0, 'exam_weight_percentage': 60.0}
+        )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'save_weights':
+            ca_weight = float(request.POST.get('ca_weight', 40.0))
+            exam_weight = float(request.POST.get('exam_weight', 60.0))
+
+            if ca_weight + exam_weight != 100.0:
+                messages.error(request, "Total weights must equal 100%.")
+            else:
+                setup.ca_weight_percentage = ca_weight
+                setup.exam_weight_percentage = exam_weight
+                setup.save()
+                messages.success(request, "Term weights saved successfully.")
+
+        elif action == 'add_assessment':
+            name = request.POST.get('name')
+            category = request.POST.get('category')  # 'CA' or 'EXAM'
+            max_raw = float(request.POST.get('max_raw_score', 100))
+
+            Assessment.objects.create(
+                term_setup=setup,
+                name=name,
+                category=category,
+                max_raw_score=max_raw
+            )
+            messages.success(request, f"Added {name} ({category}) successfully.")
+
+        elif action == 'delete_assessment':
+            assessment_id = request.POST.get('assessment_id')
+            Assessment.objects.filter(pk=assessment_id, term_setup=setup).delete()
+            messages.info(request, "Assessment paper removed.")
+
+        return redirect(f"{request.path}?year={academic_year}&term={term}")
+
+    context = {
+        'subject': subject,
+        'setup': setup,
+        'academic_year': academic_year,
+        'term': term,
+        'assessments': setup.assessments.all() if setup else []
+    }
+    return render(request, 'students_app/subject_assessment_setup.html', context)
+
+
+#
+#
+#
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.auth.decorators import login_required
+# from django.contrib import messages
+# # Make sure your models and recalculate_student_subject_grade are imported at the top!
+#
+# @login_required
+# def subject_gradebook_view(request, subject_id):
+#     """
+#     Main Dynamic Entry Spreadsheet View.
+#     Displays dynamic columns for every assessment paper created for the term.
+#     """
+#     subject = get_object_or_404(Subject, pk=subject_id)
+#     students = Students.objects.filter(subject=subject, status='Active')
+#
+#     if request.method == 'POST':
+#         academic_year = request.POST.get('academic_year')
+#         term = request.POST.get('term')
+#         action = request.POST.get('action')  # <-- FIXED: We must extract 'action' from the form!
+#
+#         setup = SubjectTermSetup.objects.filter(
+#             subject=subject,
+#             academic_year=academic_year,
+#             term=term
+#         ).first()
+#
+#         if setup and action == 'save_grades':
+#             assessments = setup.assessments.all()
+#
+#             # 1. Loop through all active students
+#             for student in students:
+#
+#                 # 2. Loop through all assessments in this term
+#                 for assessment in assessments:
+#
+#                     # Look for input names like: name="raw_score_5_12"
+#                     raw_score_str = request.POST.get(
+#                         f'raw_score_{student.id}_{assessment.id}'
+#                     )
+#
+#                     is_absent = request.POST.get(
+#                         f'is_absent_{student.id}_{assessment.id}'
+#                     ) == 'on'
+#
+#                     # 3. Save or update the raw score
+#                     if raw_score_str or is_absent:
+#                         raw_score = (
+#                             float(raw_score_str)
+#                             if raw_score_str and not is_absent
+#                             else None
+#                         )
+#
+#                         AssessmentGrade.objects.update_or_create(
+#                             student=student,
+#                             assessment=assessment,
+#                             defaults={
+#                                 'raw_score': raw_score,
+#                                 'is_absent': is_absent
+#                             }
+#                         )
+#
+#                 # 4. Trigger the engine to compute the final summary Grade record
+#                 recalculate_student_subject_grade(
+#                     student,
+#                     subject,
+#                     academic_year,
+#                     term
+#                 )
+#
+#             messages.success(
+#                 request,
+#                 "Grades saved and final scores recalculated successfully."
+#             )
+#
+#             return redirect(f"{request.path}?year={academic_year}&term={term}")
+#
+#         elif setup and action == 'publish_grades':
+#
+#             # Lock the grades in as final and visible
+#             setup.is_published = True
+#             setup.save()
+#
+#             Grade.objects.filter(
+#                 subject=subject,
+#                 academic_year=academic_year,
+#                 term=term
+#             ).update(is_draft=False)
+#
+#             messages.success(
+#                 request,
+#                 "Grades published! They are now visible on student report cards."
+#             )
+#
+#             return redirect(f"{request.path}?year={academic_year}&term={term}")
+#
+#     # --- GET REQUEST (Load the Grid) ---
+#
+#     academic_year = request.GET.get('year')
+#     term = request.GET.get('term')
+#
+#     setup = None
+#     assessments = []
+#     student_data = []
+#
+#     # 1. Fetch setup and assessments if year/term are provided
+#     if academic_year and term:
+#         setup = SubjectTermSetup.objects.filter(
+#             subject=subject,
+#             academic_year=academic_year,
+#             term=term
+#         ).first()
+#
+#         if setup:
+#             assessments = setup.assessments.all()
+#
+#     # 2. ALWAYS loop through students (Fix for the disappearing students!)
+#     for student in students:
+#         student_assessments = []
+#         final_summary = None
+#
+#         # 3. Only attempt to fetch grades if a setup exists
+#         if setup:
+#             student_grades = AssessmentGrade.objects.filter(
+#                 student=student,
+#                 assessment__in=assessments
+#             )
+#
+#             # Map them by ID temporarily
+#             grade_map = {ag.assessment_id: ag for ag in student_grades}
+#
+#             for assessment in assessments:
+#                 ag = grade_map.get(assessment.id)
+#
+#                 student_assessments.append({
+#                     'assessment_id': assessment.id,
+#                     'max_raw_score': assessment.max_raw_score,
+#                     'raw_score': ag.raw_score if ag and ag.raw_score is not None else '',
+#                     'is_absent': ag.is_absent if ag else False
+#                 })
+#
+#             # Fetch the calculated final summary grade
+#             final_summary = Grade.objects.filter(
+#                 student=student,
+#                 subject=subject,
+#                 academic_year=academic_year,
+#                 term=term
+#             ).first()
+#
+#         # 4. Append the data so the student always renders
+#         student_data.append({
+#             'student': student,
+#             'student_assessments': student_assessments,
+#             'final_summary': final_summary
+#         })
+#
+#     context = {
+#         'subject': subject,
+#         'academic_year': academic_year,
+#         'term': term,
+#         'setup': setup,
+#         'assessments': assessments,
+#         'student_data': student_data,
+#     }
+#
+#     return render(
+#         request,
+#         'students_app/subject_gradebook.html',
+#         context
+#     )
+
+
+
+from django.http import JsonResponse
+
+
+import datetime
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+@login_required
+def subject_gradebook(request, subject_id):
+    """
+    Main Dynamic Entry Spreadsheet View.
+    Displays dynamic columns for every assessment paper created for the term.
+    """
+    subject = get_object_or_404(Subject, id=subject_id)
+    user = request.user
+
+    # SECURITY CHECK
+    is_admin = getattr(user, 'is_headteacher', False) or getattr(user, 'is_deputy', False) or user.groups.filter(
+        name__in=['Headteacher', 'Admin', 'Deputy']).exists()
+    is_subject_teacher = getattr(user, 'is_teacher', False) and subject.teacher_subject == user
+    is_hod = getattr(user, 'is_hod', False) and hasattr(user, 'my_headed_department') and user.my_headed_department == subject.departments
+
+    if not (is_admin or is_subject_teacher or is_hod):
+        messages.warning(request, "🔒 You do not have permission to access this subject's gradebook.")
+        return redirect('students_app:dashboard')
+
+    # Fetch active students
+    students = Students.objects.filter(subject=subject, status='Active').order_by('surname', 'first_name')
+
+    # Dynamic years for the dropdown
+    current_year = datetime.datetime.now().year
+    years = list(range(current_year - 2, current_year + 5))
+
+    # --- HANDLE FORM SUBMISSION (BULK SAVE) ---
+    if request.method == 'POST':
+        academic_year = request.POST.get('academic_year')
+        term = request.POST.get('term')
+        action = request.POST.get('action', 'save_grades')
+
+        setup = SubjectTermSetup.objects.filter(
+            subject=subject,
+            academic_year=academic_year,
+            term=term
+        ).first()
+
+        if setup and action == 'save_grades':
+            assessments = setup.assessments.all()
+
+            for student in students:
+                for assessment in assessments:
+                    raw_score_str = request.POST.get(f'raw_score_{student.id}_{assessment.id}')
+                    is_absent = request.POST.get(f'is_absent_{student.id}_{assessment.id}') == 'on'
+
+                    if raw_score_str or is_absent:
+                        raw_score = float(raw_score_str) if raw_score_str and not is_absent else None
+
+                        AssessmentGrade.objects.update_or_create(
+                            student=student,
+                            assessment=assessment,
+                            defaults={
+                                'raw_score': raw_score,
+                                'is_absent': is_absent
+                            }
+                        )
+
+                # Trigger grade recalculation engine
+                if 'recalculate_student_subject_grade' in globals():
+                    recalculate_student_subject_grade(student, subject, academic_year, term)
+
+            messages.success(request, "Grades saved and final scores recalculated successfully.")
+            return redirect(f"{request.path}?year={academic_year}&term={term}")
+
+        elif setup and action == 'publish_grades':
+            setup.is_published = True
+            setup.save()
+
+            messages.success(request, "Grades published successfully!")
+            return redirect(f"{request.path}?year={academic_year}&term={term}")
+
+    # --- GET REQUEST (Load the Grid) ---
+    academic_year = request.GET.get('year')
+    term = request.GET.get('term')
+
+    setup = None
+    assessments = []
+    student_data = []
+
+    if academic_year and term:
+        setup = SubjectTermSetup.objects.filter(
+            subject=subject,
+            academic_year=academic_year,
+            term=term
+        ).first()
+
+        if setup:
+            assessments = setup.assessments.all()
+
+    for student in students:
+        student_assessments = []
+        final_summary = None
+
+        if setup:
+            student_grades = AssessmentGrade.objects.filter(
+                student=student,
+                assessment__in=assessments
+            )
+            grade_map = {ag.assessment_id: ag for ag in student_grades}
+
+            for assessment in assessments:
+                ag = grade_map.get(assessment.id)
+                student_assessments.append({
+                    'assessment_id': assessment.id,
+                    'max_raw_score': assessment.max_raw_score,
+                    'raw_score': ag.raw_score if ag and ag.raw_score is not None else '',
+                    'is_absent': ag.is_absent if ag else False
+                })
+
+            final_summary = Grade.objects.filter(
+                student=student,
+                subject=subject,
+                academic_year=academic_year,
+                term=term
+            ).first()
+
+        student_data.append({
+            'student': student,
+            'student_assessments': student_assessments,
+            'final_summary': final_summary
+        })
+
+    context = {
+        'subject': subject,
+        'academic_year': academic_year,
+        'term': term,
+        'setup': setup,
+        'assessments': assessments,
+        'student_data': student_data,
+        'students': students,
+        'years': years,
+    }
+
+    return render(request, 'students_app/subject_gradebook.html', context)
+
+
+
+
+
+# ASSESSMENT RULES
+
+"""
+students_app/assessment_views.py   (replaces the earlier version)
+
+Teacher-facing assessment setup.
+
+  GET   assessment_setup_home    hub: every class with its subjects (collapsible)
+  GET   subject_term_setup       rules builder for one subject + year + term (read-only, never writes)
+  POST  create_term_setup        explicitly start a setup for a subject + year + term
+  POST  update_weights           CA / Exam weight split
+  POST  assessment_save          add (setup_id) or edit (assessment_id) an assessment
+  POST  assessment_delete        delete an assessment (blocked if marks exist)
+  POST  toggle_publish           publish / unpublish a setup
+"""
+import datetime
+import re
+from collections import OrderedDict
+from functools import wraps
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
+from django.views.decorators.http import require_POST
+
+from .forms import AssessmentForm, WeightsForm
+from .models import Assessment, Subject, SubjectTermSetup
+
+
+# =====================================================================
+# Constants
+# =====================================================================
+
+TERM_CHOICES = list(SubjectTermSetup._meta.get_field('term').choices)
+VALID_TERMS = {value for value, _label in TERM_CHOICES}
+
+# Accepts "2026", "2026/27", "2026-2027". Change here if your schools use another format.
+YEAR_PATTERN = re.compile(r'^\d{4}(?:[/-]\d{2,4})?$')
+
+NOT_CONFIGURED = 'not_configured'   # no SubjectTermSetup yet
+INCOMPLETE = 'incomplete'           # setup exists but still needs CA and/or Exam assessments
+READY = 'ready'                     # has CA + Exam assessments, not published
+PUBLISHED = 'published'             # live on profiles / report cards
+
+STATUS_LABELS = {
+    NOT_CONFIGURED: 'Not configured',
+    INCOMPLETE: 'Incomplete',
+    READY: 'Ready to publish',
+    PUBLISHED: 'Published',
+}
+
+
+# =====================================================================
+# Access rules (the only place that decides who can do what)
+# =====================================================================
+
+def has_full_access(user):
+    """Admins / head teacher level: can configure every class and subject."""
+    return user.is_superuser or user.is_staff
+
+
+def can_use_assessments(user):
+    return has_full_access(user) or getattr(user, 'is_teacher', False)
+
+
+def can_publish_setup(user, subject):
+    """
+    Policy hook for publishing. Default: anyone who can configure the subject
+    may publish it. Tighten here (e.g. HOD / head teacher only) if needed.
+    """
+    return True
+
+
+def subjects_for_user(user):
+    """
+    Subjects this user may configure.
+      - full access: every subject that belongs to a class
+      - teachers: subjects they teach, subjects in classes where they are the
+        form teacher, and subjects in the department they head
+    """
+    qs = (
+        Subject.objects
+        .select_related('name', 'target_class', 'teacher_subject')
+        .filter(target_class__isnull=False)
+    )
+    if has_full_access(user):
+        return qs
+
+    return qs.filter(
+        Q(teacher_subject=user)
+        | Q(target_class__form_teacher=user)
+        | Q(departments__head_of_department=user)
+    ).distinct()
+
+
+def assessment_access_required(view_func):
+    """Login + teacher/admin check in one decorator."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not can_use_assessments(request.user):
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+
+    return login_required(login_url='users:login')(_wrapped)
+
+
+# =====================================================================
+# Object lookups (always scoped to what the user is allowed to touch)
+# =====================================================================
+
+def get_subject_or_404(user, subject_id):
+    return get_object_or_404(subjects_for_user(user), pk=subject_id)
+
+
+def get_setup_or_404(user, setup_id):
+    return get_object_or_404(
+        SubjectTermSetup.objects.select_related('subject__name', 'subject__target_class'),
+        pk=setup_id,
+        subject_id__in=subjects_for_user(user).values('pk'),
+    )
+
+
+def get_assessment_or_404(user, assessment_id):
+    return get_object_or_404(
+        Assessment.objects.select_related(
+            'term_setup__subject__name', 'term_setup__subject__target_class'
+        ),
+        pk=assessment_id,
+        term_setup__subject_id__in=subjects_for_user(user).values('pk'),
+    )
+
+
+# =====================================================================
+# Small helpers
+# =====================================================================
+
+def current_academic_year():
+    return str(datetime.date.today().year)
+
+
+def clean_period(year, term):
+    """Return (year, term) when both are valid, otherwise None."""
+    year = (year or '').strip()
+    if YEAR_PATTERN.match(year) and term in VALID_TERMS:
+        return year, term
+    return None
+
+
+def get_period(request):
+    """Selected year + term: query string, then last choice (session), then sensible defaults."""
+    year = (
+        request.GET.get('year')
+        or request.session.get('assessment_year')
+        or current_academic_year()
+    ).strip()
+    if not YEAR_PATTERN.match(year):
+        year = current_academic_year()
+
+    term = request.GET.get('term') or request.session.get('assessment_term') or '1'
+    if term not in VALID_TERMS:
+        term = '1'
+
+    request.session['assessment_year'] = year
+    request.session['assessment_term'] = term
+    return year, term
+
+
+def builder_redirect(subject_id, year, term):
+    url = reverse('students_app:subject_term_setup', args=[subject_id])
+    return redirect(f"{url}?{urlencode({'year': year, 'term': term})}")
+
+
+def flash_form_errors(request, form):
+    for field, errors in form.errors.items():
+        prefix = '' if field == '__all__' else f"{form.fields[field].label or field}: "
+        for error in errors:
+            messages.error(request, f"{prefix}{error}")
+
+
+def ensure_editable(request, setup):
+    """Published setups are locked until they are unpublished."""
+    if setup.is_published:
+        messages.error(request, "This setup is published. Unpublish it before making changes.")
+        return False
+    return True
+
+
+def get_status(setup):
+    if setup is None:
+        return NOT_CONFIGURED
+    if setup.is_published:
+        return PUBLISHED
+    if setup.ca_count and setup.exam_count:
+        return READY
+    return INCOMPLETE
+
+
+# =====================================================================
+# 1. HUB: all classes + their subjects on one page
+# =====================================================================
+
+@assessment_access_required
+def assessment_setup_home(request):
+    user = request.user
+    year, term = get_period(request)
+
+    # Subjects this user may configure, ordered by class then name
+    subjects = list(
+        subjects_for_user(user).order_by('target_class__level_order', 'name__name')
+    )
+
+    # Existing setups for that year + term, with assessment counts (one query)
+    setups = (
+        SubjectTermSetup.objects
+        .filter(
+            subject_id__in=[s.pk for s in subjects],
+            academic_year=year,
+            term=term,
+        )
+        .annotate(
+            ca_count=Count('assessments', filter=Q(assessments__category='CA')),
+            exam_count=Count('assessments', filter=Q(assessments__category='EXAM')),
+        )
+    )
+    setup_by_subject = {setup.subject_id: setup for setup in setups}
+
+    groups = OrderedDict()
+    summary = {'total': 0, 'complete': 0, 'published': 0, 'needs_attention': 0}
+
+    for subject in subjects:
+        setup = setup_by_subject.get(subject.pk)
+        status = get_status(setup)
+
+        group = groups.setdefault(subject.target_class_id, {
+            'class_level': subject.target_class,
+            'cards': [],
+            'total': 0,
+            'complete': 0,
+            'published': 0,
+        })
+
+        group['cards'].append({
+            'subject': subject,
+            'subject_name': subject.name.name,
+            'teacher': subject.teacher_subject,
+            'setup': setup,
+            'status': status,
+            'status_label': STATUS_LABELS[status],
+            'ca_count': setup.ca_count if setup else 0,
+            'exam_count': setup.exam_count if setup else 0,
+            'ca_weight': setup.ca_weight_percentage if setup else None,
+            'exam_weight': setup.exam_weight_percentage if setup else None,
+        })
+
+        group['total'] += 1
+        summary['total'] += 1
+
+        if status in (READY, PUBLISHED):
+            group['complete'] += 1
+            summary['complete'] += 1
+        else:
+            summary['needs_attention'] += 1
+
+        if status == PUBLISHED:
+            group['published'] += 1
+            summary['published'] += 1
+
+    classes = list(groups.values())
+    for group in classes:
+        group['percent'] = round(group['complete'] / group['total'] * 100) if group['total'] else 0
+    summary['percent'] = round(summary['complete'] / summary['total'] * 100) if summary['total'] else 0
+
+    years = set(SubjectTermSetup.objects.values_list('academic_year', flat=True).distinct())
+    years.update({current_academic_year(), year})
+
+    context = {
+        'classes': classes,
+        'summary': summary,
+        'year': year,
+        'term': term,
+        'term_label': dict(TERM_CHOICES).get(term, f'Term {term}'),
+        'term_choices': TERM_CHOICES,
+        'year_options': sorted(years, reverse=True),
+        'period_query': urlencode({'year': year, 'term': term}),
+        'full_access': has_full_access(user),
+    }
+    return render(request, 'students_app/assessment_setup_home.html', context)
+
+
+# =====================================================================
+# 2. RULES BUILDER (read-only page: opening it never writes to the DB)
+# =====================================================================
+
+@assessment_access_required
+def subject_term_setup(request, subject_id):
+    subject = get_subject_or_404(request.user, subject_id)
+    year, term = get_period(request)
+
+    setup = SubjectTermSetup.objects.filter(
+        subject=subject, academic_year=year, term=term
+    ).first()
+
+    ca_assessments, exam_assessments = [], []
+    if setup:
+        # One query: every assessment with its recorded-marks count (used for delete warnings)
+        assessments = Assessment.objects.filter(term_setup=setup).annotate(
+            grade_count=Count('grades')
+        )
+        ca_assessments = [a for a in assessments if a.category == 'CA']
+        exam_assessments = [a for a in assessments if a.category == 'EXAM']
+
+    context = {
+        'subject': subject,
+        'subject_name': subject.name.name,
+        'class_level': subject.target_class,
+        'setup': setup,
+        'year': year,
+        'term': term,
+        'term_label': dict(TERM_CHOICES).get(term, f'Term {term}'),
+        'period_query': urlencode({'year': year, 'term': term}),
+        'ca_assessments': ca_assessments,
+        'exam_assessments': exam_assessments,
+        'ca_total_marks': sum(a.max_raw_score for a in ca_assessments),
+        'exam_total_marks': sum(a.max_raw_score for a in exam_assessments),
+        'is_locked': bool(setup and setup.is_published),
+        'can_publish': bool(ca_assessments and exam_assessments),
+        'assessment_form': AssessmentForm(term_setup=setup) if setup else None,
+        'weights_form': (
+            WeightsForm(initial={'ca_weight_percentage': setup.ca_weight_percentage})
+            if setup else None
+        ),
+    }
+    return render(request, 'students_app/subject_term_setup.html', context)
+
+
+# =====================================================================
+# 3. WRITE ACTIONS (POST only)
+# =====================================================================
+
+@require_POST
+@assessment_access_required
+def create_term_setup(request, subject_id):
+    """Start a setup for a subject + year + term (default weights 40 / 60)."""
+    subject = get_subject_or_404(request.user, subject_id)
+
+    period = clean_period(request.POST.get('year'), request.POST.get('term'))
+    if period is None:
+        messages.error(request, "Invalid academic year or term.")
+        return redirect('students_app:assessment_setup_home')
+    year, term = period
+
+    _setup, created = SubjectTermSetup.objects.get_or_create(
+        subject=subject, academic_year=year, term=term
+    )
+    if created:
+        messages.success(request, f"Setup started for {subject.name.name} ({year}, Term {term}).")
+    return builder_redirect(subject.pk, year, term)
+
+
+@require_POST
+@assessment_access_required
+def update_weights(request, setup_id):
+    setup = get_setup_or_404(request.user, setup_id)
+    back = builder_redirect(setup.subject_id, setup.academic_year, setup.term)
+
+    if not ensure_editable(request, setup):
+        return back
+
+    form = WeightsForm(request.POST)
+    if not form.is_valid():
+        flash_form_errors(request, form)
+        return back
+
+    setup.ca_weight_percentage = form.ca_weight
+    setup.exam_weight_percentage = form.exam_weight
+    try:
+        setup.save()
+    except ValidationError as exc:
+        messages.error(request, ' '.join(exc.messages))
+    else:
+        messages.success(
+            request,
+            f"Weights saved: CA {form.ca_weight:g}% / Exam {form.exam_weight:g}%."
+        )
+    return back
+
+
+@require_POST
+@assessment_access_required
+def assessment_save(request, setup_id=None, assessment_id=None):
+    """Add an assessment (setup_id) or edit one (assessment_id)."""
+    if assessment_id:
+        assessment = get_assessment_or_404(request.user, assessment_id)
+        setup = assessment.term_setup
+    else:
+        assessment = None
+        setup = get_setup_or_404(request.user, setup_id)
+
+    back = builder_redirect(setup.subject_id, setup.academic_year, setup.term)
+
+    if not ensure_editable(request, setup):
+        return back
+
+    form = AssessmentForm(request.POST, instance=assessment, term_setup=setup)
+    if not form.is_valid():
+        flash_form_errors(request, form)
+        return back
+
+    saved = form.save(commit=False)
+    saved.term_setup = setup
+    saved.save()
+
+    verb = 'updated' if assessment_id else 'added'
+    messages.success(request, f"'{saved.name}' {verb}.")
+    return back
+
+
+@require_POST
+@assessment_access_required
+def assessment_delete(request, assessment_id):
+    assessment = get_assessment_or_404(request.user, assessment_id)
+    setup = assessment.term_setup
+    back = builder_redirect(setup.subject_id, setup.academic_year, setup.term)
+
+    if not ensure_editable(request, setup):
+        return back
+
+    grade_count = assessment.grades.count()
+    if grade_count:
+        messages.error(
+            request,
+            f"Cannot delete '{assessment.name}': {grade_count} student score(s) are already recorded."
+        )
+        return back
+
+    name = assessment.name
+    assessment.delete()
+    messages.success(request, f"'{name}' deleted.")
+    return back
+
+
+@require_POST
+@assessment_access_required
+def toggle_publish(request, setup_id):
+    setup = get_setup_or_404(request.user, setup_id)
+    back = builder_redirect(setup.subject_id, setup.academic_year, setup.term)
+
+    if not can_publish_setup(request.user, setup.subject):
+        raise PermissionDenied
+
+    if setup.is_published:
+        setup.is_published = False
+        message = "Unpublished. The setup can be edited again."
+    else:
+        counts = setup.assessments.aggregate(
+            ca=Count('pk', filter=Q(category='CA')),
+            exam=Count('pk', filter=Q(category='EXAM')),
+        )
+        if not counts['ca'] or not counts['exam']:
+            messages.error(request, "Add at least one CA assessment and one Exam paper before publishing.")
+            return back
+        setup.is_published = True
+        message = "Published. Results are now visible on profiles and report cards."
+
+    setup.save(update_fields=['is_published'])
+    messages.success(request, message)
+    return back

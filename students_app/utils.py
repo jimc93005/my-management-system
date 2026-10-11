@@ -198,3 +198,74 @@ def build_term_reports(student, level_filter=None):
         current_total_students = Students.objects.filter(class_level=student.class_level).count()
 
     return term_reports, current_total_students
+
+
+from django.db.models import Sum
+from .models import SubjectTermSetup, Assessment, AssessmentGrade, Grade
+
+def recalculate_student_subject_grade(student, subject, academic_year, term):
+    """
+    Calculates the overall weighted score for a student in a specific subject, year, and term,
+    and updates/creates the summary Grade object.
+    """
+    try:
+        setup = SubjectTermSetup.objects.get(
+            subject=subject,
+            academic_year=academic_year,
+            term=term
+        )
+    except SubjectTermSetup.DoesNotExist:
+        return None
+
+    assessments = setup.assessments.all()
+    if not assessments.exists():
+        return None
+
+    ca_assessments = assessments.filter(category='CA')
+    exam_assessments = assessments.filter(category='EXAM')
+
+    # 1. Calculate Continuous Assessment (CA) Score
+    ca_contribution = 0.0
+    if ca_assessments.exists():
+        total_ca_max = ca_assessments.aggregate(total=Sum('max_raw_score'))['total'] or 0.0
+
+        ca_grades = AssessmentGrade.objects.filter(
+            student=student,
+            assessment__in=ca_assessments,
+            is_absent=False
+        )
+        total_ca_earned = ca_grades.aggregate(total=Sum('raw_score'))['total'] or 0.0
+
+        if total_ca_max > 0:
+            ca_contribution = (total_ca_earned / total_ca_max) * setup.ca_weight_percentage
+
+    # 2. Calculate Terminal Exam (Multi-Paper) Score
+    exam_contribution = 0.0
+    if exam_assessments.exists():
+        total_exam_max = exam_assessments.aggregate(total=Sum('max_raw_score'))['total'] or 0.0
+
+        exam_grades = AssessmentGrade.objects.filter(
+            student=student,
+            assessment__in=exam_assessments,
+            is_absent=False
+        )
+        total_exam_earned = exam_grades.aggregate(total=Sum('raw_score'))['total'] or 0.0
+
+        if total_exam_max > 0:
+            exam_contribution = (total_exam_earned / total_exam_max) * setup.exam_weight_percentage
+
+    # 3. Overall Computed Percentage
+    final_score = round(ca_contribution + exam_contribution)
+
+    # 4. Save/Update Summary Grade
+    grade_summary, created = Grade.objects.update_or_create(
+        student=student,
+        subject=subject,
+        academic_year=academic_year,
+        term=term,
+        defaults={
+            'score': final_score,
+        }
+    )
+
+    return grade_summary

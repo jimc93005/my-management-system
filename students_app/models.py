@@ -266,6 +266,7 @@ class Grade(models.Model):
     class_level_snapshot = models.CharField(max_length=50, null=True, blank=True)
     grade_letter_snapshot = models.CharField(max_length=10, null=True, blank=True)
     remark_snapshot = models.CharField(max_length=100, null=True, blank=True)
+    is_draft = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ("student", "subject", "academic_year", "term",)
@@ -323,6 +324,128 @@ class Grade(models.Model):
         This keeps {{ grade.get_comment }} working perfectly in your PDF!
         """
         return self.remark_snapshot or "No comment"
+
+
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+
+
+# =========================================================
+# DYNAMIC ASSESSMENT & MULTI-PAPER MODELS
+# =========================================================
+
+class SubjectTermSetup(models.Model):
+    """
+    Defines the weight breakdown (e.g., 40% CA / 60% Exam) for a
+    specific subject in a given year and term.
+    """
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE, related_name='term_setups')
+    academic_year = models.CharField(max_length=10)
+    term = models.CharField(max_length=10, choices=[('1', 'Term 1'), ('2', 'Term 2'), ('3', 'Term 3')])
+
+    ca_weight_percentage = models.FloatField(
+        default=40.0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Percentage weight allocated to Continuous Assessment (e.g., 40)"
+    )
+    exam_weight_percentage = models.FloatField(
+        default=60.0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Percentage weight allocated to Terminal Exam / Papers (e.g., 60)"
+    )
+
+    is_published = models.BooleanField(
+        default=False,
+        help_text="When True, grades are published and visible on Student Profiles and Report Cards."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('subject', 'academic_year', 'term')
+
+    def clean(self):
+        super().clean()
+        if self.ca_weight_percentage is not None and self.exam_weight_percentage is not None:
+            total_weight = self.ca_weight_percentage + self.exam_weight_percentage
+            if total_weight != 100.0:
+                raise ValidationError(
+                    f"Total weight percentage must equal 100%. Current total: {total_weight}%"
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.subject} ({self.academic_year} Term {self.term}): CA {self.ca_weight_percentage}% / Exam {self.exam_weight_percentage}%"
+
+
+
+
+
+class Assessment(models.Model):
+    """
+    Represents an individual assessment task or exam paper.
+    e.g., 'CA 1', 'Mid-Term Test', 'Paper 1 (Theory)', 'Paper 2 (Practical)'
+    """
+    CATEGORY_CHOICES = [
+        ('CA', 'Continuous Assessment'),
+        ('EXAM', 'Terminal Exam Paper'),
+    ]
+
+    term_setup = models.ForeignKey(SubjectTermSetup, on_delete=models.CASCADE, related_name='assessments')
+    name = models.CharField(max_length=100, help_text="e.g., Paper 1, Paper 2, Mid-Term Test, Quiz 1")
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    max_raw_score = models.FloatField(
+        validators=[MinValueValidator(1.0)],
+        help_text="Maximum raw marks achievable for this test/paper (e.g., 40, 50, 100)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['category', 'created_at']
+
+    def __str__(self):
+        return f"{self.term_setup.subject.name} - {self.name} [{self.get_category_display()}] (Out of {self.max_raw_score})"
+
+
+class AssessmentGrade(models.Model):
+    """
+    Stores the raw mark a student scored for a specific Assessment/Paper.
+    """
+    student = models.ForeignKey('Students', on_delete=models.CASCADE, related_name='assessment_grades')
+    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name='grades')
+    raw_score = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text="Raw marks scored by the student (e.g. 35 out of 50)"
+    )
+    is_absent = models.BooleanField(default=False, help_text="Flag if student was sick/absent")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('student', 'assessment')
+
+    def clean(self):
+        super().clean()
+        if self.raw_score is not None and self.assessment and self.assessment.max_raw_score:
+            if self.raw_score > self.assessment.max_raw_score:
+                raise ValidationError({
+                    'raw_score': f"Raw score ({self.raw_score}) cannot exceed the maximum mark ({self.assessment.max_raw_score}) for {self.assessment.name}."
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        score_display = "Absent" if self.is_absent else f"{self.raw_score}/{self.assessment.max_raw_score}"
+        return f"{self.student.first_name} {self.student.surname} - {self.assessment.name}: {score_display}"
+
+
+
 
 # SCHOOL REPORT MODELS
 from django.db import models
@@ -719,6 +842,7 @@ class NewsArticle(models.Model):
     featured_image = models.ImageField(upload_to=news_image_path, help_text="Upload an image for the news card.")
     summary = models.TextField(max_length=300, help_text="A short 2-3 line excerpt for the homepage.")
     body = models.TextField(help_text="The full news article content.")
+    is_featured = models.BooleanField(default=False, help_text="Pin this article to the main featured slot on the home page.")
     publish_date = models.DateField(default=timezone.now)
     is_active = models.BooleanField(default=True)
 

@@ -1,0 +1,837 @@
+{% extends 'students_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="sb">
+<div class="sb-wrap">
+
+    <!-- ===================== FLASH MESSAGES ===================== -->
+    {% if messages %}
+    <div class="sb-messages">
+        {% for message in messages %}
+        <div class="sb-msg sb-msg-{{ message.level_tag }}" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="sb-msg-close" aria-label="Dismiss">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ===================== BREADCRUMB ===================== -->
+    <nav class="sb-crumbs" aria-label="Breadcrumb">
+        <a href="{% url 'students_app:assessment_setup_home' %}?{{ period_query }}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Assessment Setup
+        </a>
+        <span aria-hidden="true">/</span>
+        <span>{{ class_level }}</span>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ subject_name }}</span>
+    </nav>
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="sb-head">
+        <div class="sb-head-main">
+            <div class="sb-badges">
+                <span class="sb-period"><i class="far fa-calendar-alt" aria-hidden="true"></i> {{ year }} &middot; {{ term_label }}</span>
+                {% if setup %}
+                    {% if is_locked %}
+                        <span class="sb-pill st-published">Published</span>
+                    {% elif can_publish %}
+                        <span class="sb-pill st-ready">Ready to publish</span>
+                    {% else %}
+                        <span class="sb-pill st-incomplete">Incomplete</span>
+                    {% endif %}
+                {% else %}
+                    <span class="sb-pill">Not configured</span>
+                {% endif %}
+            </div>
+
+            <h1 class="sb-title">{{ subject_name }} <span>{{ class_level }}</span></h1>
+
+            <p class="sb-meta">
+                <span class="sb-code">{{ subject.code }}</span>
+                <span class="sb-teacher">
+                    <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                    {% if subject.teacher_subject %}
+                        {{ subject.teacher_subject.get_full_name|default:subject.teacher_subject.username }}
+                    {% else %}
+                        <em>No teacher assigned</em>
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+
+        {% if setup %}
+        <div class="sb-head-action">
+            {% if setup.is_published %}
+                <form method="post" action="{% url 'students_app:toggle_publish' setup.pk %}"
+                      class="js-confirm"
+                      data-title="Unpublish this setup?"
+                      data-text="Results for this subject will disappear from student profiles and report cards until you publish again."
+                      data-ok="Unpublish" data-danger="1">
+                    {% csrf_token %}
+                    <button type="submit" class="sb-btn sb-btn-danger">
+                        <i class="fas fa-lock-open" aria-hidden="true"></i> Unpublish
+                    </button>
+                </form>
+            {% else %}
+                <form method="post" action="{% url 'students_app:toggle_publish' setup.pk %}"
+                      class="js-confirm"
+                      data-title="Publish this setup?"
+                      data-text="Results for this subject become visible on student profiles and report cards. The rules will be locked until you unpublish."
+                      data-ok="Publish">
+                    {% csrf_token %}
+                    <button type="submit" class="sb-btn sb-btn-primary" {% if not can_publish %}disabled{% endif %}>
+                        <i class="fas fa-rocket" aria-hidden="true"></i> Publish
+                    </button>
+                </form>
+                {% if not can_publish %}
+                    <p class="sb-hint">Add a CA task and an exam paper to enable publishing.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
+    </header>
+
+    {% if not setup %}
+
+    <!-- ===================== NOT STARTED ===================== -->
+    <section class="sb-empty">
+        <i class="fas fa-sliders-h" aria-hidden="true"></i>
+        <h2>No setup for this term yet</h2>
+        <p>
+            Start the setup for {{ year }}, {{ term_label }} to define the CA / exam weighting
+            and the assessments students will be marked on. It starts at 40% CA and 60% exam, and you can change that next.
+        </p>
+        <form method="post" action="{% url 'students_app:create_term_setup' subject.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="term" value="{{ term }}">
+            <button type="submit" class="sb-btn sb-btn-primary sb-btn-lg">
+                <i class="fas fa-plus" aria-hidden="true"></i> Start setup
+            </button>
+        </form>
+    </section>
+
+    {% else %}
+
+    <!-- ===================== PROGRESS STEPS ===================== -->
+    <ol class="sb-steps" aria-label="Setup progress">
+        <li class="is-done">
+            <span class="sb-step-icon"><i class="fas fa-check" aria-hidden="true"></i></span>
+            <span class="sb-step-text"><b>Weights set</b>
+                <small>CA {{ setup.ca_weight_percentage|stringformat:"g" }}% / Exam {{ setup.exam_weight_percentage|stringformat:"g" }}%</small></span>
+        </li>
+        <li class="{% if ca_assessments %}is-done{% endif %}">
+            <span class="sb-step-icon">{% if ca_assessments %}<i class="fas fa-check" aria-hidden="true"></i>{% else %}2{% endif %}</span>
+            <span class="sb-step-text"><b>CA tasks</b>
+                <small>{% if ca_assessments %}{{ ca_assessments|length }} added{% else %}None yet{% endif %}</small></span>
+        </li>
+        <li class="{% if exam_assessments %}is-done{% endif %}">
+            <span class="sb-step-icon">{% if exam_assessments %}<i class="fas fa-check" aria-hidden="true"></i>{% else %}3{% endif %}</span>
+            <span class="sb-step-text"><b>Exam papers</b>
+                <small>{% if exam_assessments %}{{ exam_assessments|length }} added{% else %}None yet{% endif %}</small></span>
+        </li>
+        <li class="{% if is_locked %}is-done{% endif %}">
+            <span class="sb-step-icon">{% if is_locked %}<i class="fas fa-check" aria-hidden="true"></i>{% else %}4{% endif %}</span>
+            <span class="sb-step-text"><b>Published</b>
+                <small>{% if is_locked %}Live{% else %}Not yet{% endif %}</small></span>
+        </li>
+    </ol>
+
+    {% if is_locked %}
+    <div class="sb-banner" role="status">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        <div><strong>This setup is published and locked.</strong>
+            Unpublish it (top right) if you need to change the weights or the assessments.</div>
+    </div>
+    {% endif %}
+
+    <div class="sb-layout">
+
+        <!-- ===================== LEFT: WEIGHTS + ADD ===================== -->
+        <aside class="sb-side">
+
+            <!-- Weights -->
+            <section class="sb-card">
+                <h2 class="sb-card-title">Score weighting</h2>
+                <p class="sb-card-sub">How much each part counts towards the final mark.</p>
+
+                <form method="post" action="{% url 'students_app:update_weights' setup.pk %}" id="sbWeightsForm">
+                    {% csrf_token %}
+
+                    <div class="sb-split" aria-hidden="true">
+                        <span class="ca" id="sbBarCa" style="width: {{ setup.ca_weight_percentage|stringformat:'g' }}%"></span><span class="ex" id="sbBarEx" style="width: {{ setup.exam_weight_percentage|stringformat:'g' }}%"></span>
+                    </div>
+
+                    <div class="sb-split-legend">
+                        <div>
+                            <span class="sb-dot ca"></span>
+                            <span class="sb-split-label">Continuous Assessment</span>
+                            <strong><span id="sbCaVal">{{ setup.ca_weight_percentage|stringformat:"g" }}</span>%</strong>
+                        </div>
+                        <div>
+                            <span class="sb-dot ex"></span>
+                            <span class="sb-split-label">Exam</span>
+                            <strong><span id="sbExVal">{{ setup.exam_weight_percentage|stringformat:"g" }}</span>%</strong>
+                        </div>
+                    </div>
+
+                    <label class="sr-only" for="sbSlider">Continuous Assessment weight</label>
+                    <input type="range" id="sbSlider" name="ca_weight_percentage"
+                           min="0" max="100" step="1"
+                           value="{{ setup.ca_weight_percentage|stringformat:'g' }}"
+                           class="sb-range" {% if is_locked %}disabled{% endif %}>
+
+                    {% if not is_locked %}
+                    <div class="sb-presets" role="group" aria-label="Quick presets">
+                        <button type="button" data-ca="30">30 / 70</button>
+                        <button type="button" data-ca="40">40 / 60</button>
+                        <button type="button" data-ca="50">50 / 50</button>
+                        <button type="button" data-ca="60">60 / 40</button>
+                    </div>
+                    {% endif %}
+
+                    <p class="sb-explain">
+                        Each student's final mark is out of 100: up to
+                        <b><span id="sbCaPts">{{ setup.ca_weight_percentage|stringformat:"g" }}</span></b> from CA and up to
+                        <b><span id="sbExPts">{{ setup.exam_weight_percentage|stringformat:"g" }}</span></b> from the exam.
+                    </p>
+
+                    {% if not is_locked %}
+                    <button type="submit" class="sb-btn sb-btn-dark" id="sbSaveWeights" disabled>
+                        Save weights
+                    </button>
+                    {% endif %}
+                </form>
+            </section>
+
+            <!-- Add assessment -->
+            <section class="sb-card" id="sbAddCard">
+                <h2 class="sb-card-title">Add an assessment</h2>
+
+                {% if is_locked %}
+                    <p class="sb-card-sub"><i class="fas fa-lock" aria-hidden="true"></i> Unpublish the setup to add more assessments.</p>
+                {% else %}
+                <p class="sb-card-sub">A CA task (quiz, test, assignment) or a terminal exam paper.</p>
+
+                <form method="post" action="{% url 'students_app:assessment_add' setup.pk %}" id="sbAddForm">
+                    {% csrf_token %}
+
+                    <fieldset class="sb-field">
+                        <legend>Type</legend>
+                        <div class="sb-seg">
+                            <label>
+                                <input type="radio" name="category" value="CA" checked>
+                                <span><i class="fas fa-pen" aria-hidden="true"></i> CA task</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="category" value="EXAM">
+                                <span><i class="fas fa-file-alt" aria-hidden="true"></i> Exam paper</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <div class="sb-field">
+                        <label for="sbAddName">Name</label>
+                        <input type="text" id="sbAddName" name="name" maxlength="100" required
+                               placeholder="e.g. Quiz 1, Mid-Term Test, Paper 1" autocomplete="off">
+                    </div>
+
+                    <div class="sb-field">
+                        <label for="sbAddMax">Maximum marks</label>
+                        <input type="number" id="sbAddMax" name="max_raw_score" min="1" step="any" required
+                               placeholder="e.g. 40" inputmode="decimal">
+                    </div>
+
+                    <button type="submit" class="sb-btn sb-btn-primary">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Add assessment
+                    </button>
+                </form>
+                {% endif %}
+            </section>
+        </aside>
+
+        <!-- ===================== RIGHT: LISTS ===================== -->
+        <div class="sb-main">
+
+            <!-- CA -->
+            <section class="sb-card sb-list-card">
+                <header class="sb-list-head">
+                    <div>
+                        <h2 class="sb-card-title">Continuous assessments</h2>
+                        <p class="sb-card-sub">{{ ca_assessments|length }} task{{ ca_assessments|length|pluralize }}</p>
+                    </div>
+                    <span class="sb-total">Total <b>{{ ca_total_marks|floatformat:"-2" }}</b> marks</span>
+                </header>
+
+                {% if ca_assessments %}
+                <ul class="sb-rows">
+                    {% for a in ca_assessments %}
+                    <li class="sb-row">
+                        <span class="sb-row-icon"><i class="fas fa-pen" aria-hidden="true"></i></span>
+                        <div class="sb-row-main">
+                            <span class="sb-row-name">{{ a.name }}</span>
+                            <span class="sb-row-meta">
+                                Out of <b>{{ a.max_raw_score|floatformat:"-2" }}</b> marks
+                                &middot;
+                                {% if a.grade_count %}<span class="sb-tag">{{ a.grade_count }} score{{ a.grade_count|pluralize }} recorded</span>{% else %}No scores yet{% endif %}
+                            </span>
+                        </div>
+                        <div class="sb-row-actions">
+                            {% if is_locked %}
+                                <span class="sb-locked"><i class="fas fa-lock" aria-hidden="true"></i> Locked</span>
+                            {% else %}
+                                <button type="button" class="sb-icon-btn js-edit" title="Edit"
+                                        aria-label="Edit {{ a.name }}"
+                                        data-url="{% url 'students_app:assessment_edit' a.pk %}"
+                                        data-name="{{ a.name }}" data-category="{{ a.category }}"
+                                        data-max="{{ a.max_raw_score|stringformat:'g' }}">
+                                    <i class="fas fa-pen" aria-hidden="true"></i>
+                                </button>
+                                <form method="post" action="{% url 'students_app:assessment_delete' a.pk %}"
+                                      class="js-confirm"
+                                      data-title="Delete '{{ a.name }}'?"
+                                      data-text="This removes the assessment from the setup. This cannot be undone."
+                                      data-ok="Delete" data-danger="1">
+                                    {% csrf_token %}
+                                    <button type="submit" class="sb-icon-btn is-danger"
+                                            aria-label="Delete {{ a.name }}"
+                                            {% if a.grade_count %}disabled title="Cannot delete: scores are already recorded"{% else %}title="Delete"{% endif %}>
+                                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="sb-list-empty">
+                    <p>No CA tasks yet. Add quizzes, tests or assignments that count towards the CA mark.</p>
+                    {% if not is_locked %}<button type="button" class="sb-link-btn js-add-link" data-cat="CA">+ Add a CA task</button>{% endif %}
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- Exam -->
+            <section class="sb-card sb-list-card">
+                <header class="sb-list-head">
+                    <div>
+                        <h2 class="sb-card-title">Examination papers</h2>
+                        <p class="sb-card-sub">{{ exam_assessments|length }} paper{{ exam_assessments|length|pluralize }}</p>
+                    </div>
+                    <span class="sb-total">Total <b>{{ exam_total_marks|floatformat:"-2" }}</b> marks</span>
+                </header>
+
+                {% if exam_assessments %}
+                <ul class="sb-rows">
+                    {% for a in exam_assessments %}
+                    <li class="sb-row">
+                        <span class="sb-row-icon is-exam"><i class="fas fa-file-alt" aria-hidden="true"></i></span>
+                        <div class="sb-row-main">
+                            <span class="sb-row-name">{{ a.name }}</span>
+                            <span class="sb-row-meta">
+                                Out of <b>{{ a.max_raw_score|floatformat:"-2" }}</b> marks
+                                &middot;
+                                {% if a.grade_count %}<span class="sb-tag">{{ a.grade_count }} score{{ a.grade_count|pluralize }} recorded</span>{% else %}No scores yet{% endif %}
+                            </span>
+                        </div>
+                        <div class="sb-row-actions">
+                            {% if is_locked %}
+                                <span class="sb-locked"><i class="fas fa-lock" aria-hidden="true"></i> Locked</span>
+                            {% else %}
+                                <button type="button" class="sb-icon-btn js-edit" title="Edit"
+                                        aria-label="Edit {{ a.name }}"
+                                        data-url="{% url 'students_app:assessment_edit' a.pk %}"
+                                        data-name="{{ a.name }}" data-category="{{ a.category }}"
+                                        data-max="{{ a.max_raw_score|stringformat:'g' }}">
+                                    <i class="fas fa-pen" aria-hidden="true"></i>
+                                </button>
+                                <form method="post" action="{% url 'students_app:assessment_delete' a.pk %}"
+                                      class="js-confirm"
+                                      data-title="Delete '{{ a.name }}'?"
+                                      data-text="This removes the paper from the setup. This cannot be undone."
+                                      data-ok="Delete" data-danger="1">
+                                    {% csrf_token %}
+                                    <button type="submit" class="sb-icon-btn is-danger"
+                                            aria-label="Delete {{ a.name }}"
+                                            {% if a.grade_count %}disabled title="Cannot delete: scores are already recorded"{% else %}title="Delete"{% endif %}>
+                                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="sb-list-empty">
+                    <p>No exam papers yet. Add each paper (for example Paper 1 and Paper 2) with its maximum marks.</p>
+                    {% if not is_locked %}<button type="button" class="sb-link-btn js-add-link" data-cat="EXAM">+ Add an exam paper</button>{% endif %}
+                </div>
+                {% endif %}
+            </section>
+
+        </div>
+    </div>
+
+    <!-- ===================== EDIT DIALOG ===================== -->
+    <dialog class="sb-dialog" id="sbEdit" aria-labelledby="sbEditTitle">
+        <form method="post" id="sbEditForm" class="sb-dialog-box">
+            {% csrf_token %}
+            <h3 id="sbEditTitle">Edit assessment</h3>
+
+            <div class="sb-field">
+                <label for="sbEditName">Name</label>
+                <input type="text" id="sbEditName" name="name" maxlength="100" required autocomplete="off">
+            </div>
+            <div class="sb-field">
+                <label for="sbEditCategory">Type</label>
+                <select id="sbEditCategory" name="category">
+                    <option value="CA">Continuous Assessment</option>
+                    <option value="EXAM">Terminal Exam Paper</option>
+                </select>
+            </div>
+            <div class="sb-field">
+                <label for="sbEditMax">Maximum marks</label>
+                <input type="number" id="sbEditMax" name="max_raw_score" min="1" step="any" required inputmode="decimal">
+            </div>
+
+            <div class="sb-dialog-actions">
+                <button type="button" class="sb-btn sb-btn-ghost" data-close>Cancel</button>
+                <button type="submit" class="sb-btn sb-btn-primary">Save changes</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- ===================== CONFIRM DIALOG ===================== -->
+    <dialog class="sb-dialog" id="sbConfirm" aria-labelledby="sbConfirmTitle">
+        <form method="dialog" class="sb-dialog-box">
+            <h3 id="sbConfirmTitle">Are you sure?</h3>
+            <p id="sbConfirmText"></p>
+            <div class="sb-dialog-actions">
+                <button type="submit" value="cancel" class="sb-btn sb-btn-ghost">Cancel</button>
+                <button type="submit" value="ok" class="sb-btn sb-btn-primary" id="sbConfirmOk">Confirm</button>
+            </div>
+        </form>
+    </dialog>
+
+    {% endif %}
+
+</div>
+</div>
+
+
+<style>
+    .sb {
+        --ink: #16213e;
+        --ink-deep: #0e1730;
+        --brass: #b8912f;
+        --brass-light: #f3e6c4;
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --line: #e6e9f2;
+        --text: #1b2340;
+        --muted: #667085;
+
+        --off: #5f6877;   --off-bg: #eef0f4;
+        --warn: #9a6408;  --warn-bg: #fdf1d6;
+        --ok: #0b7a5b;    --ok-bg: #dff5ec;
+        --pub: #2a47c4;   --pub-bg: #e5eafd;
+        --bad: #b42318;   --bad-bg: #fde8e8;
+
+        background: var(--bg);
+        color: var(--text);
+        padding: 1.75rem 0 4rem;
+    }
+
+    .sb *, .sb *::before, .sb *::after { box-sizing: border-box; }
+    .sb [hidden] { display: none !important; }
+    .sb h1, .sb h2, .sb h3, .sb p, .sb ol, .sb ul { margin: 0; padding: 0; }
+    .sb ol, .sb ul { list-style: none; }
+    .sb button, .sb input, .sb select { font-family: inherit; }
+    .sb :focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+    .sb .sr-only {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    .sb-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; }
+
+    /* ---------- Messages ---------- */
+    .sb-messages { display: grid; gap: .6rem; margin-bottom: 1.1rem; }
+    .sb-msg {
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        padding: .75rem 1rem; border-radius: .75rem; font-size: .92rem; font-weight: 500;
+        background: var(--pub-bg); color: var(--pub);
+    }
+    .sb-msg-success { background: var(--ok-bg); color: var(--ok); }
+    .sb-msg-error, .sb-msg-danger { background: var(--bad-bg); color: var(--bad); }
+    .sb-msg-warning { background: var(--warn-bg); color: var(--warn); }
+    .sb-msg-close { background: none; border: 0; font-size: 1.4rem; line-height: 1; color: inherit; cursor: pointer; opacity: .6; }
+    .sb-msg-close:hover { opacity: 1; }
+
+    /* ---------- Breadcrumb ---------- */
+    .sb-crumbs {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+        font-size: .88rem; color: var(--muted); margin-bottom: 1rem;
+    }
+    .sb-crumbs a { color: var(--ink); font-weight: 600; text-decoration: none; }
+    .sb-crumbs a:hover { color: var(--brass); text-decoration: underline; }
+    .sb-crumbs a i { margin-right: .3rem; font-size: .75rem; }
+    .sb-crumbs [aria-current] { color: var(--ink-deep); font-weight: 600; }
+
+    /* ---------- Header ---------- */
+    .sb-head {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.25rem;
+        background: var(--card); border: 1px solid var(--line); border-radius: 1.25rem;
+        padding: 1.5rem 1.75rem; margin-bottom: 1.25rem;
+        box-shadow: 0 8px 24px rgba(22, 33, 62, .05);
+    }
+    .sb-badges { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: .7rem; }
+    .sb-period {
+        display: inline-flex; align-items: center; gap: .45rem; font-size: .82rem; font-weight: 600;
+        color: var(--ink); background: var(--bg); padding: .28rem .7rem; border-radius: 50px;
+    }
+    .sb-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-size: 2rem; font-weight: 700; color: var(--ink-deep); line-height: 1.2;
+    }
+    .sb-title span { font-size: 1.1rem; font-weight: 500; color: var(--muted); margin-left: .4rem; }
+    .sb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .9rem; margin-top: .6rem; font-size: .92rem; color: var(--muted); }
+    .sb-code {
+        font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: .75rem; font-weight: 600;
+        background: var(--bg); padding: .15rem .55rem; border-radius: .4rem; color: var(--muted);
+    }
+    .sb-teacher i { margin-right: .4rem; color: var(--brass); }
+
+    .sb-head-action { display: grid; gap: .5rem; justify-items: end; }
+    .sb-hint { font-size: .8rem; color: var(--muted); max-width: 22ch; text-align: right; }
+
+    .sb-pill {
+        display: inline-flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 700;
+        padding: .28rem .65rem; border-radius: 50px; background: var(--off-bg); color: var(--off);
+    }
+    .sb-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .sb-pill.st-incomplete { background: var(--warn-bg); color: var(--warn); }
+    .sb-pill.st-ready { background: var(--ok-bg); color: var(--ok); }
+    .sb-pill.st-published { background: var(--pub-bg); color: var(--pub); }
+
+    /* ---------- Steps ---------- */
+    .sb-steps {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.25rem;
+    }
+    .sb-steps li {
+        display: flex; align-items: center; gap: .75rem;
+        background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .8rem 1rem;
+    }
+    .sb-step-icon {
+        flex: none; width: 30px; height: 30px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--bg); color: var(--muted); font-size: .8rem; font-weight: 700;
+    }
+    .sb-steps li.is-done .sb-step-icon { background: var(--ok); color: #fff; }
+    .sb-step-text { display: grid; line-height: 1.25; min-width: 0; }
+    .sb-step-text b { font-size: .88rem; color: var(--ink-deep); }
+    .sb-step-text small { font-size: .78rem; color: var(--muted); }
+
+    /* ---------- Banner ---------- */
+    .sb-banner {
+        display: flex; align-items: center; gap: .9rem; margin-bottom: 1.25rem;
+        padding: .9rem 1.1rem; border-radius: 1rem; background: var(--pub-bg); color: var(--pub); font-size: .92rem;
+    }
+    .sb-banner i { font-size: 1.1rem; }
+
+    /* ---------- Layout ---------- */
+    .sb-layout { display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; align-items: start; }
+    .sb-side { display: grid; gap: 1.25rem; position: sticky; top: 1rem; }
+    .sb-main { display: grid; gap: 1.25rem; min-width: 0; }
+
+    .sb-card {
+        background: var(--card); border: 1px solid var(--line); border-radius: 1.25rem;
+        padding: 1.4rem; box-shadow: 0 6px 20px rgba(22, 33, 62, .04);
+    }
+    .sb-card-title { font-size: 1.05rem; font-weight: 700; color: var(--ink-deep); }
+    .sb-card-sub { margin-top: .2rem; font-size: .86rem; color: var(--muted); }
+    .sb-card-sub i { margin-right: .35rem; }
+
+    /* ---------- Weights ---------- */
+    #sbWeightsForm { margin-top: 1.1rem; display: grid; gap: 1rem; }
+    .sb-split { display: flex; height: 12px; border-radius: 50px; overflow: hidden; background: var(--line); }
+    .sb-split .ca { background: var(--brass); transition: width .2s ease; }
+    .sb-split .ex { background: var(--ink); transition: width .2s ease; }
+
+    .sb-split-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .sb-split-legend > div { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: .5rem; }
+    .sb-split-legend strong { grid-column: 1 / -1; font-size: 1.6rem; color: var(--ink-deep); font-variant-numeric: tabular-nums; }
+    .sb-split-label { font-size: .8rem; font-weight: 600; color: var(--muted); }
+    .sb-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .sb-dot.ca { background: var(--brass); }
+    .sb-dot.ex { background: var(--ink); }
+
+    .sb-range {
+        -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 50px;
+        background: linear-gradient(to right, var(--brass) var(--fill, 40%), var(--line) var(--fill, 40%));
+        outline-offset: 6px; cursor: pointer;
+    }
+    .sb-range::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+        background: #fff; border: 3px solid var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+    .sb-range::-moz-range-thumb {
+        width: 18px; height: 18px; border-radius: 50%; background: #fff;
+        border: 3px solid var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+    .sb-range:disabled { opacity: .5; cursor: not-allowed; }
+
+    .sb-presets { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .sb-presets button {
+        flex: 1; padding: .4rem .5rem; border-radius: .6rem; background: var(--bg);
+        border: 1px solid var(--line); font-size: .82rem; font-weight: 600; color: var(--ink); cursor: pointer;
+        transition: background .2s, border-color .2s;
+    }
+    .sb-presets button:hover { border-color: var(--ink); background: #fff; }
+    .sb-presets button.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+    .sb-explain { font-size: .86rem; color: var(--muted); line-height: 1.55; }
+    .sb-explain b { color: var(--ink-deep); }
+
+    /* ---------- Forms ---------- */
+    #sbAddForm { margin-top: 1rem; display: grid; gap: .95rem; }
+    .sb-field { display: grid; gap: .35rem; border: 0; padding: 0; margin: 0; min-width: 0; }
+    .sb-field label, .sb-field legend { font-size: .82rem; font-weight: 600; color: var(--ink); padding: 0; }
+    .sb-field input[type="text"], .sb-field input[type="number"], .sb-field select {
+        width: 100%; height: 2.6rem; padding: 0 .85rem; border: 1px solid #cfd5e4; border-radius: .7rem;
+        background: #fff; color: var(--text); font-size: .93rem;
+    }
+    .sb-field input::placeholder { color: #98a1b3; }
+    .sb-field input:focus, .sb-field select:focus { border-color: var(--ink); outline: 3px solid rgba(184, 145, 47, .35); outline-offset: 0; }
+
+    .sb-seg { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; background: var(--bg); padding: .25rem; border-radius: .8rem; }
+    .sb-seg label { margin: 0; cursor: pointer; }
+    .sb-seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .sb-seg span {
+        display: flex; align-items: center; justify-content: center; gap: .45rem; height: 2.3rem;
+        border-radius: .6rem; font-size: .88rem; font-weight: 600; color: var(--muted); transition: all .2s;
+    }
+    .sb-seg input:checked + span { background: var(--ink); color: #fff; box-shadow: 0 4px 10px rgba(14,23,48,.2); }
+    .sb-seg input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+    /* ---------- Buttons ---------- */
+    .sb-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+        height: 2.6rem; padding: 0 1.3rem; border-radius: .75rem; font-size: .92rem; font-weight: 600;
+        border: 1px solid transparent; cursor: pointer; text-decoration: none; width: 100%;
+        transition: background .2s, color .2s, border-color .2s, box-shadow .2s, opacity .2s;
+    }
+    .sb-head-action .sb-btn { width: auto; min-width: 150px; }
+    .sb-btn i { font-size: .8rem; }
+    .sb-btn-lg { height: 3rem; width: auto; padding: 0 2rem; }
+    .sb-btn-primary { background: var(--ink); color: #fff; }
+    .sb-btn-primary:hover:not(:disabled) { background: var(--ink-deep); box-shadow: 0 8px 18px rgba(14,23,48,.25); }
+    .sb-btn-dark { background: var(--ink-deep); color: #fff; }
+    .sb-btn-dark:hover:not(:disabled) { box-shadow: 0 8px 18px rgba(14,23,48,.25); }
+    .sb-btn-ghost { background: #fff; color: var(--ink); border-color: #cfd5e4; width: auto; }
+    .sb-btn-ghost:hover { border-color: var(--ink); background: var(--bg); }
+    .sb-btn-danger { background: #fff; color: var(--bad); border-color: #f0b8b3; }
+    .sb-btn-danger:hover { background: var(--bad-bg); border-color: var(--bad); }
+    .sb-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ---------- Lists ---------- */
+    .sb-list-card { padding: 0; overflow: hidden; }
+    .sb-list-head {
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--line);
+    }
+    .sb-total { font-size: .85rem; color: var(--muted); background: var(--bg); padding: .35rem .8rem; border-radius: 50px; }
+    .sb-total b { color: var(--ink-deep); }
+
+    .sb-row {
+        display: flex; align-items: center; gap: 1rem; padding: .95rem 1.4rem;
+        border-bottom: 1px solid var(--line); transition: background .2s;
+    }
+    .sb-row:last-child { border-bottom: 0; }
+    .sb-row:hover { background: #fafbfe; }
+    .sb-row-icon {
+        flex: none; width: 38px; height: 38px; border-radius: .75rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--brass-light); color: var(--brass); font-size: .9rem;
+    }
+    .sb-row-icon.is-exam { background: #dfe3f0; color: var(--ink); }
+    .sb-row-main { flex: 1; min-width: 0; display: grid; gap: .15rem; }
+    .sb-row-name { font-weight: 600; color: var(--ink-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-row-meta { font-size: .82rem; color: var(--muted); }
+    .sb-row-meta b { color: var(--ink-deep); }
+    .sb-tag { background: var(--pub-bg); color: var(--pub); font-weight: 600; padding: .08rem .5rem; border-radius: 50px; font-size: .76rem; }
+
+    .sb-row-actions { display: flex; align-items: center; gap: .3rem; }
+    .sb-row-actions form { margin: 0; }
+    .sb-icon-btn {
+        width: 36px; height: 36px; border-radius: .6rem; border: 1px solid transparent; background: transparent;
+        color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+        transition: background .2s, color .2s;
+    }
+    .sb-icon-btn:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+    .sb-icon-btn.is-danger:hover:not(:disabled) { background: var(--bad-bg); color: var(--bad); }
+    .sb-icon-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .sb-locked { font-size: .82rem; color: var(--muted); }
+    .sb-locked i { margin-right: .3rem; }
+
+    .sb-list-empty { text-align: center; padding: 2rem 1.5rem 2.2rem; color: var(--muted); font-size: .92rem; display: grid; gap: .7rem; justify-items: center; }
+    .sb-list-empty p { max-width: 42ch; }
+    .sb-link-btn { background: none; border: 0; font-weight: 700; color: var(--ink); cursor: pointer; font-size: .92rem; padding: .2rem; }
+    .sb-link-btn:hover { color: var(--brass); text-decoration: underline; }
+
+    /* ---------- Empty ---------- */
+    .sb-empty {
+        text-align: center; padding: 3.5rem 1.5rem; background: var(--card);
+        border: 1px dashed #cfd5e4; border-radius: 1.25rem; color: var(--muted);
+        display: grid; gap: .8rem; justify-items: center;
+    }
+    .sb-empty i { font-size: 2rem; color: var(--brass); }
+    .sb-empty h2 { font-family: 'Fraunces', Georgia, serif; font-size: 1.5rem; color: var(--ink-deep); }
+    .sb-empty p { max-width: 54ch; line-height: 1.6; }
+    .sb-empty form { margin-top: .5rem; }
+
+    /* ---------- Dialogs ---------- */
+    .sb-dialog {
+        border: 0; padding: 0; border-radius: 1.25rem; width: min(440px, calc(100vw - 2rem));
+        box-shadow: 0 30px 80px rgba(14, 23, 48, .35); color: var(--text);
+    }
+    .sb-dialog::backdrop { background: rgba(14, 23, 48, .5); }
+    .sb-dialog-box { padding: 1.6rem; display: grid; gap: 1rem; }
+    .sb-dialog h3 { font-size: 1.15rem; font-weight: 700; color: var(--ink-deep); }
+    .sb-dialog p { font-size: .93rem; color: var(--muted); line-height: 1.6; }
+    .sb-dialog-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: .3rem; }
+    .sb-dialog-actions .sb-btn { width: auto; }
+    .sb-btn.is-danger-confirm { background: var(--bad); color: #fff; }
+    .sb-btn.is-danger-confirm:hover { background: #8f1c12; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 991px) {
+        .sb-layout { grid-template-columns: 1fr; }
+        .sb-side { position: static; }
+        .sb-steps { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 575px) {
+        .sb { padding-top: 1.1rem; }
+        .sb-head { padding: 1.25rem; }
+        .sb-title { font-size: 1.6rem; }
+        .sb-head-action, .sb-head-action form { width: 100%; justify-items: stretch; }
+        .sb-head-action .sb-btn { width: 100%; }
+        .sb-hint { text-align: left; max-width: none; }
+        .sb-row { padding: .9rem 1rem; }
+        .sb-list-head { padding: 1rem; flex-wrap: wrap; }
+        .sb-steps { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .sb *, .sb *::before, .sb *::after { transition: none !important; }
+    }
+</style>
+
+
+<script>
+(function () {
+    var root = document.querySelector('.sb');
+    if (!root) return;
+
+    /* Dismiss flash messages */
+    root.querySelectorAll('.sb-msg-close').forEach(function (btn) {
+        btn.addEventListener('click', function () { btn.parentElement.remove(); });
+    });
+
+    /* ---------- Weights slider: live preview ---------- */
+    var slider = root.querySelector('#sbSlider');
+    if (slider) {
+        var initial = slider.value;
+        var els = {
+            caVal: root.querySelector('#sbCaVal'), exVal: root.querySelector('#sbExVal'),
+            caPts: root.querySelector('#sbCaPts'), exPts: root.querySelector('#sbExPts'),
+            barCa: root.querySelector('#sbBarCa'), barEx: root.querySelector('#sbBarEx'),
+            save: root.querySelector('#sbSaveWeights')
+        };
+        var presets = [].slice.call(root.querySelectorAll('.sb-presets button'));
+
+        var sync = function () {
+            var ca = parseFloat(slider.value) || 0;
+            var ex = Math.round((100 - ca) * 100) / 100;
+            els.caVal.textContent = els.caPts.textContent = ca;
+            els.exVal.textContent = els.exPts.textContent = ex;
+            els.barCa.style.width = ca + '%';
+            els.barEx.style.width = ex + '%';
+            slider.style.setProperty('--fill', ca + '%');
+            if (els.save) els.save.disabled = (slider.value === initial);
+            presets.forEach(function (b) { b.classList.toggle('is-active', parseFloat(b.dataset.ca) === ca); });
+        };
+
+        slider.addEventListener('input', sync);
+        presets.forEach(function (b) {
+            b.addEventListener('click', function () { slider.value = b.dataset.ca; sync(); });
+        });
+        sync();
+    }
+
+    /* ---------- "+ Add a ..." links jump to the add form ---------- */
+    root.querySelectorAll('.js-add-link').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var radio = root.querySelector('#sbAddForm input[name="category"][value="' + btn.dataset.cat + '"]');
+            if (radio) radio.checked = true;
+            var card = root.querySelector('#sbAddCard');
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var name = root.querySelector('#sbAddName');
+            if (name) setTimeout(function () { name.focus(); }, 250);
+        });
+    });
+
+    /* ---------- Edit dialog ---------- */
+    var editDialog = root.querySelector('#sbEdit');
+    if (editDialog && typeof editDialog.showModal === 'function') {
+        var editForm = root.querySelector('#sbEditForm');
+        root.querySelectorAll('.js-edit').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                editForm.action = btn.dataset.url;
+                root.querySelector('#sbEditName').value = btn.dataset.name;
+                root.querySelector('#sbEditCategory').value = btn.dataset.category;
+                root.querySelector('#sbEditMax').value = btn.dataset.max;
+                editDialog.showModal();
+                root.querySelector('#sbEditName').select();
+            });
+        });
+        editDialog.querySelector('[data-close]').addEventListener('click', function () { editDialog.close(); });
+    }
+
+    /* ---------- Confirm dialog for publish / unpublish / delete ---------- */
+    var dialog = root.querySelector('#sbConfirm');
+    if (dialog && typeof dialog.showModal === 'function') {
+        var pending = null;
+        var okBtn = root.querySelector('#sbConfirmOk');
+
+        root.querySelectorAll('form.js-confirm').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                pending = form;
+                root.querySelector('#sbConfirmTitle').textContent = form.dataset.title || 'Are you sure?';
+                root.querySelector('#sbConfirmText').textContent = form.dataset.text || '';
+                okBtn.textContent = form.dataset.ok || 'Confirm';
+                okBtn.classList.toggle('is-danger-confirm', !!form.dataset.danger);
+                dialog.returnValue = '';
+                dialog.showModal();
+            });
+        });
+
+        dialog.addEventListener('close', function () {
+            if (dialog.returnValue === 'ok' && pending) pending.submit();
+            pending = null;
+        });
+    } else {
+        /* Very old browsers: fall back to the built-in confirm box */
+        root.querySelectorAll('form.js-confirm').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm(form.dataset.text || 'Are you sure?')) event.preventDefault();
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

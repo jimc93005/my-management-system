@@ -80,6 +80,15 @@
                     {% endif %}
                 {% endfor %}
             </div>
+
+            {% if term_reports %}
+            <div class="card border-0 shadow-sm rounded-lg p-4 mb-4 bg-white">
+                <h6 class="text-muted font-weight-bold mb-3"><i class="fas fa-chart-line mr-2 text-primary"></i>Academic Progress Trend</h6>
+                <div style="height: 250px; width: 100%;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+            {% endif %}
             {% if term_reports %}
                 <div class="d-flex align-items-center mb-4 overflow-auto pb-2 border-bottom">
                     <span class="text-muted mr-3 font-weight-bold text-uppercase small">Select Year:</span>
@@ -171,47 +180,121 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for grade in data.grades %}
-                                        <tr>
-                                            <td class="px-4 font-weight-bold text-dark">{{ grade.subject.name }}</td>
-                                            <td class="text-center">
-                                                <span class="badge badge-soft-primary p-2 px-3">{{ grade.score }}</span>
-                                            </td>
-                                            <td><small class="font-weight-bold text-uppercase text-secondary">{{ grade.get_remark }}</small></td>
-                                            <td><em class="text-muted small">"{{ grade.get_comment|default:'No comment provided' }}"</em></td>
-                                            <td class="text-right px-4">
-                                                <div class="btn-group shadow-sm border rounded">
-                                                    <a href="{% url 'students_app:edit_grade' grade.id %}" class="btn btn-sm btn-white text-primary px-3" title="Edit">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-white text-danger px-3 border-left" data-toggle="modal" data-target="#delG-{{ grade.id }}">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </div>
+{% for grade in data.grades %}
+<!-- MAIN SUBJECT ROW -->
+<tr>
+    <td class="px-4 font-weight-bold text-dark">
+        {% if grade.assessment_breakdown %}
+        <button class="btn btn-sm btn-light border mr-2 py-0 px-2 text-primary shadow-sm"
+                type="button"
+                data-toggle="collapse"
+                data-target="#ca-details-{{ grade.id }}"
+                aria-expanded="false"
+                title="Toggle Assessment Breakdown">
+            <i class="fas fa-chevron-down small"></i>
+        </button>
+        {% endif %}
+        {{ grade.subject.name }}
+        
+    </td>
+    <td class="text-center">
+        <span class="badge badge-soft-primary p-2 px-3">{{ grade.score }}%</span>
+    </td>
+    <td><small class="font-weight-bold text-uppercase text-secondary">{{ grade.get_remark }}</small></td>
+    <td><em class="text-muted small">"{{ grade.get_comment|default:'No comment provided' }}"</em></td>
+    <td class="text-right px-4">
+        <div class="btn-group shadow-sm border rounded">
+            <a href="{% url 'students_app:edit_grade' grade.id %}" class="btn btn-sm btn-white text-primary px-3" title="Edit">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <button type="button" class="btn btn-sm btn-white text-danger px-3 border-left" data-toggle="modal" data-target="#delG-{{ grade.id }}">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
 
-                                                <div class="modal fade text-left" id="delG-{{ grade.id }}" tabindex="-1" role="dialog">
-                                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                                        <div class="modal-content border-0 shadow">
-                                                            <div class="modal-header bg-danger text-white border-0">
-                                                                <h5 class="modal-title font-weight-bold">Confirm Deletion</h5>
-                                                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                                                            </div>
-                                                            <div class="modal-body p-4 text-center">
-                                                                <p class="mb-0">Are you sure you want to delete the <strong>{{ grade.subject.name }}</strong> grade for this term?</p>
-                                                            </div>
-                                                            <div class="modal-footer bg-light border-0">
-                                                                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cancel</button>
-                                                                <form action="{% url 'students_app:delete_grade' grade.id %}" method="POST">
-                                                                    {% csrf_token %}
-                                                                    <button type="submit" class="btn btn-danger px-4 shadow-sm">Delete Permanently</button>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
+        <!-- Delete Modal -->
+        <div class="modal fade text-left" id="delG-{{ grade.id }}" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-danger text-white border-0">
+                        <h5 class="modal-title font-weight-bold">Confirm Deletion</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body p-4 text-center">
+                        <p class="mb-0">Are you sure you want to delete the <strong>{{ grade.subject.name }}</strong> grade for this term?</p>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cancel</button>
+                        <form action="{% url 'students_app:delete_grade' grade.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger px-4 shadow-sm">Delete Permanently</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </td>
+</tr>
+
+<!-- NESTED ASSESSMENT BREAKDOWN DRAWER -->
+{% if grade.assessment_breakdown %}
+<tr class="collapse bg-light" id="ca-details-{{ grade.id }}">
+    <td colspan="5" class="p-3">
+        <div class="card border-0 shadow-sm p-3 bg-white rounded-lg">
+            <div class="d-flex align-items-center mb-2">
+                <h6 class="small font-weight-bold text-uppercase text-secondary mb-0">
+                    <i class="fas fa-list-alt mr-1 text-primary"></i> {{ grade.subject.name }} Assessment Breakdown
+                </h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0 small">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Assessment Name</th>
+                            <th class="text-center">Category</th>
+                            <th class="text-center">Score Earned</th>
+                            <th class="text-center">Max Possible Score</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ag in grade.assessment_breakdown %}
+                        <tr>
+                            <td class="font-weight-bold text-dark">{{ ag.assessment.name }}</td>
+                            <td class="text-center">
+                                <span class="badge {% if ag.assessment.category == 'CA' %}badge-info{% else %}badge-primary{% endif %}">
+                                    {{ ag.assessment.category }}
+                                </span>
+                            </td>
+                            <td class="text-center font-weight-bold">
+                                {% if ag.is_absent %}
+                                    <span class="text-danger">Absent</span>
+                                {% elif ag.raw_score is not None %}
+                                    {{ ag.raw_score|floatformat:0 }}
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center text-muted">{{ ag.assessment.max_raw_score|floatformat:0 }}</td>
+                            <td class="text-center">
+                                {% if ag.is_absent %}
+                                    <span class="badge badge-danger">Absent</span>
+                                {% elif ag.raw_score is not None %}
+                                    <span class="badge badge-success">Recorded</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </td>
+</tr>
+{% endif %}
+{% endfor %}
                                     </tbody>
                                     <tfoot class="bg-light border-top">
                                         <tr class="small">
@@ -286,5 +369,57 @@
     .btn-white { background: white; color: #555; border: none; }
     .btn-white:hover { background: #f8f9fa; }
 </style>
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('performanceChart');
+        if (ctx) {
+            // Parse the JSON data passed from the Django context
+            const labels = JSON.parse('{{ chart_labels|safe }}');
+            const data = JSON.parse('{{ chart_data|safe }}');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Term Average (%)',
+                        data: data,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#007bff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.3 // Adds a slight curve to the line
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' Average: ' + context.parsed.y + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 
 {% endblock %}

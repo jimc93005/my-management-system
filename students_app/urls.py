@@ -187,6 +187,28 @@ path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='auth/password_reset_complete.html'
     ), name='password_reset_complete'),
 
+    # GRADING AND ASSESSMENT ULRS
+
+
+    path('subject/<int:subject_id>/assessment-setup/', views.subject_assessment_setup_view, name='subject_assessment_setup'),
+    # path('subject/<int:subject_id>/gradebook/', views.subject_gradebook_view, name='subject_gradebook'),
+
+
+    # ASSESSMENTS URLS
+# 1. Hub: All classes and their subjects
+    path('assessments/', views.assessment_setup_home, name='assessment_setup_home'),
+
+    # 2. Rules Builder (Read-only view for a specific subject)
+    path('assessments/subject/<int:subject_id>/', views.subject_term_setup, name='subject_term_setup'),
+
+    # 3. Write Actions (POST endpoints)
+    path('assessments/subject/<int:subject_id>/create/', views.create_term_setup, name='create_term_setup'),
+    path('assessments/setup/<int:setup_id>/weights/', views.update_weights, name='update_weights'),
+    path('assessments/setup/<int:setup_id>/assessment/add/', views.assessment_save, name='assessment_add'),
+    path('assessments/assessment/<int:assessment_id>/edit/', views.assessment_save, name='assessment_edit'),
+    path('assessments/assessment/<int:assessment_id>/delete/', views.assessment_delete, name='assessment_delete'),
+    path('assessments/setup/<int:setup_id>/publish/', views.toggle_publish, name='toggle_publish'),
+
 
 
 

@@ -402,3 +402,93 @@ class SubjectDepartmentForm(forms.ModelForm):
 
 
 
+
+# ASSESSMENT FORMS
+"""
+students_app/assessment_forms.py
+
+Forms behind the assessment setup views. All input validation lives here so
+the views never trust raw request.POST values.
+"""
+from django import forms
+from django.core.exceptions import ValidationError
+from django.db.models import Max
+
+from .models import Assessment
+
+
+class AssessmentForm(forms.ModelForm):
+    """Add / edit one assessment (a CA task or an exam paper)."""
+
+    class Meta:
+        model = Assessment
+        fields = ['name', 'category', 'max_raw_score']
+        labels = {
+            'name': 'Assessment name',
+            'category': 'Type',
+            'max_raw_score': 'Maximum marks',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. Quiz 1, Mid-Term Test, Paper 1',
+                'autocomplete': 'off',
+            }),
+            'category': forms.Select(attrs={'class': 'custom-select'}),
+            'max_raw_score': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. 40',
+                'min': 1,
+                'step': 'any',
+            }),
+        }
+
+    def __init__(self, *args, term_setup, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.term_setup = term_setup
+
+    def clean_name(self):
+        name = ' '.join(self.cleaned_data['name'].split())
+
+        duplicates = Assessment.objects.filter(
+            term_setup=self.term_setup, name__iexact=name
+        )
+        if self.instance.pk:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+
+        if duplicates.exists():
+            raise ValidationError(f"There is already an assessment named '{name}' in this setup.")
+        return name
+
+    def clean_max_raw_score(self):
+        value = self.cleaned_data['max_raw_score']
+
+        # Editing: never allow the maximum to drop below a mark already entered
+        if self.instance.pk:
+            highest = self.instance.grades.aggregate(top=Max('raw_score'))['top']
+            if highest is not None and value < highest:
+                raise ValidationError(
+                    f"Marks up to {highest:g} are already recorded, so the maximum cannot be lower than that."
+                )
+        return value
+
+
+class WeightsForm(forms.Form):
+    """
+    One value in, two out: the teacher sets the CA weight and the exam
+    weight is calculated, so the two always add up to 100.
+    """
+    ca_weight_percentage = forms.FloatField(
+        min_value=0,
+        max_value=100,
+        label='Continuous Assessment weight (%)',
+        widget=forms.NumberInput(attrs={'class': 'custom-range', 'type': 'range', 'min': 0, 'max': 100, 'step': 5}),
+    )
+
+    @property
+    def ca_weight(self):
+        return round(self.cleaned_data['ca_weight_percentage'], 2)
+
+    @property
+    def exam_weight(self):
+        return round(100.0 - self.ca_weight, 2)

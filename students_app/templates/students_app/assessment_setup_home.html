@@ -1,0 +1,637 @@
+{% extends 'students_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="ah">
+<div class="ah-wrap">
+
+    <!-- ===================== FLASH MESSAGES ===================== -->
+    {% if messages %}
+    <div class="ah-messages">
+        {% for message in messages %}
+        <div class="ah-msg ah-msg-{{ message.level_tag }}" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="ah-msg-close" aria-label="Dismiss">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ===================== HEADER + PERIOD ===================== -->
+    <header class="ah-header">
+        <div>
+            <h1 class="ah-title">Assessment Setup</h1>
+            <p class="ah-subtitle">
+                Set the CA and exam rules for every subject, then publish when they are final.
+            </p>
+        </div>
+
+        <div class="ah-period" role="group" aria-label="Academic period">
+            <form method="get" class="ah-year-form">
+                <input type="hidden" name="term" value="{{ term }}">
+                <label class="sr-only" for="ahYear">Academic year</label>
+                <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                <select id="ahYear" name="year" onchange="this.form.submit()">
+                    {% for y in year_options %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <nav class="ah-terms" aria-label="Term">
+                {% for val, label in term_choices %}
+                    <a href="?year={{ year|urlencode }}&term={{ val }}"
+                       class="ah-term{% if val == term %} is-active{% endif %}"
+                       {% if val == term %}aria-current="true"{% endif %}>{{ label }}</a>
+                {% endfor %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <section class="ah-overview" aria-label="Overview for {{ year }}, {{ term_label }}">
+
+        <div class="ah-ring-wrap">
+            <svg viewBox="0 0 120 120" class="ah-ring" role="img"
+                 aria-label="{{ summary.percent }} percent of subjects configured">
+                <circle class="ah-ring-bg" cx="60" cy="60" r="52" pathLength="100"></circle>
+                {% if summary.percent %}
+                <circle class="ah-ring-fg" cx="60" cy="60" r="52" pathLength="100"
+                        stroke-dasharray="{{ summary.percent }} 100"
+                        transform="rotate(-90 60 60)"></circle>
+                {% endif %}
+                <text x="60" y="64" text-anchor="middle" class="ah-ring-num">{{ summary.percent }}%</text>
+            </svg>
+            <div class="ah-ring-caption">
+                <strong>{{ year }} &middot; {{ term_label }}</strong>
+                <span>{{ summary.complete }} of {{ summary.total }} subjects configured</span>
+            </div>
+        </div>
+
+        <dl class="ah-stats">
+            <div class="ah-stat">
+                <dt>Subjects</dt>
+                <dd>{{ summary.total }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Configured</dt>
+                <dd class="is-ok">{{ summary.complete }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Published</dt>
+                <dd class="is-pub">{{ summary.published }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Needs attention</dt>
+                <dd class="{% if summary.needs_attention %}is-warn{% endif %}">{{ summary.needs_attention }}</dd>
+            </div>
+        </dl>
+    </section>
+
+    {% if classes %}
+
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="ah-toolbar">
+        <div class="ah-search">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <label class="sr-only" for="ahSearch">Search subjects</label>
+            <input type="search" id="ahSearch" placeholder="Search subject, code or teacher" autocomplete="off">
+        </div>
+
+        <div class="ah-chips" role="group" aria-label="Filter by status">
+            <button type="button" class="ah-chip is-active" data-status="all" aria-pressed="true">All <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="not_configured" aria-pressed="false">Not configured <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="incomplete" aria-pressed="false">Incomplete <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="ready" aria-pressed="false">Ready <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="published" aria-pressed="false">Published <span class="ah-chip-n">0</span></button>
+        </div>
+
+        <div class="ah-toggles">
+            <button type="button" class="ah-link-btn" id="ahExpandAll">Expand all</button>
+            <span aria-hidden="true">/</span>
+            <button type="button" class="ah-link-btn" id="ahCollapseAll">Collapse all</button>
+        </div>
+    </div>
+
+    <!-- ===================== CLASSES ===================== -->
+    {% for group in classes %}
+    <section class="ah-class{% if group.percent == 100 %} is-collapsed{% endif %}">
+
+        <button type="button" class="ah-class-head"
+                aria-expanded="{% if group.percent == 100 %}false{% else %}true{% endif %}"
+                aria-controls="ahClass{{ forloop.counter }}">
+            <span class="ah-class-title">
+                <span class="ah-class-name">{{ group.class_level.class_level }}</span>
+                <span class="ah-class-sub">
+                    {{ group.complete }} of {{ group.total }} configured{% if group.published %} &middot; {{ group.published }} published{% endif %}
+                </span>
+            </span>
+            <span class="ah-class-progress">
+                <span class="ah-bar" aria-hidden="true"><span style="width: {{ group.percent }}%"></span></span>
+                <b>{{ group.percent }}%</b>
+            </span>
+            <i class="fas fa-chevron-down ah-chevron" aria-hidden="true"></i>
+        </button>
+
+        <div class="ah-class-body" id="ahClass{{ forloop.counter }}">
+            <div class="ah-class-inner">
+                <div class="ah-grid">
+
+                    {% for card in group.cards %}
+                    <article class="ah-card st-{{ card.status }}"
+                             data-status="{{ card.status }}"
+                             data-search="{{ card.subject_name|lower }} {{ card.subject.code|lower }}{% if card.teacher %} {{ card.teacher.get_full_name|lower }} {{ card.teacher.username|lower }}{% endif %}">
+
+                        <header class="ah-card-top">
+                            <div class="ah-card-id">
+                                <h3 class="ah-card-name" title="{{ card.subject_name }}">{{ card.subject_name }}</h3>
+                                <span class="ah-code">{{ card.subject.code }}</span>
+                            </div>
+                            <span class="ah-pill">{{ card.status_label }}</span>
+                        </header>
+
+                        <div class="ah-teacher">
+                            {% if card.teacher %}
+                                {% with tname=card.teacher.get_full_name|default:card.teacher.username %}
+                                <span class="ah-avatar" aria-hidden="true">{{ tname|first|upper }}</span>
+                                <span>{{ tname }}</span>
+                                {% endwith %}
+                            {% else %}
+                                <span class="ah-avatar is-empty" aria-hidden="true"><i class="fas fa-user-slash"></i></span>
+                                <span class="ah-muted">No teacher assigned</span>
+                            {% endif %}
+                        </div>
+
+                        {% if card.setup %}
+                        <div class="ah-rules">
+                            <div class="ah-split" role="img"
+                                 aria-label="Continuous assessment {{ card.ca_weight|floatformat:0 }} percent, exam {{ card.exam_weight|floatformat:0 }} percent">
+                                <span class="ca" style="width: {{ card.ca_weight|floatformat:0 }}%"></span><span class="ex" style="width: {{ card.exam_weight|floatformat:0 }}%"></span>
+                            </div>
+                            <div class="ah-split-legend">
+                                <span><i class="dot ca"></i>CA {{ card.ca_weight|floatformat:0 }}%</span>
+                                <span><i class="dot ex"></i>Exam {{ card.exam_weight|floatformat:0 }}%</span>
+                            </div>
+                            <div class="ah-counts">
+                                <span><b>{{ card.ca_count }}</b> CA task{{ card.ca_count|pluralize }}</span>
+                                <span><b>{{ card.exam_count }}</b> exam paper{{ card.exam_count|pluralize }}</span>
+                            </div>
+                            {% if card.status == 'incomplete' %}
+                            <p class="ah-missing">
+                                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                Still needs
+                                {% if not card.ca_count %}a CA task{% endif %}{% if not card.ca_count and not card.exam_count %} and {% endif %}{% if not card.exam_count %}an exam paper{% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="ah-hint">No rules set for this term yet.</p>
+                        {% endif %}
+
+                        <div class="ah-cta">
+                            {% if card.setup %}
+                                <a href="{% url 'students_app:subject_term_setup' card.subject.pk %}?{{ period_query }}"
+                                   class="ah-btn {% if card.status == 'ready' %}ah-btn-primary{% else %}ah-btn-ghost{% endif %}">
+                                    {% if card.status == 'published' %}View setup
+                                    {% elif card.status == 'ready' %}Review &amp; publish
+                                    {% else %}Continue setup{% endif %}
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            {% else %}
+                                <form method="post" action="{% url 'students_app:create_term_setup' card.subject.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="year" value="{{ year }}">
+                                    <input type="hidden" name="term" value="{{ term }}">
+                                    <button type="submit" class="ah-btn ah-btn-primary">
+                                        <i class="fas fa-plus" aria-hidden="true"></i> Start setup
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endfor %}
+
+    <div class="ah-empty" id="ahNoMatch" hidden>
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <p>No subjects match your search or filter.</p>
+    </div>
+
+    {% else %}
+
+    <div class="ah-empty">
+        <i class="fas fa-chalkboard" aria-hidden="true"></i>
+        <h2>No subjects to configure</h2>
+        <p>
+            {% if full_access %}
+                Subjects need to be assigned to a class before they appear here.
+            {% else %}
+                You are not assigned to any subject yet. Ask the administrator to assign you as a subject teacher.
+            {% endif %}
+        </p>
+    </div>
+
+    {% endif %}
+
+</div>
+</div>
+
+
+<style>
+    .ah {
+        --ink: #16213e;
+        --ink-deep: #0e1730;
+        --brass: #b8912f;
+        --brass-light: #f3e6c4;
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --line: #e6e9f2;
+        --text: #1b2340;
+        --muted: #667085;
+
+        --off: #5f6877;   --off-bg: #eef0f4;
+        --warn: #9a6408;  --warn-bg: #fdf1d6;
+        --ok: #0b7a5b;    --ok-bg: #dff5ec;
+        --pub: #2a47c4;   --pub-bg: #e5eafd;
+
+        background: var(--bg);
+        color: var(--text);
+        padding: 2rem 0 4rem;
+        min-height: 100%;
+    }
+
+    .ah *, .ah *::before, .ah *::after { box-sizing: border-box; }
+    .ah [hidden] { display: none !important; }
+
+    .ah-wrap {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 1.25rem;
+    }
+
+    .ah h1, .ah h2, .ah h3, .ah p { margin: 0; }
+    .ah button { font-family: inherit; }
+    .ah :focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+    .ah .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ---------- Messages ---------- */
+    .ah-messages { display: grid; gap: .6rem; margin-bottom: 1.25rem; }
+    .ah-msg {
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        padding: .75rem 1rem; border-radius: .75rem; font-size: .92rem; font-weight: 500;
+        background: var(--pub-bg); color: var(--pub);
+    }
+    .ah-msg-success { background: var(--ok-bg); color: var(--ok); }
+    .ah-msg-error, .ah-msg-danger { background: #fde8e8; color: #b42318; }
+    .ah-msg-warning { background: var(--warn-bg); color: var(--warn); }
+    .ah-msg-close {
+        background: none; border: 0; font-size: 1.4rem; line-height: 1; color: inherit;
+        cursor: pointer; opacity: .6;
+    }
+    .ah-msg-close:hover { opacity: 1; }
+
+    /* ---------- Header ---------- */
+    .ah-header {
+        display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+        gap: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .ah-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-size: 2rem; font-weight: 700; color: var(--ink-deep); line-height: 1.2;
+    }
+    .ah-subtitle { margin-top: .35rem; color: var(--muted); max-width: 46ch; }
+
+    .ah-period { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+    .ah-year-form {
+        display: flex; align-items: center; gap: .5rem;
+        background: var(--card); border: 1px solid var(--line); border-radius: .75rem;
+        padding: 0 .5rem 0 .85rem; height: 2.6rem; color: var(--muted);
+    }
+    .ah-year-form select {
+        border: 0; background: transparent; font-weight: 600; color: var(--ink);
+        height: 100%; padding: 0 .35rem; cursor: pointer;
+    }
+    .ah-terms {
+        display: inline-flex; background: var(--card); border: 1px solid var(--line);
+        border-radius: .75rem; padding: .25rem; gap: .15rem;
+    }
+    .ah-term {
+        padding: .45rem .95rem; border-radius: .55rem; font-weight: 600; font-size: .9rem;
+        color: var(--muted); text-decoration: none; transition: background .2s, color .2s;
+    }
+    .ah-term:hover { color: var(--ink); text-decoration: none; background: var(--bg); }
+    .ah-term.is-active { background: var(--ink); color: #fff; }
+
+    /* ---------- Overview ---------- */
+    .ah-overview {
+        display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2rem;
+        background: var(--card); border: 1px solid var(--line); border-radius: 1.25rem;
+        padding: 1.5rem 1.75rem; margin-bottom: 1.5rem;
+        box-shadow: 0 8px 24px rgba(22, 33, 62, .05);
+    }
+    .ah-ring-wrap { display: flex; align-items: center; gap: 1.1rem; }
+    .ah-ring { width: 104px; height: 104px; flex: none; }
+    .ah-ring circle { fill: none; stroke-width: 10; }
+    .ah-ring-bg { stroke: var(--line); }
+    .ah-ring-fg { stroke: var(--brass); stroke-linecap: round; transition: stroke-dasharray .8s ease; }
+    .ah-ring-num { font-size: 26px; font-weight: 700; fill: var(--ink-deep); }
+    .ah-ring-caption { display: grid; gap: .2rem; }
+    .ah-ring-caption strong { color: var(--ink-deep); font-size: 1.05rem; }
+    .ah-ring-caption span { color: var(--muted); font-size: .9rem; }
+
+    .ah-stats {
+        margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    }
+    .ah-stat {
+        background: var(--bg); border-radius: .9rem; padding: .9rem 1.1rem;
+    }
+    .ah-stat dt { font-size: .8rem; font-weight: 600; color: var(--muted); }
+    .ah-stat dd {
+        margin: .2rem 0 0; font-size: 1.75rem; font-weight: 700; color: var(--ink-deep);
+        font-variant-numeric: tabular-nums;
+    }
+    .ah-stat dd.is-ok { color: var(--ok); }
+    .ah-stat dd.is-pub { color: var(--pub); }
+    .ah-stat dd.is-warn { color: var(--warn); }
+
+    /* ---------- Toolbar ---------- */
+    .ah-toolbar {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .85rem 1rem;
+        margin-bottom: 1.25rem;
+    }
+    .ah-search {
+        position: relative; flex: 1 1 260px; max-width: 360px;
+    }
+    .ah-search i {
+        position: absolute; left: .95rem; top: 50%; transform: translateY(-50%);
+        color: var(--muted); font-size: .85rem; pointer-events: none;
+    }
+    .ah-search input {
+        width: 100%; height: 2.6rem; padding: 0 .9rem 0 2.4rem;
+        border: 1px solid var(--line); border-radius: .75rem; background: var(--card);
+        color: var(--text); font-size: .93rem;
+    }
+    .ah-search input::placeholder { color: #98a1b3; }
+
+    .ah-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .ah-chip {
+        display: inline-flex; align-items: center; gap: .45rem;
+        padding: .4rem .8rem; border-radius: 50px; font-size: .85rem; font-weight: 600;
+        background: var(--card); border: 1px solid var(--line); color: var(--muted);
+        cursor: pointer; transition: all .2s ease;
+    }
+    .ah-chip:hover { color: var(--ink); border-color: #cfd5e4; }
+    .ah-chip.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .ah-chip.is-empty:not(.is-active) { opacity: .55; }
+    .ah-chip-n {
+        font-size: .75rem; padding: .05rem .45rem; border-radius: 50px;
+        background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums;
+    }
+    .ah-chip.is-active .ah-chip-n { background: rgba(255,255,255,.18); color: #fff; }
+
+    .ah-toggles { margin-left: auto; display: flex; align-items: center; gap: .4rem; color: var(--muted); }
+    .ah-link-btn {
+        background: none; border: 0; padding: .2rem .1rem; font-size: .88rem; font-weight: 600;
+        color: var(--ink); cursor: pointer;
+    }
+    .ah-link-btn:hover { color: var(--brass); text-decoration: underline; }
+
+    /* ---------- Class sections ---------- */
+    .ah-class {
+        background: var(--card); border: 1px solid var(--line); border-radius: 1.25rem;
+        margin-bottom: 1rem; box-shadow: 0 6px 20px rgba(22, 33, 62, .04);
+        overflow: hidden;
+    }
+    .ah-class-head {
+        width: 100%; display: flex; align-items: center; gap: 1.25rem;
+        padding: 1.1rem 1.4rem; background: var(--card); border: 0; text-align: left;
+        cursor: pointer; transition: background .2s;
+    }
+    .ah-class-head:hover { background: #fafbfe; }
+    .ah-class-title { display: grid; gap: .15rem; flex: 1; min-width: 0; }
+    .ah-class-name {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-size: 1.3rem; font-weight: 700; color: var(--ink-deep);
+    }
+    .ah-class-sub { font-size: .86rem; color: var(--muted); }
+
+    .ah-class-progress { display: flex; align-items: center; gap: .75rem; }
+    .ah-class-progress b { font-size: .9rem; color: var(--ink); min-width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .ah-bar { width: 120px; height: 8px; background: var(--line); border-radius: 50px; overflow: hidden; }
+    .ah-bar span { display: block; height: 100%; background: var(--brass); border-radius: 50px; transition: width .6s ease; }
+
+    .ah-chevron { color: var(--muted); transition: transform .3s ease; }
+    .ah-class.is-collapsed .ah-chevron { transform: rotate(-90deg); }
+
+    .ah-class-body {
+        display: grid; grid-template-rows: 1fr; transition: grid-template-rows .3s ease;
+        border-top: 1px solid var(--line);
+    }
+    .ah-class.is-collapsed .ah-class-body { grid-template-rows: 0fr; border-top-color: transparent; }
+    .ah-class-inner { overflow: hidden; min-height: 0; }
+    .ah-class.is-collapsed .ah-class-inner { visibility: hidden; transition: visibility 0s .3s; }
+
+    .ah-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem; padding: 1.25rem 1.4rem 1.5rem; background: var(--bg);
+    }
+
+    /* ---------- Subject cards ---------- */
+    .ah-card {
+        display: flex; flex-direction: column; gap: .85rem;
+        background: var(--card); border: 1px solid var(--line); border-radius: 1rem;
+        padding: 1.1rem 1.15rem; transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+    }
+    .ah-card:hover {
+        border-color: #d4daea; transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(22, 33, 62, .09);
+    }
+
+    .ah-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+    .ah-card-id { min-width: 0; display: grid; gap: .3rem; }
+    .ah-card-name {
+        font-size: 1.05rem; font-weight: 700; color: var(--ink-deep); line-height: 1.25;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ah-code {
+        justify-self: start; font-family: 'IBM Plex Mono', 'Courier New', monospace;
+        font-size: .72rem; font-weight: 600; color: var(--muted);
+        background: var(--bg); padding: .12rem .5rem; border-radius: .4rem;
+    }
+
+    .ah-pill {
+        flex: none; display: inline-flex; align-items: center; gap: .4rem;
+        font-size: .75rem; font-weight: 700; padding: .28rem .65rem; border-radius: 50px;
+        background: var(--off-bg); color: var(--off); white-space: nowrap;
+    }
+    .ah-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .st-incomplete .ah-pill { background: var(--warn-bg); color: var(--warn); }
+    .st-ready .ah-pill { background: var(--ok-bg); color: var(--ok); }
+    .st-published .ah-pill { background: var(--pub-bg); color: var(--pub); }
+
+    .ah-teacher { display: flex; align-items: center; gap: .6rem; font-size: .9rem; font-weight: 500; }
+    .ah-muted { color: var(--muted); font-weight: 400; }
+    .ah-avatar {
+        width: 28px; height: 28px; flex: none; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--brass-light); color: var(--ink-deep); font-size: .78rem; font-weight: 700;
+    }
+    .ah-avatar.is-empty { background: var(--off-bg); color: var(--off); font-size: .7rem; }
+
+    .ah-rules { display: grid; gap: .55rem; }
+    .ah-split { display: flex; height: 8px; border-radius: 50px; overflow: hidden; background: var(--line); }
+    .ah-split .ca { background: var(--brass); }
+    .ah-split .ex { background: var(--ink); }
+    .ah-split-legend { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 600; color: var(--ink); }
+    .ah-split-legend .dot {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .4rem;
+    }
+    .dot.ca { background: var(--brass); }
+    .dot.ex { background: var(--ink); }
+    .ah-counts { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); }
+    .ah-counts b { color: var(--ink-deep); }
+    .ah-missing { font-size: .82rem; font-weight: 600; color: var(--warn); }
+    .ah-missing i { margin-right: .3rem; }
+    .ah-hint { font-size: .86rem; color: var(--muted); }
+
+    .ah-cta { margin-top: auto; padding-top: .25rem; }
+
+    .ah-btn {
+        display: flex; align-items: center; justify-content: center; gap: .55rem; width: 100%;
+        height: 2.5rem; border-radius: .7rem; font-size: .9rem; font-weight: 600;
+        text-decoration: none; cursor: pointer; border: 1px solid transparent;
+        transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
+    }
+    .ah-btn i { font-size: .78rem; transition: transform .2s; }
+    .ah-btn:hover { text-decoration: none; }
+    .ah-btn:hover i.fa-arrow-right { transform: translateX(3px); }
+    .ah-btn-primary { background: var(--ink); color: #fff; }
+    .ah-btn-primary:hover { background: var(--ink-deep); color: #fff; box-shadow: 0 8px 18px rgba(14, 23, 48, .25); }
+    .ah-btn-ghost { background: var(--card); color: var(--ink); border-color: #cfd5e4; }
+    .ah-btn-ghost:hover { border-color: var(--ink); background: var(--bg); color: var(--ink-deep); }
+
+    /* ---------- Empty ---------- */
+    .ah-empty {
+        text-align: center; padding: 3.5rem 1.5rem; background: var(--card);
+        border: 1px dashed #cfd5e4; border-radius: 1.25rem; color: var(--muted);
+    }
+    .ah-empty i { font-size: 2rem; color: var(--brass); margin-bottom: 1rem; }
+    .ah-empty h2 { font-family: 'Fraunces', Georgia, serif; font-size: 1.4rem; color: var(--ink-deep); margin-bottom: .4rem; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 991px) {
+        .ah-overview { grid-template-columns: 1fr; gap: 1.25rem; }
+        .ah-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+        .ah { padding-top: 1.25rem; }
+        .ah-title { font-size: 1.6rem; }
+        .ah-toggles { margin-left: 0; }
+        .ah-bar { display: none; }
+        .ah-class-head { padding: 1rem; }
+        .ah-grid { padding: 1rem; grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ah *, .ah *::before, .ah *::after { transition: none !important; }
+        .ah-card:hover { transform: none; }
+    }
+</style>
+
+
+<script>
+(function () {
+    var root = document.querySelector('.ah');
+    if (!root) return;
+
+    /* Dismiss flash messages */
+    root.querySelectorAll('.ah-msg-close').forEach(function (btn) {
+        btn.addEventListener('click', function () { btn.parentElement.remove(); });
+    });
+
+    var sections = [].slice.call(root.querySelectorAll('.ah-class'));
+    var cards    = [].slice.call(root.querySelectorAll('.ah-card'));
+    var search   = root.querySelector('#ahSearch');
+    var chips    = [].slice.call(root.querySelectorAll('.ah-chip'));
+    var noMatch  = root.querySelector('#ahNoMatch');
+    var activeStatus = 'all';
+
+    if (!sections.length) return;
+
+    function setOpen(section, open) {
+        section.classList.toggle('is-collapsed', !open);
+        section.querySelector('.ah-class-head').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    /* Collapse / expand */
+    sections.forEach(function (section) {
+        section.querySelector('.ah-class-head').addEventListener('click', function () {
+            setOpen(section, section.classList.contains('is-collapsed'));
+        });
+    });
+    root.querySelector('#ahExpandAll').addEventListener('click', function () {
+        sections.forEach(function (s) { if (!s.hidden) setOpen(s, true); });
+    });
+    root.querySelector('#ahCollapseAll').addEventListener('click', function () {
+        sections.forEach(function (s) { setOpen(s, false); });
+    });
+
+    /* Status chip counts */
+    var counts = { all: cards.length };
+    cards.forEach(function (c) {
+        counts[c.dataset.status] = (counts[c.dataset.status] || 0) + 1;
+    });
+    chips.forEach(function (chip) {
+        var n = counts[chip.dataset.status] || 0;
+        chip.querySelector('.ah-chip-n').textContent = n;
+        if (chip.dataset.status !== 'all' && n === 0) chip.classList.add('is-empty');
+    });
+
+    /* Search + status filter */
+    function applyFilters() {
+        var q = (search.value || '').trim().toLowerCase();
+        var filtering = q !== '' || activeStatus !== 'all';
+        var totalVisible = 0;
+
+        sections.forEach(function (section) {
+            var visible = 0;
+            section.querySelectorAll('.ah-card').forEach(function (card) {
+                var matchStatus = activeStatus === 'all' || card.dataset.status === activeStatus;
+                var matchText = q === '' || card.dataset.search.indexOf(q) !== -1;
+                card.hidden = !(matchStatus && matchText);
+                if (!card.hidden) visible++;
+            });
+            section.hidden = visible === 0;
+            if (filtering && visible > 0) setOpen(section, true);
+            totalVisible += visible;
+        });
+
+        noMatch.hidden = totalVisible !== 0;
+    }
+
+    search.addEventListener('input', applyFilters);
+
+    chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            activeStatus = chip.dataset.status;
+            chips.forEach(function (c) {
+                var on = c === chip;
+                c.classList.toggle('is-active', on);
+                c.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            applyFilters();
+        });
+    });
+})();
+</script>
+{% endblock %}

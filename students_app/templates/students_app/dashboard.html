@@ -152,6 +152,9 @@
                         </span>
                         Configure Timetable
                     </a>
+                      <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:assessment_setup_home' %}">
+                                 <i class="fas fa-sliders-h mr-2"></i> Assessment Setup
+                      </a>
 
                     {% if timetable %}
                         <a class="dropdown-item tool-dropdown-item"
@@ -441,6 +444,10 @@
                         View Headteacher's List
                     </a>
 
+                      <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:assessment_setup_home' %}">
+                                 <i class="fas fa-sliders-h mr-2"></i> Assessment Setup
+                               </a>
+
                     <a class="dropdown-item tool-dropdown-item"
                        href="{% url 'timetable:setup_settings' %}">
                         <span class="tool-item-icon">
@@ -680,6 +687,9 @@
                         </span>
                         View Headteacher's List
                     </a>
+                      <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:assessment_setup_home' %}">
+                                 <i class="fas fa-sliders-h mr-2"></i> Assessment Setup
+                      </a>
 
                     {% if timetable %}
                         <a class="dropdown-item tool-dropdown-item"
@@ -1331,6 +1341,10 @@
 
                 <div class="dropdown-menu dropdown-menu-right tool-dropdown-menu shadow-sm"
                      aria-labelledby="teacherToolsDropdown">
+
+                      <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:assessment_setup_home' %}">
+                                 <i class="fas fa-sliders-h mr-2"></i> Assessment Setup
+                      </a>
 
                     {% if timetable %}
 

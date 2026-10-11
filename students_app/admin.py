@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Students, AttendanceWarning
+from .models import Students, AttendanceWarning, AssessmentGrade
 from .models import Subject
 from .models import Grade
 from .models import SchoolProfile
@@ -16,7 +16,10 @@ from .models import Attendance
 from .models import AttendanceWarning
 from .models import GradeBoundary
 from .models import GradingSystem
+from .models import Assessment
+from .models import AssessmentGrade
 from .models import CalendarEvent
+from .models import SubjectTermSetup
 from .models import Footer, FooterDocument, CarouselEvent
 
 
@@ -39,6 +42,9 @@ admin.site.register(GradeBoundary)
 admin.site.register(GradingSystem)
 admin.site.register(CalendarEvent)
 admin.site.register(CarouselEvent)
+admin.site.register(SubjectTermSetup)
+admin.site.register(Assessment)
+admin.site.register(AssessmentGrade)
 
 # users/admin.py
 

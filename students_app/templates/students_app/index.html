@@ -4,7 +4,7 @@
 <div class="container-fluid p-0">
 
     <!-- ========================================================= -->
-    <!-- HERO SECTION - UPDATED DESIGN -->
+    <!-- HERO SECTION -->
     <!-- ========================================================= -->
 
     <div class="hero-section d-flex align-items-center"
@@ -12,7 +12,6 @@
 
         <div class="container">
 
-            <!-- CENTERED HERO CONTENT -->
             <div class="row justify-content-center">
                 <div class="col-lg-9 col-md-11 text-center">
 
@@ -39,20 +38,16 @@
 
                                 <a href="{% url 'students_app:dashboard' %}"
                                    class="btn btn-hero btn-lg px-5">
-
                                     <i class="fas fa-chart-line mr-2"></i>
                                     Go to Dashboard
-
                                 </a>
 
                             {% else %}
 
                                 <a href="{% url 'users:login' %}"
                                    class="btn btn-hero btn-lg px-5">
-
                                     <i class="fas fa-sign-in-alt mr-2"></i>
                                     Login to Portal
-
                                 </a>
 
                             {% endif %}
@@ -70,7 +65,7 @@
 
 
     <!-- ========================================================= -->
-    <!-- CAMPUS HIGHLIGHTS - UPDATED INFINITE MARQUEE -->
+    <!-- CAMPUS HIGHLIGHTS - INFINITE MARQUEE -->
     <!-- ========================================================= -->
 
     {% if carousel_events %}
@@ -94,9 +89,6 @@
 
         </div>
 
-
-        <!-- INFINITE SCROLLING GALLERY -->
-
         <div class="marquee-container">
 
             <div class="marquee-content">
@@ -108,21 +100,17 @@
                      data-target="#galleryModal"
                      data-slide-to="{{ forloop.counter0 }}">
 
-                    <img src="{{ event.image.url }}"
-                         alt="Campus Event">
+                    <img src="{{ event.image.url }}" alt="Campus Event">
 
                     <div class="item-overlay">
-
                         <span class="small">
                             {{ event.title|truncatechars:20 }}
                         </span>
-
                     </div>
 
                 </div>
 
                 {% endfor %}
-
 
                 <!-- DUPLICATE SET FOR SEAMLESS INFINITE LOOP -->
 
@@ -133,15 +121,12 @@
                      data-target="#galleryModal"
                      data-slide-to="{{ forloop.counter0 }}">
 
-                    <img src="{{ event.image.url }}"
-                         alt="Campus Event">
+                    <img src="{{ event.image.url }}" alt="Campus Event">
 
                     <div class="item-overlay">
-
                         <span class="small">
                             {{ event.title|truncatechars:20 }}
                         </span>
-
                     </div>
 
                 </div>
@@ -159,7 +144,6 @@
 
     <!-- ========================================================= -->
     <!-- FEATURE STRIP -->
-    <!-- KEEPING YOUR ORIGINAL EXPERT STAFF / MODERN PLATFORM -->
     <!-- ========================================================= -->
 
     <div class="container feature-strip">
@@ -167,52 +151,29 @@
         <div class="row justify-content-center">
 
             <!-- EXPERT STAFF -->
-
             <div class="col-md-4 mb-4">
-
                 <div class="feature-card h-100">
-
                     <div class="feature-icon">
-
                         <i class="fas fa-chalkboard-teacher"></i>
-
                     </div>
-
-                    <h5 class="feature-title">
-                        Expert Staff
-                    </h5>
-
+                    <h5 class="feature-title">Expert Staff</h5>
                     <p class="feature-text">
                         Dedicated educators committed to nurturing the next generation of leaders.
                     </p>
-
                 </div>
-
             </div>
 
-
             <!-- MODERN PLATFORM -->
-
             <div class="col-md-4 mb-4">
-
                 <div class="feature-card h-100">
-
                     <div class="feature-icon">
-
                         <i class="fas fa-laptop-code"></i>
-
                     </div>
-
-                    <h5 class="feature-title">
-                        Modern Platform
-                    </h5>
-
+                    <h5 class="feature-title">Modern Platform</h5>
                     <p class="feature-text">
                         Real-time grades, instant report cards, and seamless digital administration.
                     </p>
-
                 </div>
-
             </div>
 
         </div>
@@ -222,7 +183,6 @@
 
     <!-- ========================================================= -->
     <!-- ANNOUNCEMENTS SECTION -->
-    <!-- EVERYTHING BELOW HERE REMAINS FROM YOUR ORIGINAL TEMPLATE -->
     <!-- ========================================================= -->
 
     {% if announcements %}
@@ -233,12 +193,9 @@
 
             <h6 class="text-uppercase mb-4 font-weight-bold"
                 style="color: var(--brass-light); letter-spacing: 2px;">
-
                 <i class="fas fa-bullhorn mr-2"></i>
                 Official Announcements
-
             </h6>
-
 
             <div id="announcementCarousel"
                  class="carousel slide"
@@ -254,33 +211,21 @@
                             {{ announcement.title }}
                         </h3>
 
-
-                        <div class="small mb-3"
-                             style="color: var(--brass-light);">
-
+                        <div class="small mb-3" style="color: var(--brass-light);">
                             <i class="far fa-clock mr-1"></i>
-
                             {{ announcement.date_posted|date:"F j, Y" }}
-
                         </div>
 
-
                         {% if announcement.category %}
-
                             <div class="announcement-category text-uppercase">
                                 {{ announcement.category }}
                             </div>
-
                         {% endif %}
-
 
                         <p class="lead font-italic mx-auto"
                            style="max-width: 800px; color: rgba(247,244,237,0.9);">
-
                             "{{ announcement.content|truncatewords:30 }}"
-
                         </p>
-
 
                         <a href="{% url 'students_app:announcement_detail' announcement.pk %}"
                            class="btn mt-3"
@@ -289,9 +234,7 @@
                                   color: var(--brass-light);
                                   border-radius: 30px;
                                   padding: 8px 24px;">
-
                             Read Full Announcement
-
                         </a>
 
                     </div>
@@ -300,34 +243,20 @@
 
                 </div>
 
-
                 <a class="carousel-control-prev"
                    href="#announcementCarousel"
                    role="button"
                    data-slide="prev">
-
-                    <span class="carousel-control-prev-icon"
-                          aria-hidden="true"></span>
-
-                    <span class="sr-only">
-                        Previous
-                    </span>
-
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
                 </a>
-
 
                 <a class="carousel-control-next"
                    href="#announcementCarousel"
                    role="button"
                    data-slide="next">
-
-                    <span class="carousel-control-next-icon"
-                          aria-hidden="true"></span>
-
-                    <span class="sr-only">
-                        Next
-                    </span>
-
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
                 </a>
 
             </div>
@@ -339,108 +268,152 @@
     {% endif %}
 
 
-
     <!-- ========================================================= -->
-    <!-- RECENT NEWS SECTION -->
+    <!-- CAMPUS NEWS SECTION (NEW LAYOUT) -->
     <!-- ========================================================= -->
 
-    {% if news_articles %}
+    {% if featured_news %}
 
-    <div class="container py-5 mt-4">
+    <section class="news-section">
 
-        <div class="text-center mb-5">
+        <div class="container">
 
-            <h2 class="section-heading">
-                Campus News
-            </h2>
+            <div class="text-center mb-5">
+                <h2 class="section-heading">Campus News</h2>
+                <div class="heading-underline mx-auto"></div>
+                <p class="news-lead mx-auto">
+                    The latest stories, results and announcements from around the school.
+                </p>
+            </div>
 
-            <div class="heading-underline mx-auto"></div>
+            <div class="row">
 
-        </div>
+                <!-- ================= FEATURED STORY ================= -->
+                <div class="{% if secondary_news %}col-lg-7{% else %}col-lg-8 mx-auto{% endif %} mb-4 news-reveal">
 
+                    <article class="news-featured">
 
-        <div class="row">
+                        <a href="{% url 'students_app:news_detail' featured_news.pk %}"
+                           class="news-featured-media"
+                           tabindex="-1"
+                           aria-hidden="true">
 
-            {% for article in news_articles %}
+                            {% if featured_news.featured_image %}
+                                <img src="{{ featured_news.featured_image.url }}"
+                                     alt=""
+                                     loading="lazy">
+                            {% else %}
+                                <div class="news-placeholder">
+                                    <i class="fas fa-newspaper fa-3x"></i>
+                                </div>
+                            {% endif %}
 
-            <div class="col-md-6 col-lg-3 mb-4">
-
-                <div class="card h-100 feature-card p-0 border-0 shadow-sm text-left">
-
-                    {% if article.featured_image %}
-
-                        <img src="{{ article.featured_image.url }}"
-                             class="card-img-top news-img"
-                             alt="{{ article.headline }}">
-
-                    {% else %}
-
-                        <div class="news-img d-flex align-items-center justify-content-center"
-                             style="background: var(--ink-deep);
-                                    color: var(--brass-light);">
-
-                            <i class="fas fa-newspaper fa-3x"></i>
-
-                        </div>
-
-                    {% endif %}
-
-
-                    <div class="card-body d-flex flex-column">
-
-                        <div class="small text-muted mb-2">
-
-                            {{ article.publish_date|date:"M d, Y" }}
-
-                        </div>
-
-
-                        <h5 class="feature-title fs-6 mb-3"
-                            style="line-height: 1.4;">
-
-                            <a href="{% url 'students_app:news_detail' article.pk %}"
-                               class="text-decoration-none"
-                               style="color: var(--ink);">
-
-                                {{ article.headline }}
-
-                            </a>
-
-                        </h5>
-
-
-                        <p class="feature-text small flex-grow-1">
-
-                            {{ article.summary|truncatewords:15 }}
-
-                        </p>
-
-
-                        <a href="{% url 'students_app:news_detail' article.pk %}"
-                           class="btn btn-sm mt-3 w-100"
-                           style="background-color: var(--brass-light);
-                                  color: var(--ink-deep);
-                                  font-weight: 600;">
-
-                            Read More
-                            <i class="fas fa-arrow-right ml-1"></i>
+                            <span class="news-badge">
+                                <i class="fas fa-star mr-1"></i> Featured
+                            </span>
 
                         </a>
 
-                    </div>
+                        <div class="news-featured-body">
+
+                            <div class="news-date">
+                                <i class="far fa-calendar-alt mr-1"></i>
+                                {{ featured_news.publish_date|date:"M d, Y" }}
+                            </div>
+
+                            <h3 class="news-featured-title">
+                                <a href="{% url 'students_app:news_detail' featured_news.pk %}">
+                                    {{ featured_news.headline }}
+                                </a>
+                            </h3>
+
+                            <p class="news-summary">
+                                {{ featured_news.summary|truncatewords:25 }}
+                            </p>
+
+                            <a href="{% url 'students_app:news_detail' featured_news.pk %}"
+                               class="btn-news">
+                                Read More
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+
+                        </div>
+
+                    </article>
 
                 </div>
 
+
+                <!-- ================= SECONDARY STORIES ================= -->
+                {% if secondary_news %}
+
+                <div class="col-lg-5 mb-4 d-flex flex-column news-reveal news-reveal-delay">
+
+                    {% for article in secondary_news %}
+
+                    <article class="news-side">
+
+                        <a href="{% url 'students_app:news_detail' article.pk %}"
+                           class="news-side-media"
+                           tabindex="-1"
+                           aria-hidden="true">
+
+                            {% if article.featured_image %}
+                                <img src="{{ article.featured_image.url }}"
+                                     alt=""
+                                     loading="lazy">
+                            {% else %}
+                                <div class="news-placeholder">
+                                    <i class="fas fa-newspaper fa-2x"></i>
+                                </div>
+                            {% endif %}
+
+                        </a>
+
+                        <div class="news-side-body">
+
+                            <div class="news-date">
+                                {{ article.publish_date|date:"M d, Y" }}
+                            </div>
+
+                            <h4 class="news-side-title">
+                                <a href="{% url 'students_app:news_detail' article.pk %}">
+                                    {{ article.headline }}
+                                </a>
+                            </h4>
+
+                            <p class="news-summary">
+                                {{ article.summary|truncatewords:12 }}
+                            </p>
+
+                            <a href="{% url 'students_app:news_detail' article.pk %}"
+                               class="btn-news btn-news-sm">
+                                Read More
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
             </div>
 
-            {% endfor %}
+            {# OPTIONAL: uncomment once you have a news list page, and use your real URL name #}
+            {# <div class="text-center mt-2"> #}
+            {#     <a href="{% url 'students_app:news_list' %}" class="btn-news-outline">View all news</a> #}
+            {# </div> #}
 
         </div>
 
-    </div>
+    </section>
 
     {% endif %}
-
 
 
     <!-- ========================================================= -->
@@ -449,21 +422,14 @@
 
     {% if leaders %}
 
-    <div class="py-5"
-         style="background-color: #fcfbf8;">
+    <div class="py-5" style="background-color: #fcfbf8;">
 
         <div class="container">
 
             <div class="text-center mb-5">
-
-                <h2 class="section-heading">
-                    School Leadership
-                </h2>
-
+                <h2 class="section-heading">School Leadership</h2>
                 <div class="heading-underline mx-auto"></div>
-
             </div>
-
 
             <div class="row justify-content-center">
 
@@ -474,13 +440,9 @@
                     <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden"
                          style="border-radius: 0.625rem;">
 
-
                         <div class="leader-card-header">
-
                             {{ leader.role }}
-
                         </div>
-
 
                         {% if leader.photo %}
 
@@ -491,25 +453,16 @@
                         {% else %}
 
                             <div class="leader-img d-flex align-items-center justify-content-center"
-                                 style="background: #eee;
-                                        color: #aaa;">
-
+                                 style="background: #eee; color: #aaa;">
                                 <i class="fas fa-user-tie fa-4x"></i>
-
                             </div>
 
                         {% endif %}
 
-
                         <div class="card-body text-center py-3">
-
-                            <h5 class="feature-title mb-0"
-                                style="font-size: 1.1rem;">
-
+                            <h5 class="feature-title mb-0" style="font-size: 1.1rem;">
                                 {{ leader.name }}
-
                             </h5>
-
                         </div>
 
                     </div>
@@ -529,7 +482,6 @@
 </div>
 
 
-
 <!-- ========================================================= -->
 <!-- GALLERY MODAL -->
 <!-- ========================================================= -->
@@ -542,11 +494,9 @@
      role="dialog"
      aria-hidden="true">
 
-    <div class="modal-dialog modal-dialog-centered modal-xl"
-         role="document">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
 
         <div class="modal-content bg-transparent border-0">
-
 
             <div class="modal-header border-0 pb-0 justify-content-end">
 
@@ -557,22 +507,16 @@
                         style="opacity: 1;
                                font-size: 2.5rem;
                                text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-
-                    <span aria-hidden="true">
-                        &times;
-                    </span>
-
+                    <span aria-hidden="true">&times;</span>
                 </button>
 
             </div>
-
 
             <div class="modal-body p-0">
 
                 <div id="largeCarousel"
                      class="carousel slide shadow-lg rounded-lg overflow-hidden"
                      data-ride="carousel">
-
 
                     <div class="carousel-inner bg-dark rounded-lg">
 
@@ -588,23 +532,17 @@
                                         object-fit: contain;
                                         background-color: #000;">
 
-
                             {% if event.title or event.description %}
 
                             <div class="carousel-caption d-block rounded shadow-lg modal-caption">
 
                                 <h3 class="font-weight-bold text-white mb-2">
-
                                     {{ event.title }}
-
                                 </h3>
 
                                 <p class="text-light mb-0"
-                                   style="font-size: 1.15rem;
-                                          font-weight: 300;">
-
+                                   style="font-size: 1.15rem; font-weight: 300;">
                                     {{ event.description }}
-
                                 </p>
 
                             </div>
@@ -617,38 +555,24 @@
 
                     </div>
 
-
                     <a class="carousel-control-prev"
                        href="#largeCarousel"
                        role="button"
                        data-slide="prev">
-
                         <span class="carousel-control-prev-icon"
                               aria-hidden="true"
-                              style="width: 3.5rem;
-                                     height: 3.5rem;"></span>
-
-                        <span class="sr-only">
-                            Previous
-                        </span>
-
+                              style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Previous</span>
                     </a>
-
 
                     <a class="carousel-control-next"
                        href="#largeCarousel"
                        role="button"
                        data-slide="next">
-
                         <span class="carousel-control-next-icon"
                               aria-hidden="true"
-                              style="width: 3.5rem;
-                                     height: 3.5rem;"></span>
-
-                        <span class="sr-only">
-                            Next
-                        </span>
-
+                              style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Next</span>
                     </a>
 
                 </div>
@@ -664,7 +588,6 @@
 {% endif %}
 
 
-
 <!-- ========================================================= -->
 <!-- STYLES -->
 <!-- ========================================================= -->
@@ -672,21 +595,16 @@
 <style>
 
     :root {
-
         --ink: #16213e;
         --ink-deep: #0e1730;
         --brass: #b8912f;
         --brass-light: #f3e6c4;
-
     }
-
 
     body,
     html {
-
         margin: 0;
         padding: 0;
-
     }
 
 
@@ -695,348 +613,167 @@
     /* ========================================================= */
 
     .hero-section {
-
         background-size: cover;
         background-position: center;
         min-height: 85vh;
         position: relative;
-
     }
-
 
     .hero-section::before {
-
         content: '';
-
         position: absolute;
-
         inset: 0;
-
         background: rgba(255,255,255,0.12);
-
         z-index: 0;
-
     }
-
 
     .hero-section .container {
-
         position: relative;
         z-index: 2;
-
     }
-
-
-    /* ========================================================= */
-    /* GLASS HERO CARD */
-    /* ========================================================= */
 
     .hero-glass-card {
-
         background: rgba(255, 255, 255, 0.03);
-
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
-
         padding: 4rem 2.5rem;
-
         border-radius: 1.5rem;
-
         border: 1px solid rgba(255, 255, 255, 0.15);
-
-        box-shadow:
-            0 25px 50px -12px rgba(0, 0, 0, 0.15);
-
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
     }
-
-
-    /* ========================================================= */
-    /* HERO EYEBROW */
-    /* ========================================================= */
 
     .hero-eyebrow {
-
-        font-family:
-            'IBM Plex Mono',
-            'Courier New',
-            monospace;
-
+        font-family: 'IBM Plex Mono', 'Courier New', monospace;
         font-size: 0.85rem;
-
         font-weight: 700;
-
         letter-spacing: 0.2em;
-
         text-transform: uppercase;
-
         color: var(--ink-deep);
-
         margin-bottom: 1rem;
-
     }
-
-
-    /* ========================================================= */
-    /* HERO TITLE */
-    /* ========================================================= */
 
     .hero-title {
-
-        font-family:
-            'Fraunces',
-            'Playfair Display',
-            Georgia,
-            serif;
-
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
         font-weight: 700;
-
         font-size: 3.5rem;
-
         color: var(--ink-deep);
-
         line-height: 1.2;
-
-        text-shadow:
-            0 2px 4px rgba(255,255,255,0.7);
-
+        text-shadow: 0 2px 4px rgba(255,255,255,0.7);
     }
-
-
-    /* ========================================================= */
-    /* HERO SUBTITLE */
-    /* ========================================================= */
 
     .hero-subtitle {
-
         font-size: 1.25rem;
-
         color: #1a252f;
-
         font-weight: 600;
-
-        text-shadow:
-            0 1px 3px rgba(255,255,255,0.6);
-
+        text-shadow: 0 1px 3px rgba(255,255,255,0.6);
     }
-
-
-    /* ========================================================= */
-    /* HERO BUTTON */
-    /* ========================================================= */
 
     .btn-hero {
-
         background: var(--ink-deep);
-
         color: #fff;
-
         border-radius: 50px;
-
         font-weight: 600;
-
         padding: 12px 30px;
-
         border: 2px solid var(--ink-deep);
-
         transition: all 0.3s ease;
-
     }
 
-
     .btn-hero:hover {
-
         background: #ffffff;
-
         color: var(--ink-deep);
-
         transform: translateY(-2px);
-
-        box-shadow:
-            0 10px 25px rgba(0,0,0,0.15);
-
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
 
 
     /* ========================================================= */
-    /* CAMPUS HIGHLIGHTS */
+    /* CAMPUS HIGHLIGHTS + MARQUEE */
     /* ========================================================= */
 
     .campus-highlights-wrapper {
-
         padding: 40px 0;
-
         background: #fff;
-
         overflow: hidden;
-
     }
-
 
     .highlights-label {
-
         font-weight: 700;
-
         letter-spacing: 2px;
-
         color: var(--brass);
-
     }
-
-
-    /* ========================================================= */
-    /* MARQUEE */
-    /* ========================================================= */
 
     .marquee-container {
-
         display: flex;
-
         overflow: hidden;
-
         user-select: none;
-
-        mask-image:
-            linear-gradient(
-                to right,
-                hsl(0 0% 0% / 0),
-                hsl(0 0% 0% / 1) 10%,
-                hsl(0 0% 0% / 1) 90%,
-                hsl(0 0% 0% / 0)
-            );
-
-        -webkit-mask-image:
-            linear-gradient(
-                to right,
-                transparent,
-                black 10%,
-                black 90%,
-                transparent
-            );
-
+        mask-image: linear-gradient(
+            to right,
+            hsl(0 0% 0% / 0),
+            hsl(0 0% 0% / 1) 10%,
+            hsl(0 0% 0% / 1) 90%,
+            hsl(0 0% 0% / 0)
+        );
+        -webkit-mask-image: linear-gradient(
+            to right,
+            transparent,
+            black 10%,
+            black 90%,
+            transparent
+        );
     }
-
 
     .marquee-content {
-
         display: flex;
-
         flex-shrink: 0;
-
         gap: 20px;
-
-        animation:
-            scroll 40s linear infinite;
-
+        animation: scroll 40s linear infinite;
     }
-
 
     .marquee-content:hover {
-
         animation-play-state: paused;
-
     }
-
 
     @keyframes scroll {
-
-        from {
-
-            transform: translateX(0);
-
-        }
-
-        to {
-
-            transform:
-                translateX(calc(-50% - 10px));
-
-        }
-
+        from { transform: translateX(0); }
+        to   { transform: translateX(calc(-50% - 10px)); }
     }
-
-
-    /* ========================================================= */
-    /* MARQUEE IMAGE CARDS */
-    /* ========================================================= */
 
     .marquee-item {
-
         width: 300px;
-
         height: 200px;
-
         flex-shrink: 0;
-
         position: relative;
-
         border-radius: 12px;
-
         overflow: hidden;
-
         cursor: pointer;
-
-        transition:
-            transform 0.3s ease;
-
+        transition: transform 0.3s ease;
         border: 1px solid #eee;
-
     }
-
 
     .marquee-item:hover {
-
         transform: scale(1.05);
-
         z-index: 5;
-
     }
-
 
     .marquee-item img {
-
         width: 100%;
-
         height: 100%;
-
         object-fit: cover;
-
-        transition:
-            transform 0.5s ease;
-
+        transition: transform 0.5s ease;
     }
-
 
     .marquee-item:hover img {
-
         transform: scale(1.08);
-
     }
 
-
-    /* ========================================================= */
-    /* IMAGE OVERLAY */
-    /* ========================================================= */
-
     .item-overlay {
-
         position: absolute;
-
         bottom: 0;
-
         left: 0;
-
         right: 0;
-
-        background:
-            linear-gradient(
-                transparent,
-                rgba(0,0,0,0.7)
-            );
-
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
         padding: 10px;
-
         color: white;
-
     }
 
 
@@ -1045,148 +782,69 @@
     /* ========================================================= */
 
     .feature-strip {
-
         margin-top: -20px;
-
         position: relative;
-
         z-index: 10;
-
     }
-
-
-    /* ========================================================= */
-    /* FEATURE CARD */
-    /* ========================================================= */
 
     .feature-card {
-
         background: #ffffff;
-
         border: 1px solid #eef0f2;
-
         border-radius: 1rem;
-
         padding: 2.5rem 1.5rem;
-
-        box-shadow:
-            0 10px 30px rgba(0,0,0,0.05);
-
-        transition:
-            all 0.3s ease;
-
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
         position: relative;
-
         overflow: hidden;
-
     }
 
-
     .feature-card::before {
-
         content: '';
-
         position: absolute;
-
         top: 0;
         left: 0;
         right: 0;
-
         height: 3px;
-
         background: var(--brass);
-
         transform: scaleX(0);
-
         transform-origin: left;
-
-        transition:
-            transform 0.3s ease;
-
+        transition: transform 0.3s ease;
     }
-
 
     .feature-card:hover {
-
         transform: translateY(-10px);
-
-        box-shadow:
-            0 20px 40px rgba(0,0,0,0.1);
-
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
-
 
     .feature-card:hover::before {
-
         transform: scaleX(1);
-
     }
-
-
-    /* ========================================================= */
-    /* FEATURE ICON */
-    /* ========================================================= */
 
     .feature-icon {
-
         background: var(--brass-light);
-
         color: var(--brass);
-
         width: 60px;
-
         height: 60px;
-
         border-radius: 15px;
-
         display: flex;
-
         align-items: center;
-
         justify-content: center;
-
         margin: 0 auto 1.5rem;
-
         font-size: 1.5rem;
-
     }
-
-
-    /* ========================================================= */
-    /* FEATURE TITLE */
-    /* ========================================================= */
 
     .feature-title {
-
-        font-family:
-            'Fraunces',
-            'Playfair Display',
-            Georgia,
-            serif;
-
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
         font-weight: 600;
-
         color: var(--ink);
-
         margin-bottom: 0.5rem;
-
     }
 
-
-    /* ========================================================= */
-    /* FEATURE TEXT */
-    /* ========================================================= */
-
     .feature-text {
-
         color: #5b6472;
-
         font-size: 0.9rem;
-
         line-height: 1.6;
-
         margin-bottom: 0;
-
     }
 
 
@@ -1195,44 +853,21 @@
     /* ========================================================= */
 
     .announcement-section {
-
-        background:
-            linear-gradient(
-                135deg,
-                var(--ink) 0%,
-                var(--ink-deep) 100%
-            );
-
+        background: linear-gradient(135deg, var(--ink) 0%, var(--ink-deep) 100%);
         color: white;
-
         padding: 60px 0;
-
-        box-shadow:
-            inset 0 5px 15px rgba(0,0,0,0.2);
-
+        box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
     }
 
-
     .announcement-category {
-
-        background-color:
-            rgba(184, 145, 47, 0.2);
-
-        border:
-            1px solid var(--brass);
-
+        background-color: rgba(184, 145, 47, 0.2);
+        border: 1px solid var(--brass);
         color: var(--brass-light);
-
         padding: 4px 12px;
-
         font-size: 0.75rem;
-
         display: inline-block;
-
         margin-bottom: 15px;
-
         border-radius: 20px;
-
     }
 
 
@@ -1241,50 +876,294 @@
     /* ========================================================= */
 
     .section-heading {
-
-        font-family:
-            'Fraunces',
-            'Playfair Display',
-            Georgia,
-            serif;
-
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
         font-weight: 600;
-
         color: var(--ink);
-
         font-size: 2.5rem;
-
     }
-
 
     .heading-underline {
-
         height: 3px;
-
         width: 60px;
-
         background-color: var(--brass);
-
         margin-top: 15px;
-
     }
 
 
     /* ========================================================= */
-    /* NEWS */
+    /* CAMPUS NEWS (NEW LAYOUT) */
     /* ========================================================= */
 
-    .news-img {
+    .news-section {
+        padding: 4.5rem 0 3.5rem;
+        background: linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%);
+    }
 
-        height: 220px;
+    .news-lead {
+        max-width: 520px;
+        margin-top: 1.1rem;
+        color: #5b6472;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
 
-        object-fit: cover;
+    .news-date {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
 
+    .news-summary {
+        color: #5b6472;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .news-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--ink) 0%, var(--ink-deep) 100%);
+        color: var(--brass-light);
+    }
+
+    .btn-news {
+        display: inline-flex;
+        align-items: center;
+        background: var(--brass-light);
+        color: var(--ink-deep);
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 0.6rem 1.5rem;
+        border-radius: 0.6rem;
+        text-decoration: none;
+        transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .btn-news i {
+        transition: transform 0.25s ease;
+    }
+
+    .btn-news:hover,
+    .btn-news:focus {
+        background: var(--brass);
+        color: #fff;
+        text-decoration: none;
+        box-shadow: 0 8px 20px rgba(184, 145, 47, 0.35);
+    }
+
+    .btn-news:hover i,
+    .btn-news:focus i {
+        transform: translateX(4px);
+    }
+
+    .btn-news:focus-visible,
+    .news-featured-title a:focus-visible,
+    .news-side-title a:focus-visible {
+        outline: 3px solid var(--brass);
+        outline-offset: 3px;
+    }
+
+    .btn-news-sm {
+        padding: 0.45rem 1.2rem;
+        font-size: 0.88rem;
+    }
+
+    .btn-news-outline {
+        display: inline-block;
+        border: 2px solid var(--ink);
+        color: var(--ink);
+        font-weight: 600;
+        padding: 0.65rem 2rem;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .btn-news-outline:hover {
+        background: var(--ink);
+        color: #fff;
+        text-decoration: none;
+    }
+
+    /* ---------- Featured card ---------- */
+
+    .news-featured {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: #fff;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(22, 33, 62, 0.08);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .news-featured:hover {
+        box-shadow: 0 18px 40px rgba(22, 33, 62, 0.14);
+    }
+
+    .news-featured-media {
+        position: relative;
+        display: block;
+        flex: 1 1 auto;
+        min-height: 280px;
+        overflow: hidden;
+    }
+
+    .news-featured-media img {
+        position: absolute;
+        inset: 0;
         width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
 
-        border-radius:
-            0.625rem 0.625rem 0 0;
+    .news-featured:hover .news-featured-media img {
+        transform: scale(1.05);
+    }
 
+    .news-badge {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 2;
+        background: var(--brass-light);
+        color: var(--ink-deep);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+
+    .news-featured-body {
+        padding: 1.5rem 1.75rem 1.75rem;
+    }
+
+    .news-featured-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-weight: 700;
+        font-size: 1.85rem;
+        line-height: 1.25;
+        margin-bottom: 0.75rem;
+    }
+
+    .news-featured-title a,
+    .news-side-title a {
+        color: var(--ink-deep);
+        text-decoration: none;
+        background-image: linear-gradient(var(--brass), var(--brass));
+        background-repeat: no-repeat;
+        background-position: 0 100%;
+        background-size: 0 2px;
+        transition: background-size 0.3s ease;
+    }
+
+    .news-featured-title a:hover,
+    .news-side-title a:hover {
+        text-decoration: none;
+        background-size: 100% 2px;
+    }
+
+    /* ---------- Secondary cards ---------- */
+
+    .news-side {
+        display: flex;
+        flex: 1 1 0;
+        gap: 1.25rem;
+        padding: 1rem;
+        background: #fff;
+        border-radius: 1.25rem;
+        box-shadow: 0 10px 30px rgba(22, 33, 62, 0.08);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .news-side + .news-side {
+        margin-top: 1.25rem;
+    }
+
+    .news-side:hover {
+        box-shadow: 0 18px 40px rgba(22, 33, 62, 0.14);
+    }
+
+    .news-side-media {
+        position: relative;
+        display: block;
+        flex: 0 0 38%;
+        min-height: 150px;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .news-side-media img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
+
+    .news-side:hover .news-side-media img {
+        transform: scale(1.07);
+    }
+
+    .news-side-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+        padding: 0.25rem 0.25rem 0.25rem 0;
+    }
+
+    .news-side-title {
+        font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+        font-weight: 700;
+        font-size: 1.2rem;
+        line-height: 1.3;
+        margin-bottom: 0.5rem;
+    }
+
+    .news-side .news-summary {
+        font-size: 0.85rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .news-side .btn-news {
+        align-self: flex-start;
+    }
+
+    /* ---------- One-time entrance (only when JS is running) ---------- */
+
+    .news-reveal {
+        transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .news-reveal.news-hidden {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    .news-reveal-delay {
+        transition-delay: 0.15s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .news-reveal,
+        .news-featured-media img,
+        .news-side-media img {
+            transition: none;
+        }
+        .news-reveal.news-hidden {
+            opacity: 1;
+            transform: none;
+        }
     }
 
 
@@ -1293,52 +1172,27 @@
     /* ========================================================= */
 
     .leader-card-header {
-
         background-color: var(--brass);
-
         color: var(--ink-deep);
-
-        font-family:
-            'IBM Plex Mono',
-            'Courier New',
-            monospace;
-
+        font-family: 'IBM Plex Mono', 'Courier New', monospace;
         font-weight: 700;
-
         min-height: 60px;
-
         display: flex;
-
         align-items: center;
-
         justify-content: center;
-
         text-align: center;
-
         padding: 10px;
-
         font-size: 0.85rem;
-
         text-transform: uppercase;
-
         letter-spacing: 0.05em;
-
     }
 
-
     .leader-img {
-
         height: 300px;
-
         object-fit: cover;
-
         object-position: top;
-
         width: 100%;
-
-        border-bottom:
-            3px solid var(--brass-light);
-
+        border-bottom: 3px solid var(--brass-light);
     }
 
 
@@ -1347,22 +1201,12 @@
     /* ========================================================= */
 
     .modal-caption {
-
-        background:
-            rgba(14, 23, 48, 0.92);
-
-        padding:
-            20px 30px;
-
+        background: rgba(14, 23, 48, 0.92);
+        padding: 20px 30px;
         bottom: 30px;
-
-        border-top:
-            3px solid var(--brass);
-
+        border-top: 3px solid var(--brass);
         max-width: 80%;
-
         margin: 0 auto;
-
     }
 
 
@@ -1373,76 +1217,81 @@
     @media (max-width: 991px) {
 
         .hero-title {
-
             font-size: 2.5rem;
-
         }
 
         .hero-glass-card {
-
             padding: 2rem;
-
             margin: 0 15px;
-
         }
 
         .marquee-item {
-
             width: 220px;
-
             height: 150px;
+        }
 
+        .news-section {
+            padding: 3rem 0 2rem;
+        }
+
+        .news-featured-media {
+            min-height: 240px;
+        }
+
+        .news-featured-title {
+            font-size: 1.5rem;
         }
 
     }
 
-
     @media (max-width: 767px) {
 
         .hero-section {
-
             min-height: 75vh;
-
         }
 
         .hero-title {
-
             font-size: 2rem;
-
         }
 
         .hero-subtitle {
-
             font-size: 1rem;
-
         }
 
         .hero-glass-card {
-
             padding: 2rem 1.25rem;
-
             border-radius: 1rem;
-
         }
 
         .section-heading {
-
             font-size: 2rem;
-
         }
 
         .marquee-item {
-
             width: 200px;
-
             height: 135px;
+        }
 
+    }
+
+    @media (max-width: 480px) {
+
+        .news-side {
+            flex-direction: column;
+        }
+
+        .news-side-media {
+            flex: 0 0 auto;
+            min-height: 180px;
+        }
+
+        .news-side-body {
+            padding: 0 0.25rem 0.25rem;
         }
 
     }
 
 </style>
-
 
 
 <!-- ========================================================= -->
@@ -1451,45 +1300,39 @@
 
 <script>
 
-    /*
-     * When a campus highlight is clicked,
-     * open the gallery modal at the corresponding image.
-     */
-
+    /* Open the gallery modal at the clicked highlight image */
     $('.marquee-item').on('click', function() {
-
         var slideTo = $(this).data('slide-to');
-
-        $('#largeCarousel').carousel(
-            parseInt(slideTo)
-        );
-
+        $('#largeCarousel').carousel(parseInt(slideTo));
     });
 
-
-    /*
-     * Stop the marquee while the user is interacting
-     * with the gallery area.
-     */
-
+    /* Pause the marquee while the user hovers the gallery */
     $('.marquee-container').on('mouseenter', function() {
-
-        $('.marquee-content').css(
-            'animation-play-state',
-            'paused'
-        );
-
+        $('.marquee-content').css('animation-play-state', 'paused');
     });
-
 
     $('.marquee-container').on('mouseleave', function() {
-
-        $('.marquee-content').css(
-            'animation-play-state',
-            'running'
-        );
-
+        $('.marquee-content').css('animation-play-state', 'running');
     });
+
+    /* Fade the news section in once, when it scrolls into view */
+    (function () {
+        var items = document.querySelectorAll('.news-reveal');
+        if (!items.length || !('IntersectionObserver' in window)) return;
+
+        items.forEach(function (el) { el.classList.add('news-hidden'); });
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.remove('news-hidden');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+
+        items.forEach(function (el) { observer.observe(el); });
+    })();
 
 </script>
 
