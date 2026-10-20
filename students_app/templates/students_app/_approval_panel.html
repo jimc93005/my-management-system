@@ -1,0 +1,93 @@
+<section class="ap-panel ap-{{ approval_status }}" aria-label="Approval status">
+    <div class="ap-main">
+        <span class="ap-badge">{{ approval_label }}</span>
+        <p class="ap-text">
+            {% if approval_status == 'DRAFT' %}Not submitted yet. Marks can still be edited.
+            {% elif approval_status == 'PENDING_HOD' %}Waiting for the Head of Department. Marks are locked.
+            {% elif approval_status == 'PENDING_HEAD' %}Approved by the HOD, waiting for the headteacher. Marks are locked.
+            {% elif approval_status == 'APPROVED' %}Approved and locked.
+            {% elif approval_status == 'REJECTED' %}Rejected by the {% if approval.rejected_at_stage == 'HOD' %}HOD{% else %}headteacher{% endif %}. Fix the marks, then submit again.
+            {% endif %}
+        </p>
+
+        {% if approval_status == 'REJECTED' and approval.rejection_reason %}
+        <blockquote class="ap-reason"><strong>Reason:</strong> {{ approval.rejection_reason }}</blockquote>
+        {% endif %}
+
+        {% if submission_problems %}
+        <div class="ap-problems">
+            <strong>Before you can submit:</strong>
+            <ul>{% for problem in submission_problems %}<li>{{ problem }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="ap-actions">
+        {% if can_submit_results %}
+        <form method="post" action="{% url 'students_app:submit_results' subject.id %}"
+              onsubmit="return confirm('Submit these results for HOD approval? The marks will be locked until they are reviewed.');">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ panel_year }}">
+            <input type="hidden" name="term" value="{{ panel_term }}">
+            <input type="hidden" name="next" value="{{ panel_next }}">
+            <button type="submit" class="ap-btn ap-btn-primary" {% if submission_problems %}disabled{% endif %}>
+                <i class="fas fa-paper-plane" aria-hidden="true"></i> Submit for approval
+            </button>
+        </form>
+        {% endif %}
+
+        {% if can_withdraw_results %}
+        <form method="post" action="{% url 'students_app:withdraw_results' subject.id %}"
+              onsubmit="return confirm('Withdraw this submission? You will be able to edit the marks again.');">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ panel_year }}">
+            <input type="hidden" name="term" value="{{ panel_term }}">
+            <input type="hidden" name="next" value="{{ panel_next }}">
+            <button type="submit" class="ap-btn ap-btn-ghost">Withdraw submission</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+    .ap-panel {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem;
+        background: #fff; border: 1px solid #e6e9f2; border-left: 5px solid #5f6877;
+        border-radius: 1rem; padding: 1.1rem 1.35rem; margin: 0 0 1.25rem;
+        box-shadow: 0 6px 20px rgba(22, 33, 62, .05); color: #1b2340;
+    }
+    .ap-panel * { box-sizing: border-box; }
+    .ap-PENDING_HOD, .ap-PENDING_HEAD { border-left-color: #b8912f; }
+    .ap-APPROVED { border-left-color: #0b7a5b; }
+    .ap-REJECTED { border-left-color: #b42318; }
+
+    .ap-main { flex: 1 1 320px; min-width: 0; display: grid; gap: .55rem; }
+    .ap-badge {
+        justify-self: start; font-size: .78rem; font-weight: 700; padding: .28rem .7rem;
+        border-radius: 50px; background: #eef0f4; color: #5f6877;
+    }
+    .ap-PENDING_HOD .ap-badge, .ap-PENDING_HEAD .ap-badge { background: #fdf1d6; color: #9a6408; }
+    .ap-APPROVED .ap-badge { background: #dff5ec; color: #0b7a5b; }
+    .ap-REJECTED .ap-badge { background: #fde8e8; color: #b42318; }
+
+    .ap-text { margin: 0; font-size: .92rem; color: #667085; }
+    .ap-reason {
+        margin: 0; padding: .6rem .85rem; border-radius: .6rem; background: #fde8e8;
+        color: #8f1c12; font-size: .88rem; border: 0;
+    }
+    .ap-problems { font-size: .85rem; color: #9a6408; background: #fdf1d6; border-radius: .6rem; padding: .65rem .9rem; }
+    .ap-problems ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+
+    .ap-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .ap-actions form { margin: 0; }
+    .ap-btn {
+        display: inline-flex; align-items: center; gap: .5rem; height: 2.5rem; padding: 0 1.2rem;
+        border-radius: .7rem; font-size: .9rem; font-weight: 600; cursor: pointer;
+        border: 1px solid transparent; transition: background .2s, box-shadow .2s, border-color .2s;
+    }
+    .ap-btn-primary { background: #16213e; color: #fff; }
+    .ap-btn-primary:hover:not(:disabled) { background: #0e1730; box-shadow: 0 8px 18px rgba(14, 23, 48, .25); }
+    .ap-btn-ghost { background: #fff; color: #16213e; border-color: #cfd5e4; }
+    .ap-btn-ghost:hover { border-color: #16213e; background: #f4f6fb; }
+    .ap-btn:disabled { opacity: .45; cursor: not-allowed; }
+</style>

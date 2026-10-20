@@ -22,7 +22,7 @@
         <div>
             <h1 class="ah-title">Assessment Setup</h1>
             <p class="ah-subtitle">
-                Set the CA and exam rules for every subject, then publish when they are final.
+                Set the CA and exam rules for every subject, then submit them for approval.
             </p>
         </div>
 
@@ -78,8 +78,8 @@
                 <dd class="is-ok">{{ summary.complete }}</dd>
             </div>
             <div class="ah-stat">
-                <dt>Published</dt>
-                <dd class="is-pub">{{ summary.published }}</dd>
+                <dt>Approved</dt>
+                <dd class="is-pub">{{ summary.approved }}</dd>
             </div>
             <div class="ah-stat">
                 <dt>Needs attention</dt>
@@ -103,7 +103,7 @@
             <button type="button" class="ah-chip" data-status="not_configured" aria-pressed="false">Not configured <span class="ah-chip-n">0</span></button>
             <button type="button" class="ah-chip" data-status="incomplete" aria-pressed="false">Incomplete <span class="ah-chip-n">0</span></button>
             <button type="button" class="ah-chip" data-status="ready" aria-pressed="false">Ready <span class="ah-chip-n">0</span></button>
-            <button type="button" class="ah-chip" data-status="published" aria-pressed="false">Published <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="published" aria-pressed="false">Approved <span class="ah-chip-n">0</span></button>
         </div>
 
         <div class="ah-toggles">
@@ -162,6 +162,13 @@
                             {% endif %}
                         </div>
 
+                        <div class="ah-approval">
+                            <span class="ah-apbadge ap-{{ card.approval_status }}">{{ card.approval_label }}</span>
+                            {% if card.approval_status == 'REJECTED' and card.approval.rejection_reason %}
+                                <span class="ah-ap-note">{{ card.approval.rejection_reason|truncatechars:60 }}</span>
+                            {% endif %}
+                        </div>
+
                         {% if card.setup %}
                         <div class="ah-rules">
                             <div class="ah-split" role="img"
@@ -193,7 +200,7 @@
                                 <a href="{% url 'students_app:subject_term_setup' card.subject.pk %}?{{ period_query }}"
                                    class="ah-btn {% if card.status == 'ready' %}ah-btn-primary{% else %}ah-btn-ghost{% endif %}">
                                     {% if card.status == 'published' %}View setup
-                                    {% elif card.status == 'ready' %}Review &amp; publish
+                                    {% elif card.status == 'ready' %}Review &amp; submit
                                     {% else %}Continue setup{% endif %}
                                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
                                 </a>
@@ -546,6 +553,13 @@
         .ah *, .ah *::before, .ah *::after { transition: none !important; }
         .ah-card:hover { transform: none; }
     }
+
+     .ah-approval { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .ah-apbadge { font-size: .74rem; font-weight: 700; padding: .22rem .6rem; border-radius: 50px; background: var(--off-bg); color: var(--off); }
+    .ah-apbadge.ap-PENDING_HOD, .ah-apbadge.ap-PENDING_HEAD { background: var(--warn-bg); color: var(--warn); }
+    .ah-apbadge.ap-APPROVED { background: var(--ok-bg); color: var(--ok); }
+    .ah-apbadge.ap-REJECTED { background: #fde8e8; color: #b42318; }
+    .ah-ap-note { font-size: .78rem; color: #b42318; }
 </style>
 
 

@@ -33,17 +33,21 @@
         <div class="sb-head-main">
             <div class="sb-badges">
                 <span class="sb-period"><i class="far fa-calendar-alt" aria-hidden="true"></i> {{ year }} &middot; {{ term_label }}</span>
-                {% if setup %}
-                    {% if is_locked %}
-                        <span class="sb-pill st-published">Published</span>
-                    {% elif can_publish %}
-                        <span class="sb-pill st-ready">Ready to publish</span>
+                              {% if setup %}
+                    {% if approval_status == 'DRAFT' %}
+                        {% if can_publish %}
+                            <span class="sb-pill st-ready">Ready to submit</span>
+                        {% else %}
+                            <span class="sb-pill st-incomplete">Incomplete</span>
+                        {% endif %}
+                    {% elif approval_status == 'APPROVED' %}
+                        <span class="sb-pill st-published">Approved</span>
+                    {% elif approval_status == 'REJECTED' %}
+                        <span class="sb-pill st-rejected">Rejected</span>
                     {% else %}
-                        <span class="sb-pill st-incomplete">Incomplete</span>
+                        <span class="sb-pill st-pending">{{ approval_label }}</span>
                     {% endif %}
-                {% else %}
-                    <span class="sb-pill">Not configured</span>
-                {% endif %}
+
             </div>
 
             <h1 class="sb-title">{{ subject_name }} <span>{{ class_level }}</span></h1>
@@ -61,36 +65,8 @@
             </p>
         </div>
 
-        {% if setup %}
-        <div class="sb-head-action">
-            {% if setup.is_published %}
-                <form method="post" action="{% url 'students_app:toggle_publish' setup.pk %}"
-                      class="js-confirm"
-                      data-title="Unpublish this setup?"
-                      data-text="Results for this subject will disappear from student profiles and report cards until you publish again."
-                      data-ok="Unpublish" data-danger="1">
-                    {% csrf_token %}
-                    <button type="submit" class="sb-btn sb-btn-danger">
-                        <i class="fas fa-lock-open" aria-hidden="true"></i> Unpublish
-                    </button>
-                </form>
-            {% else %}
-                <form method="post" action="{% url 'students_app:toggle_publish' setup.pk %}"
-                      class="js-confirm"
-                      data-title="Publish this setup?"
-                      data-text="Results for this subject become visible on student profiles and report cards. The rules will be locked until you unpublish."
-                      data-ok="Publish">
-                    {% csrf_token %}
-                    <button type="submit" class="sb-btn sb-btn-primary" {% if not can_publish %}disabled{% endif %}>
-                        <i class="fas fa-rocket" aria-hidden="true"></i> Publish
-                    </button>
-                </form>
-                {% if not can_publish %}
-                    <p class="sb-hint">Add a CA task and an exam paper to enable publishing.</p>
-                {% endif %}
-            {% endif %}
-        </div>
-        {% endif %}
+
+
     </header>
 
     {% if not setup %}
@@ -113,7 +89,15 @@
         </form>
     </section>
 
+
     {% else %}
+
+    {% include 'students_app/_approval_panel.html' with panel_year=year panel_term=term panel_next='builder' %}
+
+    <!-- ===================== PROGRESS STEPS ===================== -->
+
+    {% endif %}
+
 
     <!-- ===================== PROGRESS STEPS ===================== -->
     <ol class="sb-steps" aria-label="Setup progress">
@@ -132,18 +116,19 @@
             <span class="sb-step-text"><b>Exam papers</b>
                 <small>{% if exam_assessments %}{{ exam_assessments|length }} added{% else %}None yet{% endif %}</small></span>
         </li>
-        <li class="{% if is_locked %}is-done{% endif %}">
-            <span class="sb-step-icon">{% if is_locked %}<i class="fas fa-check" aria-hidden="true"></i>{% else %}4{% endif %}</span>
-            <span class="sb-step-text"><b>Published</b>
-                <small>{% if is_locked %}Live{% else %}Not yet{% endif %}</small></span>
+               <li class="{% if approval_status == 'APPROVED' %}is-done{% endif %}">
+            <span class="sb-step-icon">{% if approval_status == 'APPROVED' %}<i class="fas fa-check" aria-hidden="true"></i>{% else %}4{% endif %}</span>
+            <span class="sb-step-text"><b>Approval</b>
+                <small>{{ approval_label }}</small></span>
         </li>
     </ol>
 
-    {% if is_locked %}
+        {% if is_locked %}
     <div class="sb-banner" role="status">
         <i class="fas fa-lock" aria-hidden="true"></i>
-        <div><strong>This setup is published and locked.</strong>
-            Unpublish it (top right) if you need to change the weights or the assessments.</div>
+        <div><strong>These results are locked.</strong>
+            {% if approval_status == 'APPROVED' %}They have been approved. Ask the headteacher or admin to reopen them if a correction is needed.
+            {% else %}They are awaiting approval.{% if can_withdraw_results %} Withdraw the submission to make changes.{% endif %}{% endif %}</div>
     </div>
     {% endif %}
 
@@ -211,7 +196,7 @@
                 <h2 class="sb-card-title">Add an assessment</h2>
 
                 {% if is_locked %}
-                    <p class="sb-card-sub"><i class="fas fa-lock" aria-hidden="true"></i> Unpublish the setup to add more assessments.</p>
+                <p class="sb-card-sub"><i class="fas fa-lock" aria-hidden="true"></i> These results are locked, so assessments cannot be added.</p>
                 {% else %}
                 <p class="sb-card-sub">A CA task (quiz, test, assignment) or a terminal exam paper.</p>
 
@@ -517,6 +502,8 @@
     .sb-pill.st-incomplete { background: var(--warn-bg); color: var(--warn); }
     .sb-pill.st-ready { background: var(--ok-bg); color: var(--ok); }
     .sb-pill.st-published { background: var(--pub-bg); color: var(--pub); }
+    .sb-pill.st-pending { background: var(--warn-bg); color: var(--warn); }
+    .sb-pill.st-rejected { background: var(--bad-bg); color: var(--bad); }
 
     /* ---------- Steps ---------- */
     .sb-steps {

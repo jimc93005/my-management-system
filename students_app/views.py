@@ -6,12 +6,10 @@ from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Sum, Avg
-from django.contrib import messages
-from django.utils.timezone import now
-from weasyprint import HTML
+
 from pathlib import Path
 from django.conf import settings
-
+from .approvals import is_locked, get_approval
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .forms import TeacherRegistrationForm
@@ -27,7 +25,17 @@ from .models import CalendarEvent
 from .forms import SubjectDepartmentForm
 from collections import defaultdict
 from timetable.models import Timetable
+from .approvals import is_locked
 
+
+from django.core.exceptions import PermissionDenied, ValidationError   # (already there)
+from .approvals import (
+    ApprovalError, Status, approval_panel_context, can_submit, get_or_create_approval,
+    get_submission_problems, is_locked, recalculate_term_grades,
+    submit_for_approval, withdraw_submission, approval_panel_context
+)
+from .models import Assessment, ResultApproval, Subject, SubjectTermSetup
+from .approvals import is_locked, get_approval, approval_panel_context, approved_grades,  pending_counts_for
 
 
 
@@ -35,10 +43,7 @@ from timetable.models import Timetable
 
 from .utils import build_term_reports
 
-from .models import Students
-from .models import Subject
-from .models import Grade
-from .models import SchoolProfile
+
 from .models import Teacher
 
 from .forms import SchoolProfileForm
@@ -48,9 +53,7 @@ from .forms import SubjectForm
 from .models import Department
 from .forms import DepartmentForm
 from .forms import SubDepartmentForm
-from .models import SubDepartment
-from .models import ClassLevel
-from .models import TeachingAssignment
+
 from .models import SubDepartmentRole
 from .forms import SubDepartmentRoleForm
 from .forms import TeacherForm
@@ -83,7 +86,7 @@ def index(request):
     announcements = Announcement.objects.filter(is_active=True).order_by('-date_posted')[:5]
 
     # 4. Fetch the 4 most recent news articles (fits perfectly in your 4-column grid)
-    news_articles = NewsArticle.objects.filter(is_active=True).order_by('-publish_date')[:4]
+    news_articles = NewsArticle.objects.filter(is_active=True).order_by('-publish_date')[:6]
     featured_news = news_articles[0] if len(news_articles) > 0 else None
     secondary_news = news_articles[1:] if len(news_articles) > 1 else []
 
@@ -518,16 +521,13 @@ def add_grade(request, student_id):
         term = request.POST.get('term')
 
         # Validation
-        if not academic_year or not term:
-            messages.error(request, "Please select an academic year and term.")
-            return render(request, 'students_app/add_grade.html', {
-                'student': student, 'subjects': subjects, 'years': years
-            })
-
-        # Loop through the SECURE list of subjects and save grades
+        saved, skipped = 0, []
         for subject in subjects:
             score = request.POST.get(f'score_{subject.id}')
             if score:
+                if is_locked(subject, academic_year, term):
+                    skipped.append(str(subject.name))
+                    continue
                 Grade.objects.update_or_create(
                     student=student,
                     subject=subject,
@@ -535,11 +535,15 @@ def add_grade(request, student_id):
                     term=term,
                     defaults={
                         "score": score,
-                        # Snapshot the class level string for historical records
                         "class_level_snapshot": str(student.class_level)
                     }
                 )
+                saved += 1
 
+        if skipped:
+            messages.warning(request, "Locked (awaiting approval or approved), not changed: " + ", ".join(skipped))
+        if saved:
+            messages.success(request, f"Grades successfully saved for {student.first_name}!")
         messages.success(request, f"Grades successfully saved for {student.first_name}!")
         return redirect('students_app:student_profile', student_id=student.id)
 
@@ -582,16 +586,16 @@ def student_profile(request, student_id):
                     ).select_related('assessment')
 
     # Chart logic
-    chart_labels = []
-    chart_data = []
+    # Chart: one point per fully approved term (labels and values always stay in step)
+    chart_points = []
+    for year in sorted(term_reports.keys()):
+        for term in sorted(term_reports[year].keys()):
+            term_data = term_reports[year][term]
+            if term_data.get('is_complete', True):
+                chart_points.append((f"{year} T{term}", float(term_data.get('average') or 0)))
 
-    if term_reports:
-        for year in sorted(term_reports.keys()):
-            for term in sorted(term_reports[year].keys()):
-                chart_labels.append(f"{year} T{term}")
-                average = term_reports[year][term].get('average', 0)
-                chart_data.append(float(average))
-
+    chart_labels = [label for label, _ in chart_points]
+    chart_data = [value for _, value in chart_points]
     context = {
         'student': student,
         'term_reports': term_reports,
@@ -600,6 +604,8 @@ def student_profile(request, student_id):
         'current_filter': level_filter,
         'chart_labels': json.dumps(chart_labels),
         'chart_data': json.dumps(chart_data),
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
     }
 
     return render(request, "students_app/student_profile.html", context)
@@ -620,6 +626,9 @@ def edit_grade(request, grade_id):
         return redirect('students_app:dashboard')
     grade = get_object_or_404(Grade, id=grade_id)
     student = grade.student
+    if is_locked(grade.subject, grade.academic_year, grade.term):
+        messages.error(request, "This result is awaiting approval or already approved, so it is locked.")
+        return redirect("students_app:student_profile", student_id=student.id)
 
     if request.method == "POST":
         score = request.POST.get("score")
@@ -629,6 +638,9 @@ def edit_grade(request, grade_id):
         # Validate fields
         if not score or not academic_year or not term:
             messages.error(request, "All fields are required.")
+            if is_locked(grade.subject, academic_year, term):
+                messages.error(request, "The target term is locked (awaiting approval or approved).")
+                return redirect("students_app:student_profile", student_id=student.id)
             return redirect("students_app:edit_grade", grade_id=grade.id)
 
         grade.score = score
@@ -667,6 +679,9 @@ def delete_grade(request, grade_id):
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     grade = get_object_or_404(Grade, id=grade_id)
+    if is_locked(grade.subject, grade.academic_year, grade.term):
+        messages.error(request, "This result is awaiting approval or already approved, so it cannot be deleted.")
+        return redirect("students_app:student_profile", student_id=grade.student.id)
 
     grade.delete()   # permanent delete
 
@@ -686,13 +701,18 @@ def delete_term_grades(request, student_id, year, term):
         return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
 
-    Grade.objects.filter(
-        student=student,
-        academic_year=year,
-        term=term
-    ).delete()   # permanent delete
+    deleted, skipped = 0, 0
+    for g in Grade.objects.filter(student=student, academic_year=year, term=term).select_related('subject'):
+        if is_locked(g.subject, g.academic_year, g.term):
+            skipped += 1
+        else:
+            g.delete()
+            deleted += 1
 
-    messages.success(request, f"All grades for Term {term}, {year} permanently deleted.")
+    if deleted:
+        messages.success(request, f"{deleted} grade(s) for Term {term}, {year} deleted.")
+    if skipped:
+        messages.warning(request, f"{skipped} grade(s) were locked (awaiting approval or approved) and not deleted.")
     return redirect("students_app:student_profile", student_id=student.id)
 
 
@@ -709,12 +729,18 @@ def delete_year_grades(request, student_id, year):
         return redirect('students_app:dashboard')
     student = get_object_or_404(Students, id=student_id)
 
-    Grade.objects.filter(
-        student=student,
-        academic_year=year
-    ).delete()   # permanent delete
+    deleted, skipped = 0, 0
+    for g in Grade.objects.filter(student=student, academic_year=year).select_related('subject'):
+        if is_locked(g.subject, g.academic_year, g.term):
+            skipped += 1
+        else:
+            g.delete()
+            deleted += 1
 
-    messages.success(request, f"All grades for Year {year} permanently deleted.")
+    if deleted:
+        messages.success(request, f"{deleted} grade(s) for {year} deleted.")
+    if skipped:
+        messages.warning(request, f"{skipped} grade(s) were locked (awaiting approval or approved) and not deleted.")
     return redirect("students_app:student_profile", student_id=student.id)
 
 
@@ -758,7 +784,12 @@ def school_report(request, student_id, academic_year, term):
     report_data = term_reports.get(academic_year, {}).get(term)
 
     if not report_data:
-        raise Http404("Report not found")
+        if not report_data or not report_data.get('is_complete', True):
+            messages.warning(
+                request,
+                "This report is not available yet. Reports are issued once every subject has been approved."
+            )
+            return redirect('students_app:student_profile', student_id=student.id)
 
     context = {
         'student': student,
@@ -1308,6 +1339,7 @@ def dashboard(request):
         'unread_count': unread_notifications.count(),
         'timetable': current_timetable,
     }
+    context['approval_counts'] = pending_counts_for(user)
 
     # -----------------------------------------------------
     # 1. ADMIN DATA
@@ -1336,8 +1368,9 @@ def dashboard(request):
         context['class_stats'] = []
 
         if my_dept:
+
             dept_subjects = Subject.objects.filter(departments=my_dept)
-            dept_grades = Grade.objects.filter(subject__in=dept_subjects)
+            dept_grades = approved_grades(Grade.objects.filter(subject__in=dept_subjects))
             total_grades = dept_grades.count()
             passed_grades = dept_grades.filter(score__gte=50).count()
 
@@ -1353,13 +1386,13 @@ def dashboard(request):
 
             for cl in classes_taught:
                 subjects_in_class = dept_subjects.filter(target_class=cl).select_related('teacher_subject')
-                c_total = Grade.objects.filter(subject__in=subjects_in_class).count()
-                c_pass = Grade.objects.filter(subject__in=subjects_in_class, score__gte=50).count()
+                c_total = approved_grades(Grade.objects.filter(subject__in=subjects_in_class)).count()
+                c_pass = approved_grades(Grade.objects.filter(subject__in=subjects_in_class, score__gte=50)).count()
 
                 subj_details = []
                 for sub in subjects_in_class:
-                    s_total = Grade.objects.filter(subject=sub).count()
-                    s_pass = Grade.objects.filter(subject=sub, score__gte=50).count()
+                    s_total = approved_grades(Grade.objects.filter(subject=sub)).count()
+                    s_pass = approved_grades(Grade.objects.filter(subject=sub, score__gte=50)).count()
                     subj_details.append({
                         'name': sub.name,
                         'teacher': sub.teacher_subject,
@@ -1612,11 +1645,21 @@ def scholastic_report_pdf(request, class_level, academic_year, term):
                                   " the Headteacher if you need this feature.")
         return redirect('students_app:dashboard')
     # 1. We use __icontains so that "2" will match "Form 2" or "2" perfectly!
-    student_ids = Grade.objects.filter(
+    # 1. The master sheet needs EVERY subject for this class and term to be approved
+    cohort = Grade.objects.filter(
         class_level_snapshot__icontains=class_level,
         academic_year=academic_year,
         term=term
-    ).values_list('student_id', flat=True).distinct()
+    )
+    if approved_grades(cohort).count() != cohort.count():
+        messages.warning(
+            request,
+            "Some subjects for this class and term are still awaiting approval, "
+            "so the master sheet cannot be produced yet."
+        )
+        return redirect('students_app:scholastic_selector')
+
+    student_ids = cohort.values_list('student_id', flat=True).distinct()
 
     # 2. INSTEAD of a scary 404 error, we send them back with a polite message
     if not student_ids:
@@ -1919,12 +1962,12 @@ def academic_statistics(request):
 
         # 1. HISTORICAL GRADES FETCH
         # Query grades matching the exact class snapshot, term, and year
-        grades = Grade.objects.filter(
+        grades = approved_grades(Grade.objects.filter(
             class_level_snapshot=target_class_name,
             term=selected_term,
             academic_year=selected_year,
             student__status='Active'
-        ).select_related('subject', 'student')
+        )).select_related('subject', 'student')
 
         # 2. DEMOGRAPHICS (Derived from historical exam takers)
         historical_students = {grade.student for grade in grades}
@@ -1972,12 +2015,12 @@ def academic_statistics(request):
         # 4. OVERALL PROGRESS (Filtered by Class Snapshot)
         progress_data = []
         for term_num in [1, 2, 3]:
-            term_avg = Grade.objects.filter(
+            term_avg = approved_grades(Grade.objects.filter(
                 class_level_snapshot=target_class_name,
                 academic_year=selected_year,
                 term=term_num,
                 student__status='Active'
-            ).aggregate(Avg('score'))['score__avg']
+            )).aggregate(Avg('score'))['score__avg']
             progress_data.append(round(term_avg, 1) if term_avg else 0)
 
         # 5. GRADE DISTRIBUTION BREAKDOWN
@@ -3084,9 +3127,9 @@ def download_class_reports(request, class_id, academic_year, term):
                     break  # Stop looking for years, we found it
 
             # Skip students who don't have generated data for this term
-            if not report_data :
+                if not report_data or not report_data.get('is_complete', True):
 
-                continue
+                  continue
 
             # Safely get Teacher Signature
             teacher_sig_uri = None
@@ -3317,11 +3360,11 @@ def get_top_performers(class_level_snapshot, academic_year, term, limit=5):
     Historically accurate because class_level_snapshot is frozen at grading time —
     a later promotion never changes what this returns for a past term.
     """
-    grades_qs = Grade.objects.filter(
+    grades_qs = approved_grades(Grade.objects.filter(
         class_level_snapshot=class_level_snapshot,
         academic_year=academic_year,
         term=term
-    )
+    ))
     student_ids = grades_qs.values_list('student_id', flat=True).distinct()
 
     rankings = []
@@ -3355,6 +3398,22 @@ def get_top_performers(class_level_snapshot, academic_year, term, limit=5):
     return top
 
 
+def get_pending_classes(academic_year, term):
+    """Classes that still have subjects awaiting approval this term."""
+    pending = []
+    if academic_year and term:
+        snapshots = Grade.objects.filter(
+            academic_year=academic_year, term=term
+        ).values_list('class_level_snapshot', flat=True).distinct()
+        for snapshot in snapshots:
+            cohort = Grade.objects.filter(
+                class_level_snapshot=snapshot, academic_year=academic_year, term=term
+            )
+            if approved_grades(cohort).count() != cohort.count():
+                pending.append(snapshot)
+    return pending
+
+
 def _build_headteachers_list_context(academic_year, term):
     """Shared between the browsable HTML view and the PDF view, so they never drift apart."""
     class_results = []
@@ -3364,7 +3423,10 @@ def _build_headteachers_list_context(academic_year, term):
             academic_year=academic_year, term=term
         ).values_list('class_level_snapshot', flat=True).distinct()
 
+        pending = set(get_pending_classes(academic_year, term))
         for snapshot in snapshots:
+            if snapshot in pending:
+                continue
             top_students = get_top_performers(snapshot, academic_year, term, limit=5)
             if top_students:  # skip classes with no grades recorded this term
                 class_results.append({'class_name': snapshot, 'top_students': top_students})
@@ -3825,7 +3887,7 @@ def subject_gradebook(request, subject_id):
 
     # Dynamic years for the dropdown
     current_year = datetime.datetime.now().year
-    years = list(range(current_year - 2, current_year + 5))
+    years = list(range(current_year - 2, current_year + 100))
 
     # --- HANDLE FORM SUBMISSION (BULK SAVE) ---
     if request.method == 'POST':
@@ -3838,6 +3900,13 @@ def subject_gradebook(request, subject_id):
             academic_year=academic_year,
             term=term
         ).first()
+
+        if setup and is_locked(subject, academic_year, term):
+            messages.error(
+                request,
+                "Grades for this term are awaiting approval or already approved, so they are locked."
+            )
+            return redirect(f"{request.path}?year={academic_year}&term={term}")
 
         if setup and action == 'save_grades':
             assessments = setup.assessments.all()
@@ -3867,15 +3936,12 @@ def subject_gradebook(request, subject_id):
             return redirect(f"{request.path}?year={academic_year}&term={term}")
 
         elif setup and action == 'publish_grades':
-            setup.is_published = True
-            setup.save()
-
-            messages.success(request, "Grades published successfully!")
+            messages.info(request, "Publishing now goes through approval. Submit the results for approval instead.")
             return redirect(f"{request.path}?year={academic_year}&term={term}")
-
     # --- GET REQUEST (Load the Grid) ---
     academic_year = request.GET.get('year')
     term = request.GET.get('term')
+    # approval = get_approval(subject, academic_year, term) if academic_year and term else None
 
     setup = None
     assessments = []
@@ -3933,7 +3999,12 @@ def subject_gradebook(request, subject_id):
         'student_data': student_data,
         'students': students,
         'years': years,
+        # 'approval': approval,
+        # 'is_locked': bool(approval and approval.is_locked),
     }
+
+    if academic_year and term:
+        context.update(approval_panel_context(request.user, subject, academic_year, term))
 
     return render(request, 'students_app/subject_gradebook.html', context)
 
@@ -3992,8 +4063,8 @@ PUBLISHED = 'published'             # live on profiles / report cards
 STATUS_LABELS = {
     NOT_CONFIGURED: 'Not configured',
     INCOMPLETE: 'Incomplete',
-    READY: 'Ready to publish',
-    PUBLISHED: 'Published',
+    READY: 'Ready to submit',
+    PUBLISHED: 'Approved',
 }
 
 
@@ -4123,11 +4194,16 @@ def flash_form_errors(request, form):
         for error in errors:
             messages.error(request, f"{prefix}{error}")
 
-
 def ensure_editable(request, setup):
-    """Published setups are locked until they are unpublished."""
+    """Published or approval-locked setups are frozen."""
     if setup.is_published:
         messages.error(request, "This setup is published. Unpublish it before making changes.")
+        return False
+    if is_locked(setup.subject, setup.academic_year, setup.term):
+        messages.error(
+            request,
+            "These results are awaiting approval or already approved, so they are locked."
+        )
         return False
     return True
 
@@ -4171,12 +4247,23 @@ def assessment_setup_home(request):
     )
     setup_by_subject = {setup.subject_id: setup for setup in setups}
 
+    approvals = {
+        a.subject_id: a
+        for a in ResultApproval.objects.filter(
+            subject_id__in=[s.pk for s in subjects], academic_year=year, term=term
+        )
+    }
+
     groups = OrderedDict()
     summary = {'total': 0, 'complete': 0, 'published': 0, 'needs_attention': 0}
 
     for subject in subjects:
         setup = setup_by_subject.get(subject.pk)
         status = get_status(setup)
+
+        approval = approvals.get(subject.pk)
+        if setup and approval and approval.is_approved:
+            status = PUBLISHED
 
         group = groups.setdefault(subject.target_class_id, {
             'class_level': subject.target_class,
@@ -4185,6 +4272,8 @@ def assessment_setup_home(request):
             'complete': 0,
             'published': 0,
         })
+
+        approval = approvals.get(subject.pk)
 
         group['cards'].append({
             'subject': subject,
@@ -4197,6 +4286,9 @@ def assessment_setup_home(request):
             'exam_count': setup.exam_count if setup else 0,
             'ca_weight': setup.ca_weight_percentage if setup else None,
             'exam_weight': setup.exam_weight_percentage if setup else None,
+            'approval_status': approval.status if approval else 'DRAFT',
+            'approval_label': approval.get_status_display() if approval else 'Draft',
+            'approval': approval,
         })
 
         group['total'] += 1
@@ -4277,6 +4369,10 @@ def subject_term_setup(request, subject_id):
             if setup else None
         ),
     }
+
+    if setup:
+        context.update(approval_panel_context(request.user, subject, year, term))
+        context['is_locked'] = context['is_locked'] or setup.is_published
     return render(request, 'students_app/subject_term_setup.html', context)
 
 
@@ -4388,27 +4484,84 @@ def assessment_delete(request, assessment_id):
 
 @require_POST
 @assessment_access_required
+@require_POST
+@assessment_access_required
 def toggle_publish(request, setup_id):
     setup = get_setup_or_404(request.user, setup_id)
-    back = builder_redirect(setup.subject_id, setup.academic_year, setup.term)
+    messages.info(
+        request,
+        "Publishing now goes through approval. Submit the results for HOD and headteacher approval."
+    )
+    return builder_redirect(setup.subject_id, setup.academic_year, setup.term)
 
-    if not can_publish_setup(request.user, setup.subject):
+
+
+
+
+
+# LOCKING AND UNLOCKING GRADES ADN APPROVALS VIEWS
+
+
+
+
+def _back_to_origin(request, subject_id, year, term):
+    if request.POST.get('next') == 'gradebook':
+        url = reverse('students_app:subject_gradebook', args=[subject_id])
+        return redirect(f"{url}?{urlencode({'year': year, 'term': term})}")
+    return builder_redirect(subject_id, year, term)
+
+
+@require_POST
+@assessment_access_required
+def submit_results(request, subject_id):
+    subject = get_subject_or_404(request.user, subject_id)
+    period = clean_period(request.POST.get('year'), request.POST.get('term'))
+    if period is None:
+        messages.error(request, "Invalid academic year or term.")
+        return redirect('students_app:assessment_setup_home')
+    year, term = period
+    back = _back_to_origin(request, subject.pk, year, term)
+
+    if not can_submit(request.user, subject):
         raise PermissionDenied
 
-    if setup.is_published:
-        setup.is_published = False
-        message = "Unpublished. The setup can be edited again."
-    else:
-        counts = setup.assessments.aggregate(
-            ca=Count('pk', filter=Q(category='CA')),
-            exam=Count('pk', filter=Q(category='EXAM')),
-        )
-        if not counts['ca'] or not counts['exam']:
-            messages.error(request, "Add at least one CA assessment and one Exam paper before publishing.")
-            return back
-        setup.is_published = True
-        message = "Published. Results are now visible on profiles and report cards."
+    approval = get_or_create_approval(subject, year, term)
+    if approval.status not in (Status.DRAFT, Status.REJECTED):
+        messages.error(request, f"These results are already '{approval.get_status_display()}'.")
+        return back
 
-    setup.save(update_fields=['is_published'])
-    messages.success(request, message)
+    problems = get_submission_problems(subject, year, term)
+    if problems:
+        for problem in problems:
+            messages.error(request, problem)
+        return back
+
+    recalculate_term_grades(subject, year, term)
+    try:
+        submit_for_approval(approval, request.user)
+    except ApprovalError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Submitted for HOD approval. The marks are now locked.")
+    return back
+
+
+@require_POST
+@assessment_access_required
+def withdraw_results(request, subject_id):
+    subject = get_subject_or_404(request.user, subject_id)
+    period = clean_period(request.POST.get('year'), request.POST.get('term'))
+    if period is None:
+        messages.error(request, "Invalid academic year or term.")
+        return redirect('students_app:assessment_setup_home')
+    year, term = period
+    back = _back_to_origin(request, subject.pk, year, term)
+
+    approval = get_or_create_approval(subject, year, term)
+    try:
+        withdraw_submission(approval, request.user)
+    except ApprovalError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Submission withdrawn. You can edit the marks again.")
     return back

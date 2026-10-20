@@ -20,6 +20,7 @@ from .models import Assessment
 from .models import AssessmentGrade
 from .models import CalendarEvent
 from .models import SubjectTermSetup
+from .models import ResultApproval, ApprovalLog
 from .models import Footer, FooterDocument, CarouselEvent
 
 
@@ -45,6 +46,9 @@ admin.site.register(CarouselEvent)
 admin.site.register(SubjectTermSetup)
 admin.site.register(Assessment)
 admin.site.register(AssessmentGrade)
+
+admin.site.register(ResultApproval)
+admin.site.register(ApprovalLog)
 
 # users/admin.py
 

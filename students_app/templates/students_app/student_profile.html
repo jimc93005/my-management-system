@@ -75,18 +75,37 @@
                     {% if level %}
                     <a href="{% url 'students_app:student_profile' student.id %}?level={{ level }}"
                        class="btn {% if current_filter == level %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                       Form {{ level }} Grades
+                       {{ level }} Grades
                     </a>
                     {% endif %}
                 {% endfor %}
             </div>
 
-            {% if term_reports %}
+                       {% if chart_labels %}
             <div class="card border-0 shadow-sm rounded-lg p-4 mb-4 bg-white">
                 <h6 class="text-muted font-weight-bold mb-3"><i class="fas fa-chart-line mr-2 text-primary"></i>Academic Progress Trend</h6>
-                <div style="height: 250px; width: 100%;">
+
+                <div class="trend-stats">
+                    <div class="trend-stat"><span>Latest average</span><strong id="trendLatest">-</strong></div>
+                    <div class="trend-stat"><span>Change since last term</span><strong id="trendChange">-</strong></div>
+                    <div class="trend-stat"><span>Best term</span><strong class="sm" id="trendBest">-</strong></div>
+                </div>
+
+                <div style="height: 300px; width: 100%;">
                     <canvas id="performanceChart"></canvas>
                 </div>
+
+                <div class="trend-legend">
+                    <span><i style="background:#16a34a"></i>Strong (70% and above)</span>
+                    <span><i style="background:#f59e0b"></i>Pass (50% to 69%)</span>
+                    <span><i style="background:#dc2626"></i>Below the pass mark (under 50%)</span>
+                    <span><span class="dash"></span>Pass mark</span>
+                </div>
+            </div>
+            {% elif term_reports %}
+            <div class="alert alert-light border mb-4 small">
+                <i class="fas fa-chart-line mr-2 text-primary"></i>
+                The progress trend appears once a term has been fully approved.
             </div>
             {% endif %}
             {% if term_reports %}
@@ -140,22 +159,23 @@
                             <div class="col-md-2">
                                 <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-primary">
                                     <small class="text-muted d-block mb-1">AVERAGE</small>
-                                    <h4 class="font-weight-bold mb-0 text-primary">{{ data.average }}</h4>
+                                    <h4 class="font-weight-bold mb-0 text-primary">{% if data.is_complete %}{{ data.average }}{% else %}&mdash;{% endif %}</h4>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-success">
                                     <small class="text-muted d-block mb-1">POSITION</small>
-                                    <h4 class="font-weight-bold mb-0 text-success">{{ data.position }} <small class="text-muted">/ {{ total_students }}</small></h4>
+                                    <h4 class="font-weight-bold mb-0 text-success">{% if data.is_complete %}{{ data.position }} <small class="text-muted">/ {{ total_students }}</small>{% else %}&mdash;{% endif %}</h4>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="metric-card bg-white p-3 shadow-sm text-center border-bottom border-info">
                                     <small class="text-muted d-block mb-1">PROMOTION</small>
-                                    <h5 class="font-weight-bold mb-0 {% if data.average >= 50 %}text-success{% else %}text-danger{% endif %}">{{ data.promotion_status }}</h5>
+                                    <h5 class="font-weight-bold mb-0 {% if not data.is_complete %}text-warning{% elif data.average >= 50 %}text-success{% else %}text-danger{% endif %}">{{ data.promotion_status }}</h5>
                                 </div>
                             </div>
                             <div class="col-md-5">
+                                {% if data.is_complete %}
                                 <div class="d-flex h-100">
                                     <a href="{% url 'students_app:school_report' student.id year term %}" class="btn btn-success flex-fill mr-2 d-flex align-items-center justify-content-center shadow-sm font-weight-bold rounded">
                                         <i class="fas fa-print mr-2"></i> Print Report
@@ -164,6 +184,12 @@
                                         <i class="fas fa-file-pdf mr-2"></i> Download PDF
                                     </a>
                                 </div>
+                                {% else %}
+                                <div class="alert alert-warning mb-0 h-100 d-flex align-items-center small">
+                                    <i class="fas fa-hourglass-half mr-2"></i>
+                                    Some subjects are still awaiting approval. The average, position and report become available once every subject is approved.
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -176,7 +202,7 @@
                                             <th class="border-0 py-3 text-center">Score</th>
                                             <th class="border-0 py-3">Remark</th>
                                             <th class="border-0 py-3">Comment</th>
-                                            <th class="border-0 text-right px-4 py-3">Actions</th>
+                                            <th class="border-0 text-right px-4 py-3">status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -202,38 +228,12 @@
     </td>
     <td><small class="font-weight-bold text-uppercase text-secondary">{{ grade.get_remark }}</small></td>
     <td><em class="text-muted small">"{{ grade.get_comment|default:'No comment provided' }}"</em></td>
-    <td class="text-right px-4">
-        <div class="btn-group shadow-sm border rounded">
-            <a href="{% url 'students_app:edit_grade' grade.id %}" class="btn btn-sm btn-white text-primary px-3" title="Edit">
-                <i class="fas fa-edit"></i> Edit
-            </a>
-            <button type="button" class="btn btn-sm btn-white text-danger px-3 border-left" data-toggle="modal" data-target="#delG-{{ grade.id }}">
-                <i class="fas fa-trash"></i> Delete
-            </button>
-        </div>
-
-        <!-- Delete Modal -->
-        <div class="modal fade text-left" id="delG-{{ grade.id }}" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-danger text-white border-0">
-                        <h5 class="modal-title font-weight-bold">Confirm Deletion</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                    </div>
-                    <div class="modal-body p-4 text-center">
-                        <p class="mb-0">Are you sure you want to delete the <strong>{{ grade.subject.name }}</strong> grade for this term?</p>
-                    </div>
-                    <div class="modal-footer bg-light border-0">
-                        <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cancel</button>
-                        <form action="{% url 'students_app:delete_grade' grade.id %}" method="POST">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger px-4 shadow-sm">Delete Permanently</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <td class="text-right px-4">
+        <span class="badge badge-success p-2 px-3" title="Approved results are locked. Ask the headteacher to reopen them if a correction is needed.">
+            <i class="fas fa-lock mr-1"></i> Approved
+        </span>
     </td>
+
 </tr>
 
 <!-- NESTED ASSESSMENT BREAKDOWN DRAWER -->
@@ -303,7 +303,7 @@
                                                 <span class="text-dark">{{ data.head_remark|default:"No general remark set." }}</span>
                                             </td>
                                             <td colspan="2" class="text-right px-4 py-3">
-                                                <span class="badge {% if data.average >= 50 %}badge-success{% else %}badge-danger{% endif %} p-2 px-3 shadow-sm">
+                                                <span class="badge {% if not data.is_complete %}badge-warning{% elif data.average >= 50 %}badge-success{% else %}badge-danger{% endif %} p-2 px-3 shadow-sm">
                                                     {{ data.promotion_status|upper }}
                                                 </span>
                                             </td>
@@ -368,55 +368,178 @@
     .table td { vertical-align: middle; }
     .btn-white { background: white; color: #555; border: none; }
     .btn-white:hover { background: #f8f9fa; }
+        .trend-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .trend-stat { flex: 1 1 160px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; }
+    .trend-stat span { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #6b7280; }
+    .trend-stat strong { font-size: 1.4rem; color: #111827; }
+    .trend-stat strong.sm { font-size: 1.05rem; }
+    .trend-up { color: #16a34a !important; }
+    .trend-down { color: #dc2626 !important; }
+    .trend-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: .82rem; color: #4b5563; }
+    .trend-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .trend-legend .dash { display: inline-block; width: 18px; border-top: 2px dashed #dc2626; margin-right: 6px; vertical-align: middle; }
 </style>
-<!-- Chart.js Script -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_data|json_script:"chart-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('performanceChart');
-        if (ctx) {
-            // Parse the JSON data passed from the Django context
-            const labels = JSON.parse('{{ chart_labels|safe }}');
-            const data = JSON.parse('{{ chart_data|safe }}');
+    document.addEventListener('DOMContentLoaded', function () {
+        const canvas = document.getElementById('performanceChart');
+        if (!canvas) return;
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Term Average (%)',
-                        data: data,
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#007bff',
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        fill: true,
-                        tension: 0.3 // Adds a slight curve to the line
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: { stepSize: 20 }
-                        }
+        const rawLabels = JSON.parse(document.getElementById('chart-labels').textContent);
+        const values = JSON.parse(document.getElementById('chart-data').textContent).map(Number);
+        const labels = rawLabels.map(l => l.replace(' T', ' · Term '));
+
+        // Change these two numbers if your school uses different bands
+        const PASS = 50, STRONG = 70;
+
+        const COLORS = { strong: '#16a34a', pass: '#f59e0b', low: '#dc2626' };
+        const NAMES = { strong: 'Strong', pass: 'Pass', low: 'Below the pass mark' };
+        const band = v => v >= STRONG ? 'strong' : (v >= PASS ? 'pass' : 'low');
+        const pointColors = values.map(v => COLORS[band(v)]);
+
+        /* ---------- Summary tiles ---------- */
+        const latest = values[values.length - 1];
+        document.getElementById('trendLatest').textContent = latest.toFixed(1) + '%';
+
+        const changeEl = document.getElementById('trendChange');
+        if (values.length > 1) {
+            const diff = latest - values[values.length - 2];
+            if (diff > 0) { changeEl.textContent = '▲ +' + diff.toFixed(1) + ' pts'; changeEl.classList.add('trend-up'); }
+            else if (diff < 0) { changeEl.textContent = '▼ ' + diff.toFixed(1) + ' pts'; changeEl.classList.add('trend-down'); }
+            else { changeEl.textContent = '● No change'; }
+        } else {
+            changeEl.textContent = 'First term';
+        }
+
+        const bestIndex = values.indexOf(Math.max.apply(null, values));
+        document.getElementById('trendBest').textContent = labels[bestIndex] + ' · ' + values[bestIndex].toFixed(1) + '%';
+
+        /* ---------- Plugin: coloured zones and the pass-mark line ---------- */
+        const zones = {
+            id: 'zones',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                const { left, right, top, bottom } = chartArea;
+                const yPass = scales.y.getPixelForValue(PASS);
+                const yStrong = scales.y.getPixelForValue(STRONG);
+                ctx.save();
+                ctx.fillStyle = 'rgba(220, 38, 38, 0.06)';
+                ctx.fillRect(left, yPass, right - left, bottom - yPass);
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.07)';
+                ctx.fillRect(left, yStrong, right - left, yPass - yStrong);
+                ctx.fillStyle = 'rgba(22, 163, 74, 0.07)';
+                ctx.fillRect(left, top, right - left, yStrong - top);
+
+                ctx.setLineDash([6, 6]);
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(left, yPass);
+                ctx.lineTo(right, yPass);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#dc2626';
+                ctx.font = '600 11px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('Pass mark ' + PASS + '%', right - 6, yPass - 6);
+                ctx.restore();
+            }
+        };
+
+        /* ---------- Plugin: the score above every dot ---------- */
+        const valueLabels = {
+            id: 'valueLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                const meta = chart.getDatasetMeta(0);
+                ctx.save();
+                ctx.font = '700 12px sans-serif';
+                ctx.textAlign = 'center';
+                meta.data.forEach(function (point, i) {
+                    ctx.fillStyle = COLORS[band(values[i])];
+                    ctx.fillText(values[i].toFixed(1) + '%', point.x, point.y - 14);
+                });
+                ctx.restore();
+            }
+        };
+
+        const chart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Term average',
+                    data: values,
+                    borderColor: '#4f46e5',
+                    borderWidth: 3,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: function (context) {
+                        const c = context.chart;
+                        if (!c.chartArea) return 'rgba(79, 70, 229, 0.12)';
+                        const gradient = c.ctx.createLinearGradient(0, c.chartArea.top, 0, c.chartArea.bottom);
+                        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.28)');
+                        gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
+                        return gradient;
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return ' Average: ' + context.parsed.y + '%';
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 3,
+                    pointRadius: 7,
+                    pointHoverRadius: 9
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 24, right: 14 } },
+                animation: { duration: 900, easing: 'easeOutQuart' },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: { stepSize: 20, callback: v => v + '%', color: '#6b7280' },
+                        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#374151', font: { weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (item) {
+                                const i = item.dataIndex;
+                                const v = values[i];
+                                const lines = ['Average: ' + v.toFixed(1) + '%', 'Level: ' + NAMES[band(v)]];
+                                if (i > 0) {
+                                    const d = v - values[i - 1];
+                                    lines.push('Since previous term: ' + (d > 0 ? '+' : '') + d.toFixed(1) + ' pts');
                                 }
+                                return lines;
                             }
                         }
                     }
                 }
+            },
+            plugins: [zones, valueLabels]
+        });
+
+        // The chart sits inside a hidden tab, so redraw it whenever a tab is shown
+        if (window.jQuery) {
+            jQuery('a[data-toggle="tab"], a[data-toggle="pill"]').on('shown.bs.tab', function () {
+                chart.resize();
+                chart.update();
             });
         }
     });

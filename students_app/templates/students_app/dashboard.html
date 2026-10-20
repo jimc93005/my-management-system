@@ -36,6 +36,8 @@
                                 {% endif %}
                             </a>
 
+
+
                             <div class="role-icon">
                                 {% if is_admin %}
                                     <i class="fas fa-building fa-3x text-white-50"></i>
@@ -55,7 +57,30 @@
         </div>
     </div>
 
-
+     {% if approval_counts.hod or approval_counts.final or approval_counts.rejected %}
+            <div class="card border-0 shadow-sm mb-4" style="border-left: 5px solid #b8912f !important;">
+                <div class="card-body">
+                    <h6 class="font-weight-bold mb-3"><i class="fas fa-clipboard-check mr-2 text-warning"></i>Results approvals needing attention</h6>
+                    <div class="d-flex flex-wrap">
+                        {% if approval_counts.hod %}
+                        <a href="{% url 'students_app:hod_review' %}" class="btn btn-warning btn-sm rounded-pill mr-2 mb-2 font-weight-bold">
+                            {{ approval_counts.hod }} subject{{ approval_counts.hod|pluralize }} awaiting your review
+                        </a>
+                        {% endif %}
+                        {% if approval_counts.final %}
+                        <a href="{% url 'students_app:final_review' %}" class="btn btn-primary btn-sm rounded-pill mr-2 mb-2 font-weight-bold">
+                            {{ approval_counts.final }} subject{{ approval_counts.final|pluralize }} awaiting final approval
+                        </a>
+                        {% endif %}
+                        {% if approval_counts.rejected %}
+                        <a href="{% url 'students_app:assessment_setup_home' %}" class="btn btn-danger btn-sm rounded-pill mr-2 mb-2 font-weight-bold">
+                            {{ approval_counts.rejected }} subject{{ approval_counts.rejected|pluralize }} sent back to you
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+     {% endif %}
     <!-- =========================================================
          IMPORTANT ANNOUNCEMENTS
          ========================================================= -->
@@ -144,6 +169,13 @@
                         </span>
                         View Headteacher's List
                     </a>
+
+                    {% if user.is_headteacher or user.is_deputy or user.is_superuser %}
+                    <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:final_review' %}">
+                        <i class="fas fa-check-double mr-2"></i> Final Approval
+                    </a>
+                    {% endif %}
+
 
                     <a class="dropdown-item tool-dropdown-item"
                        href="{% url 'timetable:setup_settings' %}">
@@ -443,6 +475,12 @@
                         </span>
                         View Headteacher's List
                     </a>
+
+                    {% if user.is_hod or user.is_headteacher or user.is_deputy or user.is_superuser %}
+                    <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:hod_review' %}">
+                        <i class="fas fa-clipboard-check mr-2"></i> Results Review
+                    </a>
+                    {% endif %}
 
                       <a class="dropdown-item py-2 text-secondary" href="{% url 'students_app:assessment_setup_home' %}">
                                  <i class="fas fa-sliders-h mr-2"></i> Assessment Setup

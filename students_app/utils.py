@@ -1,9 +1,10 @@
 from django.db.models import Sum, Avg, Q
 from .models import Grade, Students, ClassLevel, GradeBoundary
+from .approvals import approved_grades
 
 
 def build_term_reports(student, level_filter=None):
-    all_grades = Grade.objects.filter(student=student)
+    all_grades = approved_grades(Grade.objects.filter(student=student))
 
     if level_filter:
         all_grades = all_grades.filter(class_level_snapshot__icontains=level_filter)
@@ -40,12 +41,12 @@ def build_term_reports(student, level_filter=None):
             historical_class = term_reports[year][term]['historical_class']
 
             # STRICT FILTER: Only query grades matching the locked class!
-            term_grades = Grade.objects.filter(
+            term_grades = approved_grades(Grade.objects.filter(
                 student=student,
                 academic_year=year,
                 term=term,
                 class_level_snapshot=historical_class
-            )
+            ))
 
             total = term_grades.aggregate(total=Sum('score'))['total'] or 0
             count = term_grades.count()
@@ -55,21 +56,21 @@ def build_term_reports(student, level_filter=None):
             term_reports[year][term]['average'] = average
 
             # --- HISTORICAL POSITION CALCULATION (Updated with Strict Filter) ---
-            cohort_grades = Grade.objects.filter(
+            cohort_grades = approved_grades(Grade.objects.filter(
                 academic_year=year, term=term, class_level_snapshot=historical_class
-            )
+            ))
             cohort_student_ids = cohort_grades.values_list('student_id', flat=True).distinct()
             total_students_in_term = cohort_student_ids.count()
 
             term_averages = []
             for s_id in cohort_student_ids:
                 # Calculate ranking average only using the locked class subjects
-                avg = Grade.objects.filter(
+                avg = approved_grades(Grade.objects.filter(
                     student_id=s_id,
                     academic_year=year,
                     term=term,
                     class_level_snapshot=historical_class
-                ).aggregate(avg=Avg('score'))['avg'] or 0
+                )).aggregate(avg=Avg('score'))['avg'] or 0
 
                 term_averages.append({'student_id': s_id, 'average': round(avg, 2)})
 
@@ -167,6 +168,19 @@ def build_term_reports(student, level_filter=None):
             term_reports[year][term]['promotion_status'] = status
             term_reports[year][term]['head_remark'] = remark
             term_reports[year][term]['class_comment'] = class_teacher_comment
+
+            # Hold back the overall results until EVERY subject in this class-term is approved
+            cohort_all = Grade.objects.filter(
+                academic_year=year, term=term, class_level_snapshot=historical_class
+            )
+            is_complete = approved_grades(cohort_all).count() == cohort_all.count()
+            term_reports[year][term]['is_complete'] = is_complete
+            if not is_complete:
+                term_reports[year][term]['average'] = 0
+                term_reports[year][term]['position'] = None
+                term_reports[year][term]['promotion_status'] = 'Pending approval'
+                term_reports[year][term]['head_remark'] = 'Awaiting approval of all subjects.'
+                term_reports[year][term]['class_comment'] = ''
 
             # --- HISTORICAL SUBJECT-WISE POSITIONING (Unchanged) ---
             grades_in_term = term_reports[year][term]['grades']

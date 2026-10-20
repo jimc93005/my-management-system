@@ -447,6 +447,97 @@ class AssessmentGrade(models.Model):
 
 
 
+
+
+
+# LOCKING OF GRADES AND APPROVALS
+class ResultApproval(models.Model):
+    """One approval record per subject + academic year + term."""
+
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PENDING_HOD = 'PENDING_HOD', 'Awaiting HOD'
+        PENDING_HEAD = 'PENDING_HEAD', 'Awaiting Headteacher'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE, related_name='result_approvals')
+    academic_year = models.CharField(max_length=10)
+    term = models.CharField(max_length=10, choices=[('1', 'Term 1'), ('2', 'Term 2'), ('3', 'Term 3')])
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.DRAFT, db_index=True)
+
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                     null=True, blank=True, related_name='+')
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    hod_reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                        null=True, blank=True, related_name='+')
+    hod_reviewed_at = models.DateTimeField(null=True, blank=True)
+    hod_note = models.TextField(blank=True)
+
+    head_reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                         null=True, blank=True, related_name='+')
+    head_reviewed_at = models.DateTimeField(null=True, blank=True)
+    head_note = models.TextField(blank=True)
+
+    rejection_reason = models.TextField(blank=True)
+    rejected_at_stage = models.CharField(max_length=4, blank=True, choices=[('HOD', 'HOD'), ('HEAD', 'Headteacher')])
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('subject', 'academic_year', 'term')
+        ordering = ['-updated_at']
+
+    @property
+    def is_locked(self):
+        """Grades cannot be changed while pending or approved."""
+        return self.status in (self.Status.PENDING_HOD, self.Status.PENDING_HEAD, self.Status.APPROVED)
+
+    @property
+    def is_approved(self):
+        return self.status == self.Status.APPROVED
+
+    def __str__(self):
+        return f"{self.subject} | {self.academic_year} Term {self.term} | {self.get_status_display()}"
+
+
+class ApprovalLog(models.Model):
+    """Audit trail: every submit, approve, reject and reopen."""
+
+    class Action(models.TextChoices):
+        SUBMIT = 'SUBMIT', 'Submitted'
+        WITHDRAW = 'WITHDRAW', 'Withdrawn'
+        HOD_APPROVE = 'HOD_APPROVE', 'HOD approved'
+        HOD_REJECT = 'HOD_REJECT', 'HOD rejected'
+        HEAD_APPROVE = 'HEAD_APPROVE', 'Final approval'
+        HEAD_REJECT = 'HEAD_REJECT', 'Final rejection'
+        REOPEN = 'REOPEN', 'Reopened'
+        BACKFILL = 'BACKFILL', 'Backfilled'
+
+    approval = models.ForeignKey(ResultApproval, on_delete=models.CASCADE, related_name='logs')
+    action = models.CharField(max_length=15, choices=Action.choices)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                              null=True, blank=True, related_name='+')
+    from_status = models.CharField(max_length=15, blank=True)
+    to_status = models.CharField(max_length=15, blank=True)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.approval} - {self.get_action_display()}"
+
+
+
+
+
+
+
+
 # SCHOOL REPORT MODELS
 from django.db import models
 from django.db import connection

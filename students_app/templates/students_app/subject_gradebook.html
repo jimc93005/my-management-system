@@ -60,6 +60,9 @@
     </div>
 
     <!-- DJANGO MESSAGES -->
+    {% if academic_year and term %}
+        {% include 'students_app/_approval_panel.html' with panel_year=academic_year panel_term=term panel_next='gradebook' %}
+    {% endif %}
     {% if messages %}
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} shadow-sm border-0 rounded" role="alert">{{ message }}</div>
@@ -133,12 +136,12 @@
                                     </td>
                                     {% endif %}
 
-                                    <!-- ASSESSMENTS (New Clean Loop) -->
+                                                                        <!-- ASSESSMENTS (New Clean Loop) -->
                                     {% for item in data.student_assessments %}
                                     <td>
-                                        <input type="number" step="0.1" max="{{ item.max_raw_score }}" name="raw_score_{{ data.student.id }}_{{ item.assessment_id }}" value="{{ item.raw_score }}" class="form-control mb-2 assessment-input" placeholder="--">
+                                        <input type="number" step="0.1" max="{{ item.max_raw_score }}" name="raw_score_{{ data.student.id }}_{{ item.assessment_id }}" value="{{ item.raw_score }}" class="form-control mb-2 assessment-input" placeholder="--" {% if is_locked %}disabled{% endif %}>
                                         <label>
-                                            <input type="checkbox" name="is_absent_{{ data.student.id }}_{{ item.assessment_id }}" class="absent-checkbox" {% if item.is_absent %}checked{% endif %}>
+                                            <input type="checkbox" name="is_absent_{{ data.student.id }}_{{ item.assessment_id }}" class="absent-checkbox" {% if item.is_absent %}checked{% endif %} {% if is_locked %}disabled{% endif %}>
                                             Absent
                                         </label>
                                     </td>
@@ -182,8 +185,8 @@
                                 <ul class="pagination pagination-sm m-0" id="entryPaginationNav"></ul>
                             </nav>
                             {% if student_data %}
-                            <button type="submit" id="saveBtn" class="btn btn-primary rounded-pill px-4 py-2 font-weight-bold shadow-sm hover-lift" style="font-size: 0.95rem;">
-                                <i class="fas fa-save mr-2"></i> Save & Calculate Grades
+                            <button type="submit" id="saveBtn" class="btn btn-primary rounded-pill px-4 py-2 font-weight-bold shadow-sm hover-lift" style="font-size: 0.95rem;" {% if is_locked %}disabled{% endif %}>
+                                {% if is_locked %}<i class="fas fa-lock mr-2"></i> Locked{% else %}<i class="fas fa-save mr-2"></i> Save & Calculate Grades{% endif %}
                             </button>
                             {% endif %}
                         </div>
@@ -334,6 +337,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const rankedTableBody = document.getElementById("rankedTableBody");
     const downloadPdfBtn = document.getElementById("downloadPdfBtn");
     const subjectId = "{{ subject.id }}";
+    const gridLocked = {% if is_locked %}true{% else %}false{% endif %};
 
     /* MODAL */
     const warningOverlay = document.getElementById("customWarningOverlay");

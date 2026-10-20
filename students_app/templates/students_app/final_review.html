@@ -1,0 +1,383 @@
+{% extends 'students_app/base.html' %}
+
+{% block content %}
+<div class="hr">
+<div class="hr-wrap">
+
+    {% if messages %}
+    <div class="hr-messages">
+        {% for message in messages %}
+        <div class="hr-msg hr-msg-{{ message.level_tag }}" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="hr-msg-close" aria-label="Dismiss">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <header class="hr-header">
+        <div class="hr-header-container mb-4">
+            <div class="subtitle-highlight">
+                <i class="fas fa-check-double me-2" style="font-size: 0.85rem;"></i> Stage 2: Executive Review
+            </div>
+            <h1 class="hr-title">
+                <i class="fas fa-award"></i>Final Approval
+            </h1>
+            <p class="hr-subtitle">
+                Results approved by the Heads of Department arrive here. Review student performance data to approve and make them final, or reject them back to the teacher with notes.
+            </p>
+        </div>
+        <div class="hr-period">
+            <form method="get" class="hr-year-form">
+                <input type="hidden" name="term" value="{{ term }}">
+                <label class="sr-only" for="hrYear">Academic year</label>
+                <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                <select id="hrYear" name="year" onchange="this.form.submit()">
+                    {% for y in year_options %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                </select>
+            </form>
+            <nav class="hr-terms" aria-label="Term">
+                {% for val, label in term_choices %}
+                <a href="?year={{ year|urlencode }}&term={{ val }}" class="hr-term{% if val == term %} is-active{% endif %}">{{ label }}</a>
+                {% endfor %}
+            </nav>
+        </div>
+    </header>
+
+    <dl class="hr-stats is-four">
+        <div class="hr-stat"><dt>Awaiting your approval</dt><dd class="{% if summary.awaiting %}is-warn{% endif %}">{{ summary.awaiting }}</dd></div>
+        <div class="hr-stat"><dt>With the HOD</dt><dd>{{ summary.with_hod }}</dd></div>
+        <div class="hr-stat"><dt>Approved</dt><dd class="is-ok">{{ summary.approved }}</dd></div>
+        <div class="hr-stat"><dt>Sent back</dt><dd class="{% if summary.rejected %}is-bad{% endif %}">{{ summary.rejected }}</dd></div>
+    </dl>
+
+    {% if groups %}
+    <div class="hr-toolbar">
+        <div class="hr-chips" role="group" aria-label="Filter">
+            <button type="button" class="hr-chip is-active" data-bucket="all">All</button>
+            <button type="button" class="hr-chip" data-bucket="awaiting">Awaiting approval</button>
+            <button type="button" class="hr-chip" data-bucket="with_hod">With the HOD</button>
+            <button type="button" class="hr-chip" data-bucket="approved">Approved</button>
+            <button type="button" class="hr-chip" data-bucket="rejected">Sent back</button>
+        </div>
+        <div class="hr-toggles">
+            <button type="button" class="hr-link-btn" id="hrExpand">Expand all</button>
+            <span aria-hidden="true">/</span>
+            <button type="button" class="hr-link-btn" id="hrCollapse">Collapse all</button>
+        </div>
+    </div>
+
+    {% for group in groups %}
+    <details class="hr-class" {% if group.awaiting %}open{% endif %}>
+        <summary class="hr-class-head">
+            <span class="hr-class-title">
+                <span class="hr-class-name">{{ group.class_level|default_if_none:"Unassigned" }}</span>
+                <span class="hr-class-sub">
+                    {{ group.cards|length }} subject{{ group.cards|length|pluralize }}{% if group.awaiting %} &middot; <b>{{ group.awaiting }} awaiting your approval</b>{% endif %}
+                </span>
+            </span>
+            <i class="fas fa-chevron-down hr-chev" aria-hidden="true"></i>
+        </summary>
+
+        <div class="hr-class-body">
+            {% for card in group.cards %}
+            {% with approval=card.approval review=card.review %}
+            <details class="hr-subject" data-bucket="{{ card.bucket }}" {% if card.can_act %}open{% endif %}>
+                <summary class="hr-subject-head">
+                    <span class="hr-subject-title">
+                        <span class="hr-subject-name">{{ approval.subject.name.name }}</span>
+                        <span class="hr-subject-meta">
+                            <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                            {% if approval.subject.teacher_subject %}{{ approval.subject.teacher_subject.get_full_name|default:approval.subject.teacher_subject.username }}{% else %}No teacher assigned{% endif %}
+                            &middot; {{ review.stats.count }} student{{ review.stats.count|pluralize }}
+                        </span>
+                    </span>
+                    <span class="hr-pill hr-{{ approval.status }}">{{ approval.get_status_display }}</span>
+                    <i class="fas fa-chevron-down hr-chev" aria-hidden="true"></i>
+                </summary>
+
+                <div class="hr-subject-body">
+
+                    <p class="hr-submitted">
+                        {% if approval.submitted_by %}Submitted by <b>{{ approval.submitted_by.get_full_name|default:approval.submitted_by.username }}</b>{% if approval.submitted_at %} on {{ approval.submitted_at|date:"j M Y, H:i" }}{% endif %}.{% endif %}
+                        {% if approval.hod_reviewed_by and approval.status != 'REJECTED' %}
+                            HOD approval by <b>{{ approval.hod_reviewed_by.get_full_name|default:approval.hod_reviewed_by.username }}</b> on {{ approval.hod_reviewed_at|date:"j M Y, H:i" }}.
+                        {% endif %}
+                        {% if approval.status == 'APPROVED' and approval.head_reviewed_by %}
+                            Final approval by <b>{{ approval.head_reviewed_by.get_full_name|default:approval.head_reviewed_by.username }}</b> on {{ approval.head_reviewed_at|date:"j M Y, H:i" }}.
+                        {% endif %}
+                        {% if approval.status == 'PENDING_HOD' %}Still with the Head of Department.{% endif %}
+                    </p>
+
+                    {% if approval.status == 'REJECTED' %}
+                    <p class="hr-reason"><strong>Rejected by the {% if approval.rejected_at_stage == 'HOD' %}HOD{% else %}headteacher{% endif %}:</strong> {{ approval.rejection_reason }}</p>
+                    {% endif %}
+
+                    <dl class="hr-mini">
+                        <div><dt>Students</dt><dd>{{ review.stats.count }}</dd></div>
+                        <div><dt>Average</dt><dd>{{ review.stats.average|floatformat:"-1" }}%</dd></div>
+                        <div><dt>Highest</dt><dd>{{ review.stats.highest|floatformat:0 }}%</dd></div>
+                        <div><dt>Lowest</dt><dd>{{ review.stats.lowest|floatformat:0 }}%</dd></div>
+                        <div><dt>Pass rate (50%+)</dt><dd>{{ review.stats.pass_rate }}%</dd></div>
+                    </dl>
+
+                    <div class="hr-table-wrap">
+                        <table class="hr-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student</th>
+                                    <th>ID</th>
+                                    {% if review.has_breakdown %}
+                                    <th class="num">CA <small>/ {{ review.ca_weight|floatformat:"-1" }}</small></th>
+                                    <th class="num">Exam <small>/ {{ review.exam_weight|floatformat:"-1" }}</small></th>
+                                    {% endif %}
+                                    <th class="num">Final %</th>
+                                    <th>Grade</th>
+                                    <th>Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in review.rows %}
+                                <tr>
+                                    <td>{{ r.rank }}</td>
+                                    <td class="name">{{ r.student.first_name }} {{ r.student.surname }}{% if r.absent %} <span class="hr-abs" title="Absent for {{ r.absent }} paper{{ r.absent|pluralize }}">absent</span>{% endif %}</td>
+                                    <td class="code">{{ r.student.student_id }}</td>
+                                    {% if review.has_breakdown %}
+                                    <td class="num">{{ r.ca_points|default_if_none:"-" }}</td>
+                                    <td class="num">{{ r.exam_points|default_if_none:"-" }}</td>
+                                    {% endif %}
+                                    <td class="num final">{{ r.score|floatformat:0 }}%</td>
+                                    <td><span class="hr-grade">{{ r.letter|default:"-" }}</span></td>
+                                    <td class="muted">{{ r.remark }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="8" class="empty">No results have been recorded.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if card.can_act %}
+                    <div class="hr-actions">
+                        <form method="post" action="{% url 'students_app:final_decide' approval.pk %}"
+                              onsubmit="return confirm('Give final approval? These results become final and visible on student profiles and report cards.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="decision" value="approve">
+                            <button type="submit" class="hr-btn hr-btn-ok"><i class="fas fa-check" aria-hidden="true"></i> Approve</button>
+                        </form>
+                        <button type="button" class="hr-btn hr-btn-bad" id="reject-toggle-{{ approval.pk }}"
+                                onclick="document.getElementById('reject-box-{{ approval.pk }}').hidden = false; this.hidden = true;">
+                            <i class="fas fa-times" aria-hidden="true"></i> Reject&hellip;
+                        </button>
+                    </div>
+                    <form method="post" action="{% url 'students_app:final_decide' approval.pk %}"
+                          class="hr-reasonform" id="reject-box-{{ approval.pk }}" hidden>
+                        {% csrf_token %}
+                        <input type="hidden" name="decision" value="reject">
+                        <label for="reject-note-{{ approval.pk }}">Why are you sending these results back? (the teacher will see this)</label>
+                        <textarea id="reject-note-{{ approval.pk }}" name="note" rows="3" maxlength="500" required
+                                  placeholder="e.g. Paper 2 marks look too low. Please recheck."></textarea>
+                        <div class="hr-reasonform-actions">
+                            <button type="button" class="hr-btn hr-btn-ghost"
+                                    onclick="this.closest('form').hidden = true; document.getElementById('reject-toggle-{{ approval.pk }}').hidden = false;">Cancel</button>
+                            <button type="submit" class="hr-btn hr-btn-bad">Send back to teacher</button>
+                        </div>
+                    </form>
+                    {% elif card.can_reopen %}
+                    <div class="hr-actions">
+                        <button type="button" class="hr-btn hr-btn-ghost" id="reopen-toggle-{{ approval.pk }}"
+                                onclick="document.getElementById('reopen-box-{{ approval.pk }}').hidden = false; this.hidden = true;">
+                            <i class="fas fa-lock-open" aria-hidden="true"></i> Reopen for corrections&hellip;
+                        </button>
+                    </div>
+                    <form method="post" action="{% url 'students_app:final_decide' approval.pk %}"
+                          class="hr-reasonform" id="reopen-box-{{ approval.pk }}" hidden>
+                        {% csrf_token %}
+                        <input type="hidden" name="decision" value="reopen">
+                        <label for="reopen-note-{{ approval.pk }}">Why are you reopening these results? (recorded in the approval log)</label>
+                        <textarea id="reopen-note-{{ approval.pk }}" name="note" rows="3" maxlength="500" required
+                                  placeholder="e.g. A mark was entered wrongly for one student."></textarea>
+                        <div class="hr-reasonform-actions">
+                            <button type="button" class="hr-btn hr-btn-ghost"
+                                    onclick="this.closest('form').hidden = true; document.getElementById('reopen-toggle-{{ approval.pk }}').hidden = false;">Cancel</button>
+                            <button type="submit" class="hr-btn hr-btn-ghost">Reopen these results</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                            </div>
+            </details>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+
+    <div class="hr-empty" id="hrNoMatch" hidden><p>Nothing matches this filter.</p></div>
+    <dialog class="hr-dialog" id="hrReject" aria-labelledby="hrRejectHeading">
+        <form method="post" id="hrRejectForm" class="hr-dialog-box">
+            {% csrf_token %}
+            <input type="hidden" name="decision" value="reject">
+            <h3 id="hrRejectHeading">Reject these results</h3>
+            <p id="hrRejectTitle" class="hr-dialog-sub"></p>
+            <label for="hrNote">Reason (recorded in the approval log; for a rejection the teacher will see it)</label>
+            <textarea id="hrNote" name="note" rows="4" maxlength="500" required placeholder="Write the reason here"></textarea>
+            <div class="hr-dialog-actions">
+                <button type="button" class="hr-btn hr-btn-ghost" data-close>Cancel</button>
+                <button type="submit" class="hr-btn hr-btn-bad" id="hrRejectSubmit">Reject and return</button>
+            </div>
+        </form>
+    </dialog>
+
+    {% else %}
+    <div class="hr-empty">
+        <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+        <h2>Nothing to approve</h2>
+        <p>No subjects have been submitted for {{ year }}, {{ term_label }}. They appear here as teachers submit and Heads of Department approve.</p>
+    </div>
+    {% endif %}
+
+</div>
+</div>
+
+<style>
+    .hr-stats.is-four { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 767px) { .hr-stats.is-four { grid-template-columns: 1fr 1fr; } }
+
+
+
+
+    .hr-reasonform { margin-top: .75rem; display: grid; gap: .5rem; background: #fff; border: 1px solid #e6e9f2; border-radius: .9rem; padding: 1rem; }
+    .hr-reasonform label { font-size: .85rem; font-weight: 600; margin: 0; }
+    .hr-reasonform textarea { width: 100%; border: 1px solid #cfd5e4; border-radius: .7rem; padding: .7rem .85rem; font-family: inherit; font-size: .93rem; resize: vertical; }
+    .hr-reasonform-actions { display: flex; justify-content: flex-end; gap: .6rem; }
+
+    /* Glassmorphic Container Wrapper (Optional, wrap your header in .hr-header-container) */
+.hr-header-container {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1.25rem;
+    padding: 2.25rem 2.5rem;
+    box-shadow: 0 10px 30px -10px rgba(29, 78, 216, 0.08),
+                0 4px 12px -2px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hr-header-container:hover {
+    box-shadow: 0 20px 40px -12px rgba(29, 78, 216, 0.14),
+                0 6px 16px -2px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+}
+
+/* Vibrant Radial Ambient Glow Behind the Header */
+.hr-header-container::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(72, 180, 232, 0.25) 0%, rgba(29, 78, 216, 0.05) 60%, transparent 80%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Gradient Title with Shimmer Text Effect */
+.hr-title {
+    font-size: clamp(2.2rem, 4.5vw, 3.25rem);
+    font-weight: 850;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #0f2b48 0%, #1d4ed8 40%, #3b82f6 75%, #06b6d4 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+    animation: titleReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both, shimmer 8s linear infinite;
+}
+
+/* Golden Icon Styling with Soft Glow */
+.hr-title i {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fef08a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-right: 12px;
+    filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.35));
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.hr-title:hover i {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Enhanced Subtitle Typography */
+.hr-subtitle {
+    max-width: 780px;
+    color: #475569;
+    font-size: 1.08rem;
+    line-height: 1.85;
+    font-weight: 450;
+    margin-top: 0;
+    position: relative;
+    z-index: 1;
+    animation: subtitleReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Glowing Highlight Pill */
+.subtitle-highlight {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(29, 78, 216, 0.08) 0%, rgba(59, 130, 246, 0.12) 100%);
+    color: #1e40af;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(29, 78, 216, 0.18);
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(29, 78, 216, 0.06);
+    letter-spacing: 0.2px;
+}
+
+/* Smooth Entrance & Shimmer Animations */
+@keyframes titleReveal {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes subtitleReveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% center; }
+    50% { background-position: 100% center; }
+    100% { background-position: 0% center; }
+}
+</style>
+
+
+{% include 'students_app/_review_assets.html' %}
+{% endblock %}

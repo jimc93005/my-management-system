@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import approval_views
 from django.contrib.auth import views as auth_views
 
 app_name = 'students_app'
@@ -200,6 +201,12 @@ path('password-reset/', auth_views.PasswordResetView.as_view(
 
     # 2. Rules Builder (Read-only view for a specific subject)
     path('assessments/subject/<int:subject_id>/', views.subject_term_setup, name='subject_term_setup'),
+    path('assessments/subject/<int:subject_id>/submit/', views.submit_results, name='submit_results'),
+    path('assessments/subject/<int:subject_id>/withdraw/', views.withdraw_results, name='withdraw_results'),
+    path('approvals/hod/', approval_views.hod_review_home, name='hod_review'),
+    path('approvals/hod/<int:approval_id>/decide/', approval_views.hod_decide, name='hod_decide'),
+    path('approvals/final/', approval_views.final_review_home, name='final_review'),
+    path('approvals/final/<int:approval_id>/decide/', approval_views.final_decide, name='final_decide'),
 
     # 3. Write Actions (POST endpoints)
     path('assessments/subject/<int:subject_id>/create/', views.create_term_setup, name='create_term_setup'),

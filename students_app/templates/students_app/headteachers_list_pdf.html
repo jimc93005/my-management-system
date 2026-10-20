@@ -90,7 +90,7 @@
                     {% for entry in class_data.top_students %}
                         <tr>
                             <td class="rank-cell">{{ entry.position }}</td>
-                            <td>{{ entry.student.first_name }} {{ entry.student.surname }}</td>
+                            <td>{{ entry.student.first_name|upper }} {{ entry.student.surname|upper }}</td>
                             <td>{{ entry.average }}%</td>
                         </tr>
                     {% endfor %}
