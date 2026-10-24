@@ -24,6 +24,12 @@ from .emails import (
     send_rejected_registration_email
 )
 from .models import HeroBanner
+from django.contrib.admin.models import CHANGE, LogEntry
+from django.core.exceptions import PermissionDenied
+from django.utils.html import format_html
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
 
 from .emails import (
 
@@ -731,54 +737,65 @@ def demo_hub(request):
 
 # RESERT PASSOWRDS VIEWS
 
-# schools_manager/views.py
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django_tenants.utils import tenant_context
-
 
 @staff_member_required
 def emergency_password_reset(request, pk):
     """
-    Generates a 1-time password reset link for the primary superuser
-    of a specific school tenant without requiring email access.
+    Master admin only: makes a one-time password reset link for the main
+    administrator of a school, without needing email access.
     """
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     school_tenant = get_object_or_404(School, pk=pk)
+    changelist = 'tenant_admin_site:schools_manager_school_changelist'
 
     # Do not allow resetting the master public schema this way
     if school_tenant.schema_name == 'public':
         messages.error(request, "Cannot use this tool for the Master schema.")
-        return redirect('tenant_admin_site:schools_manager_school_changelist')
+        return redirect(changelist)
 
-    domain_obj = school_tenant.domains.first()
+    domain_obj = school_tenant.get_primary_domain() or school_tenant.domains.first()
     if not domain_obj:
         messages.error(request, "No domain associated with this tenant.")
-        return redirect('tenant_admin_site:schools_manager_school_changelist')
+        return redirect(changelist)
 
-    # Switch context to the specific school to find their admin
+    # Switch to the school's own data to find its administrator
     with tenant_context(school_tenant):
         User = get_user_model()
-        # Grab the first superuser (usually the primary school admin created during provisioning)
-        admin_user = User.objects.filter(is_superuser=True).first()
-
+        admin_user = (
+            User.objects.filter(is_superuser=True, is_active=True,
+                                username=f"admin_{school_tenant.schema_name}").first()
+            or User.objects.filter(is_superuser=True, is_active=True).order_by('pk').first()
+        )
         if not admin_user:
-            messages.error(request, f"No superuser found for {school_tenant.name}.")
-            return redirect('tenant_admin_site:schools_manager_school_changelist')
+            messages.error(request, f"No active administrator found for {school_tenant.name}.")
+            return redirect(changelist)
 
-        # Generate the secure tokens required by Django's built-in reset system
         uid = urlsafe_base64_encode(force_bytes(admin_user.pk))
         token = default_token_generator.make_token(admin_user)
+        admin_username, admin_email = admin_user.username, admin_user.email
 
-        # Construct the full tenant-specific URL
-        protocol = "https" if request.is_secure() else "http"
-        reset_link = f"{protocol}://{domain_obj.domain}/password-reset-confirm/{uid}/{token}/"
+    # Build the link on the school's own address (keeping the port when testing locally)
+    port = request.get_host().partition(':')[2]
+    port_part = f":{port}" if port else ''
+    reset_link = f"{request.scheme}://{domain_obj.domain}{port_part}/password-reset-confirm/{uid}/{token}/"
 
-        # Push the link to the Master Admin screen via a flash message
-        messages.success(request, format_html(
-            f"✅ <b>Emergency Link Generated for {school_tenant.name}</b> (User: {admin_user.email})<br><br>"
-            f"Copy and send this link securely. It will expire in 24 hours or immediately after use:<br>"
-            f"<a href='{reset_link}' target='_blank' style='color: #2563eb; font-family: monospace;'>{reset_link}</a>"
-        ))
+    # Record it in the school's History page in the admin
+    try:
+        LogEntry.objects.log_actions(
+            user_id=request.user.pk,
+            queryset=[school_tenant],
+            action_flag=CHANGE,
+            change_message=f"Emergency password reset link generated for account '{admin_username}'.",
+        )
+    except Exception:
+        logger.exception("Could not record the emergency reset in the admin history")
 
-    return redirect('tenant_admin_site:schools_manager_school_changelist')
+    messages.success(request, format_html(
+        "✅ <b>Emergency link generated for {}</b> (account: {}, {})<br><br>"
+        "Send it only to the verified school administrator. It works once and expires in 24 hours:<br>"
+        "<a href='{}' target='_blank' rel='noopener' style='color: #2563eb; font-family: monospace;'>{}</a>",
+        school_tenant.name, admin_username, admin_email, reset_link, reset_link,
+    ))
+    return redirect(changelist)

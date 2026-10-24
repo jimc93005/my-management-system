@@ -106,10 +106,10 @@ SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
 # ==============================================================================
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django_tenants.middleware.main.TenantMainMiddleware',
     'schools_manager.middleware.TenantSubscriptionMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serves static files efficiently
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

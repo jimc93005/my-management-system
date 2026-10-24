@@ -4,12 +4,11 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django_tenants.utils import schema_context
-from django.utils import timezone
-from django.utils.html import format_html
-from django.urls import reverse
+
 
 from .models import School, Domain, SchoolRegistrationRequest
 from .models import SubscriptionPlan, PlanFeature, PaymentMethod
+from django.urls import reverse, NoReverseMatch
 
 
 
@@ -31,7 +30,6 @@ tenant_admin_site.register(Domain)
 
 # schools_manager/admin.py
 from django.utils.html import format_html
-from django.urls import reverse
 
 
 @admin.register(School, site=tenant_admin_site)
@@ -45,7 +43,11 @@ class SchoolAdmin(admin.ModelAdmin):
         if obj.schema_name == 'public':
             return ""
 
-        emergency_url = reverse('schools_manager:emergency_reset', args=[obj.pk])
+        try:
+            emergency_url = reverse('schools_manager:emergency_reset', args=[obj.pk])
+        except NoReverseMatch:
+            return "Not available yet"
+
         return format_html(
             '<a class="button" style="background-color: #f59e0b; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold;" href="{}">'
             'Generate Emergency Reset Link'

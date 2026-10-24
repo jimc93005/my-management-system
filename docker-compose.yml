@@ -20,8 +20,8 @@ services:
     build: .
     container_name: school-portal-container
     restart: always
-    # Replace 'your_project' with your actual Django project directory name
-    command: gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000
+
+    command: gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60
     volumes:
       - static_data:/app/staticfiles
       - media_data:/app/media

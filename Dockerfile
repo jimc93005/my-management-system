@@ -34,4 +34,6 @@ COPY . /app/
 EXPOSE 8000
 
 # 8. Run migrations, collect static files, and start Gunicorn for production
-CMD ["sh", "-c", "python manage.py migrate_schemas && python manage.py collectstatic --noinput && gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000"]
+
+# 8. Run migrations, collect static files, and start Gunicorn for production
+CMD ["sh", "-c", "python manage.py migrate_schemas && python manage.py collectstatic --noinput && exec gunicorn projectfolder.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 60"]
