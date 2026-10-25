@@ -2743,7 +2743,7 @@ from .forms import SchoolCoverPhotoForm, CarouselEventForm
 
 @login_required(login_url='login')
 def edit_school_photos(request):
-    if not request.user.has_perm('students_app.view_subjectdepartment'):
+    if not request.user.has_perm('students_app.view_schoolcoverphoto'):
         messages.warning(request, "🔒 Oops! You don't have permission to"
                                   " view departments. Please contact"
                                   " the Headteacher if you need this feature.")
@@ -2823,6 +2823,12 @@ def academic_settings(request):
 
 @login_required(login_url='users:login')
 def add_grading_system(request):
+    if not request.user.has_perm('students_app.view_schoolcoverphoto'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view departments. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
+
     if request.method == "POST":
         form = GradingSystemForm(request.POST)
         if form.is_valid():
@@ -2842,6 +2848,11 @@ def add_grading_system(request):
 
 @login_required(login_url='users:login')
 def add_grade_boundary(request, system_id):
+    if not request.user.has_perm('students_app.view_gradeboundary'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view grade boundary. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Find the specific grading system from the URL
     system = get_object_or_404(GradingSystem, id=system_id)
 
@@ -2874,6 +2885,11 @@ def add_grade_boundary(request, system_id):
 
 @login_required(login_url='users:login')
 def add_class_level(request):
+    if not request.user.has_perm('students_app.view_classlevel'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " view class level. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     if request.method == "POST":
         form = ClassLevelForm(request.POST)
         if form.is_valid():
@@ -2895,6 +2911,11 @@ def add_class_level(request):
 
 @login_required(login_url='users:login')
 def edit_class_level(request, class_id):
+    if not request.user.has_perm('students_app.change_classlevel'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " change class level. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Fetch the specific class they clicked on
     class_obj = get_object_or_404(ClassLevel, id=class_id)
 
@@ -2921,6 +2942,11 @@ def edit_class_level(request, class_id):
 
 @login_required(login_url='users:login')
 def edit_grade_boundary(request, boundary_id):
+    if not request.user.has_perm('students_app.change_gradeboundary'):
+        messages.warning(request, "🔒 Oops! You don't have permission to"
+                                  " change grade boundary. Please contact"
+                                  " the Headteacher if you need this feature.")
+        return redirect('students_app:dashboard')
     # Fetch the specific grade boundary they clicked on
     boundary = get_object_or_404(GradeBoundary, id=boundary_id)
 
