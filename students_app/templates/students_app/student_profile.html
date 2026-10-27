@@ -1,4 +1,36 @@
 {% extends "students_app/base.html" %}
+{% block extra_css %}
+
+<style>
+    body { background-color: #f0f2f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .custom-pills .nav-link { color: #5f6368; border-radius: 8px; padding: 12px 20px; font-weight: 600; transition: 0.3s; margin-right: 10px; background: white; border: 1px solid #e0e0e0; }
+    .custom-pills .nav-link.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 4px 10px rgba(0,123,255,0.25); }
+
+    .btn-year-selector { background: white; border: 1px solid #dcdcdc; color: #555; border-radius: 6px; padding: 8px 16px; font-weight: bold; }
+    .btn-year-selector.active { background: #202124; color: white; border-color: #202124; box-shadow: 0 3px 6px rgba(0,0,0,0.16); }
+
+    .metric-card { border-radius: 10px; transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-3px); }
+
+    .subject-badge { background: white; border-radius: 6px; padding: 10px 15px; font-weight: 600; color: #3c4043; border: 1px solid #eee; }
+    .badge-soft-primary { background-color: #e8f0fe; color: #1967d2; font-weight: bold; }
+    .nav-tabs .nav-link { border: none; color: #5f6368; }
+    .nav-tabs .nav-link.active { background-color: transparent !important; border-bottom: 3px solid #007bff !important; color: #007bff !important; }
+    .table td { vertical-align: middle; }
+    .btn-white { background: white; color: #555; border: none; }
+    .btn-white:hover { background: #f8f9fa; }
+        .trend-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .trend-stat { flex: 1 1 160px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; }
+    .trend-stat span { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #6b7280; }
+    .trend-stat strong { font-size: 1.4rem; color: #111827; }
+    .trend-stat strong.sm { font-size: 1.05rem; }
+    .trend-up { color: #16a34a !important; }
+    .trend-down { color: #dc2626 !important; }
+    .trend-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: .82rem; color: #4b5563; }
+    .trend-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .trend-legend .dash { display: inline-block; width: 18px; border-top: 2px dashed #dc2626; margin-right: 6px; vertical-align: middle; }
+</style>
+{% endblock %}
 {% block content %}
 
 <div class="container py-5">
@@ -348,35 +380,6 @@
     </div>
 </div>
 
-<style>
-    body { background-color: #f0f2f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .custom-pills .nav-link { color: #5f6368; border-radius: 8px; padding: 12px 20px; font-weight: 600; transition: 0.3s; margin-right: 10px; background: white; border: 1px solid #e0e0e0; }
-    .custom-pills .nav-link.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 4px 10px rgba(0,123,255,0.25); }
-
-    .btn-year-selector { background: white; border: 1px solid #dcdcdc; color: #555; border-radius: 6px; padding: 8px 16px; font-weight: bold; }
-    .btn-year-selector.active { background: #202124; color: white; border-color: #202124; box-shadow: 0 3px 6px rgba(0,0,0,0.16); }
-
-    .metric-card { border-radius: 10px; transition: transform 0.2s; }
-    .metric-card:hover { transform: translateY(-3px); }
-
-    .subject-badge { background: white; border-radius: 6px; padding: 10px 15px; font-weight: 600; color: #3c4043; border: 1px solid #eee; }
-    .badge-soft-primary { background-color: #e8f0fe; color: #1967d2; font-weight: bold; }
-    .nav-tabs .nav-link { border: none; color: #5f6368; }
-    .nav-tabs .nav-link.active { background-color: transparent !important; border-bottom: 3px solid #007bff !important; color: #007bff !important; }
-    .table td { vertical-align: middle; }
-    .btn-white { background: white; color: #555; border: none; }
-    .btn-white:hover { background: #f8f9fa; }
-        .trend-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
-    .trend-stat { flex: 1 1 160px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; }
-    .trend-stat span { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #6b7280; }
-    .trend-stat strong { font-size: 1.4rem; color: #111827; }
-    .trend-stat strong.sm { font-size: 1.05rem; }
-    .trend-up { color: #16a34a !important; }
-    .trend-down { color: #dc2626 !important; }
-    .trend-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: .82rem; color: #4b5563; }
-    .trend-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-    .trend-legend .dash { display: inline-block; width: 18px; border-top: 2px dashed #dc2626; margin-right: 6px; vertical-align: middle; }
-</style>
 {{ chart_labels|json_script:"chart-labels" }}
 {{ chart_data|json_script:"chart-data" }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

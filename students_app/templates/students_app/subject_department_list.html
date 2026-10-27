@@ -1,219 +1,5 @@
 {% extends 'students_app/base.html' %}
-
-{% block content %}
-<div class="departments-page">
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-8">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{% url 'students_app:dashboard' %}">Dashboard</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Departments</li>
-                        </ol>
-                    </nav>
-                    <span class="page-eyebrow">Faculty Registry</span>
-                    <h1 class="page-title">School Departments</h1>
-                    <p class="page-subtitle">Organize and manage academic departments, heads, and faculty assignments.</p>
-                </div>
-                <div class="col-lg-4 text-lg-right mt-3 mt-lg-0">
-                    <a href="{% url 'students_app:add_subject_department' %}" class="btn btn-create">
-                        <i class="fas fa-plus-circle mr-2"></i>Create Department
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-icon icon-total">
-                    <i class="fas fa-building"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-number">{{ departments|length }}</span>
-                    <span class="stat-label">Total Departments</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon icon-hod">
-                    <i class="fas fa-user-tie"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-number">{{ departments_with_hod|default:departments|length }}</span>
-                    <span class="stat-label">With HOD Assigned</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon icon-staff">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-number">{{ total_staff|default:"0" }}</span>
-                    <span class="stat-label">Total Staff Members</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="container">
-                <div class="alert alert-{{ message.tags|default:'success' }} alert-dismissible fade show custom-alert" role="alert">
-                    <div class="alert-content">
-                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% elif message.tags == 'info' %}info-circle{% else %}check-circle{% endif %} mr-2"></i>
-                        {{ message }}
-                    </div>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="container">
-        {% if departments %}
-            <div class="dept-grid">
-                {% for dept in departments %}
-                    <div class="dept-card">
-                        <span class="dept-tag">DEPT&nbsp;{{ forloop.counter|stringformat:"02d" }}</span>
-
-                        <div class="dept-card-header">
-                            <div class="dept-seal">
-                                {{ dept.departments|first|default:"D" }}
-                            </div>
-                            <div class="dept-actions dropdown">
-                                <button class="btn-action" type="button" data-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-right shadow">
-                                    <a class="dropdown-item" href="{% url 'students_app:edit_subject_department' dept.id %}">
-                                        <i class="fas fa-edit mr-2"></i>Edit Department
-                                    </a>
-
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#deleteModal{{ dept.id }}">
-                                        <i class="fas fa-trash-alt mr-2"></i>Delete Department
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dept-card-body">
-                            <h3 class="dept-name">{{ dept.departments.upper }}</h3>
-                            <p class="dept-description">{{ dept.description|default:"No description provided for this department." }}</p>
-
-                            <div class="dept-divider"></div>
-
-                            <div class="dept-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Head of Department</span>
-                                    <div class="hod-display">
-                                        <div class="hod-avatar">
-                                            {{ dept.head_of_department.get_full_name|first|default:"?" }}
-                                        </div>
-                                        <span class="hod-name">{{ dept.head_of_department.get_full_name|default:"Not Assigned" }}</span>
-                                    </div>
-                                </div>
-
-                                <div class="meta-item meta-item-right">
-                                    <span class="meta-label">Staff Directory</span>
-                                    <a href="#" class="staff-counter-link" data-toggle="modal" data-target="#staffModal{{ dept.id }}">
-                                        <div class="staff-counter">
-                                            <span class="staff-number">{{ dept.staff_members.count }}</span>
-                                            <span class="staff-suffix">{% if dept.staff_members.count == 1 %}member{% else %}members{% endif %}</span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="deleteModal{{ dept.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel{{ dept.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered" role="document">
-                            <div class="modal-content custom-modal">
-                                <div class="modal-header modal-header-danger">
-                                    <h5 class="modal-title" id="deleteModalLabel{{ dept.id }}">Confirm Deletion</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body text-left">
-                                    <p>Are you sure you want to permanently delete the department <strong>{{ dept.departments }}</strong>?</p>
-                                    <div class="alert alert-danger custom-alert mb-0 mt-3" style="padding: 0.75rem;">
-                                        <div class="alert-content">
-                                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                                            <span style="font-size: 0.875rem;">This action cannot be undone and may affect assigned staff.</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-                                    <form action="{% url 'students_app:delete_subject_department' dept.id %}" method="POST" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="staffModal{{ dept.id }}" tabindex="-1" role="dialog" aria-labelledby="staffModalLabel{{ dept.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
-                            <div class="modal-content custom-modal">
-                                <div class="modal-header bg-light">
-                                    <h5 class="modal-title text-dark" id="staffModalLabel{{ dept.id }}">{{ dept.departments|title }} Staff</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body p-0">
-                                    {% if dept.staff_members.all %}
-                                        <ul class="list-group list-group-flush custom-staff-list">
-                                            {% for staff in dept.staff_members.all %}
-                                                <li class="list-group-item d-flex align-items-center">
-                                                    <div class="staff-list-avatar mr-3">
-                                                        {{ staff.get_full_name|first|default:"S" }}
-                                                    </div>
-                                                    <div>
-                                                        <h6 class="mb-0 font-weight-bold text-dark">{{ staff.get_full_name }}</h6>
-                                                        <small class="text-muted"><i class="fas fa-envelope mr-1"></i>{{ staff.email|default:"No email provided" }}</small>
-                                                    </div>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <div class="p-5 text-center text-muted">
-                                            <i class="fas fa-users-slash fa-3x mb-3" style="opacity: 0.2;"></i>
-                                            <p class="mb-0">No staff members currently assigned to this department.</p>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                <div class="modal-footer border-top-0 bg-light">
-                                    <button type="button" class="btn btn-outline-secondary btn-block" data-dismiss="modal">Close Directory</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-building"></i>
-                </div>
-                <h3 class="empty-title">No Departments Yet</h3>
-                <p class="empty-text">Start building your academic structure by creating your first department. Departments help organize faculty and streamline school management.</p>
-                <a href="{% url 'students_app:add_subject_department' %}" class="btn btn-create btn-lg">
-                    <i class="fas fa-plus-circle mr-2"></i>Create First Department
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
     /* ============ BASE & VARIABLES ============ */
     /* A "faculty registry" identity: ink navy + brass, serif headings, mono data */
@@ -844,6 +630,223 @@
         }
     }
 </style>
+
+{% endblock %}
+
+{% block content %}
+<div class="departments-page">
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'students_app:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Departments</li>
+                        </ol>
+                    </nav>
+                    <span class="page-eyebrow">Faculty Registry</span>
+                    <h1 class="page-title">School Departments</h1>
+                    <p class="page-subtitle">Organize and manage academic departments, heads, and faculty assignments.</p>
+                </div>
+                <div class="col-lg-4 text-lg-right mt-3 mt-lg-0">
+                    <a href="{% url 'students_app:add_subject_department' %}" class="btn btn-create">
+                        <i class="fas fa-plus-circle mr-2"></i>Create Department
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon icon-total">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number">{{ departments|length }}</span>
+                    <span class="stat-label">Total Departments</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-hod">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number">{{ departments_with_hod|default:departments|length }}</span>
+                    <span class="stat-label">With HOD Assigned</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-staff">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number">{{ total_staff|default:"0" }}</span>
+                    <span class="stat-label">Total Staff Members</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="container">
+                <div class="alert alert-{{ message.tags|default:'success' }} alert-dismissible fade show custom-alert" role="alert">
+                    <div class="alert-content">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% elif message.tags == 'info' %}info-circle{% else %}check-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        {% if departments %}
+            <div class="dept-grid">
+                {% for dept in departments %}
+                    <div class="dept-card">
+                        <span class="dept-tag">DEPT&nbsp;{{ forloop.counter|stringformat:"02d" }}</span>
+
+                        <div class="dept-card-header">
+                            <div class="dept-seal">
+                                {{ dept.departments|first|default:"D" }}
+                            </div>
+                            <div class="dept-actions dropdown">
+                                <button class="btn-action" type="button" data-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow">
+                                    <a class="dropdown-item" href="{% url 'students_app:edit_subject_department' dept.id %}">
+                                        <i class="fas fa-edit mr-2"></i>Edit Department
+                                    </a>
+
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#deleteModal{{ dept.id }}">
+                                        <i class="fas fa-trash-alt mr-2"></i>Delete Department
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dept-card-body">
+                            <h3 class="dept-name">{{ dept.departments.upper }}</h3>
+                            <p class="dept-description">{{ dept.description|default:"No description provided for this department." }}</p>
+
+                            <div class="dept-divider"></div>
+
+                            <div class="dept-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Head of Department</span>
+                                    <div class="hod-display">
+                                        <div class="hod-avatar">
+                                            {{ dept.head_of_department.get_full_name|first|default:"?" }}
+                                        </div>
+                                        <span class="hod-name">{{ dept.head_of_department.get_full_name|default:"Not Assigned" }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="meta-item meta-item-right">
+                                    <span class="meta-label">Staff Directory</span>
+                                    <a href="#" class="staff-counter-link" data-toggle="modal" data-target="#staffModal{{ dept.id }}">
+                                        <div class="staff-counter">
+                                            <span class="staff-number">{{ dept.staff_members.count }}</span>
+                                            <span class="staff-suffix">{% if dept.staff_members.count == 1 %}member{% else %}members{% endif %}</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="deleteModal{{ dept.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel{{ dept.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content custom-modal">
+                                <div class="modal-header modal-header-danger">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ dept.id }}">Confirm Deletion</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body text-left">
+                                    <p>Are you sure you want to permanently delete the department <strong>{{ dept.departments }}</strong>?</p>
+                                    <div class="alert alert-danger custom-alert mb-0 mt-3" style="padding: 0.75rem;">
+                                        <div class="alert-content">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                                            <span style="font-size: 0.875rem;">This action cannot be undone and may affect assigned staff.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'students_app:delete_subject_department' dept.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="staffModal{{ dept.id }}" tabindex="-1" role="dialog" aria-labelledby="staffModalLabel{{ dept.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+                            <div class="modal-content custom-modal">
+                                <div class="modal-header bg-light">
+                                    <h5 class="modal-title text-dark" id="staffModalLabel{{ dept.id }}">{{ dept.departments|title }} Staff</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-0">
+                                    {% if dept.staff_members.all %}
+                                        <ul class="list-group list-group-flush custom-staff-list">
+                                            {% for staff in dept.staff_members.all %}
+                                                <li class="list-group-item d-flex align-items-center">
+                                                    <div class="staff-list-avatar mr-3">
+                                                        {{ staff.get_full_name|first|default:"S" }}
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 font-weight-bold text-dark">{{ staff.get_full_name }}</h6>
+                                                        <small class="text-muted"><i class="fas fa-envelope mr-1"></i>{{ staff.email|default:"No email provided" }}</small>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <div class="p-5 text-center text-muted">
+                                            <i class="fas fa-users-slash fa-3x mb-3" style="opacity: 0.2;"></i>
+                                            <p class="mb-0">No staff members currently assigned to this department.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer border-top-0 bg-light">
+                                    <button type="button" class="btn btn-outline-secondary btn-block" data-dismiss="modal">Close Directory</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h3 class="empty-title">No Departments Yet</h3>
+                <p class="empty-text">Start building your academic structure by creating your first department. Departments help organize faculty and streamline school management.</p>
+                <a href="{% url 'students_app:add_subject_department' %}" class="btn btn-create btn-lg">
+                    <i class="fas fa-plus-circle mr-2"></i>Create First Department
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
