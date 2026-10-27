@@ -1,596 +1,6 @@
 {% extends 'students_app/base.html' %}
 
-{% block content %}
-<div class="container-fluid p-0">
-
-    <!-- ========================================================= -->
-    <!-- HERO SECTION -->
-    <!-- ========================================================= -->
-
-    <div class="hero-section d-flex align-items-center"
-         style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
-
-        <div class="container">
-
-            <div class="row justify-content-center">
-                <div class="col-lg-9 col-md-11 text-center">
-
-                    <div class="hero-glass-card animate__animated animate__fadeInUp">
-
-                        <span class="hero-eyebrow mx-auto d-block">
-                            School Management Portal
-                        </span>
-
-                        <h1 class="hero-title mb-3">
-                            Welcome to <br>
-                            {{ request.tenant.name|default:request.tenant.schema_name|title }}
-                        </h1>
-
-                        <p class="hero-subtitle mb-4 mx-auto">
-                            Empowering excellence in education. Our digital management portal
-                            streamlines administration, enhances collaboration, and tracks success.
-                        </p>
-
-                        <!-- LOGIN / DASHBOARD BUTTON -->
-                        <div class="d-flex justify-content-center gap-3 flex-wrap">
-
-                            {% if user.is_authenticated %}
-
-                                <a href="{% url 'students_app:dashboard' %}"
-                                   class="btn btn-hero btn-lg px-5">
-                                    <i class="fas fa-chart-line mr-2"></i>
-                                    Go to Dashboard
-                                </a>
-
-                            {% else %}
-
-                                <a href="{% url 'users:login' %}"
-                                   class="btn btn-hero btn-lg px-5">
-                                    <i class="fas fa-sign-in-alt mr-2"></i>
-                                    Login to Portal
-                                </a>
-
-                            {% endif %}
-
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ========================================================= -->
-    <!-- CAMPUS HIGHLIGHTS - INFINITE MARQUEE -->
-    <!-- ========================================================= -->
-
-    {% if carousel_events %}
-
-    <div class="campus-highlights-wrapper">
-
-        <div class="container mb-3">
-
-            <div class="d-flex align-items-center justify-content-between">
-
-                <h6 class="highlights-label mb-0">
-                    <i class="fas fa-camera-retro mr-2"></i>
-                    CAMPUS HIGHLIGHTS
-                </h6>
-
-                <span class="small text-muted font-italic">
-                    Live Gallery
-                </span>
-
-            </div>
-
-        </div>
-
-        <div class="marquee-container">
-
-            <div class="marquee-content">
-
-                {% for event in carousel_events %}
-
-                <div class="marquee-item"
-                     data-toggle="modal"
-                     data-target="#galleryModal"
-                     data-slide-to="{{ forloop.counter0 }}">
-
-                    <img src="{{ event.image.url }}" alt="Campus Event">
-
-                    <div class="item-overlay">
-                        <span class="small">
-                            {{ event.title|truncatechars:20 }}
-                        </span>
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-                <!-- DUPLICATE SET FOR SEAMLESS INFINITE LOOP -->
-
-                {% for event in carousel_events %}
-
-                <div class="marquee-item"
-                     data-toggle="modal"
-                     data-target="#galleryModal"
-                     data-slide-to="{{ forloop.counter0 }}">
-
-                    <img src="{{ event.image.url }}" alt="Campus Event">
-
-                    <div class="item-overlay">
-                        <span class="small">
-                            {{ event.title|truncatechars:20 }}
-                        </span>
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% endif %}
-
-
-    <!-- ========================================================= -->
-    <!-- FEATURE STRIP -->
-    <!-- ========================================================= -->
-
-    <div class="container feature-strip">
-
-        <div class="row justify-content-center">
-
-            <!-- EXPERT STAFF -->
-            <div class="col-md-4 mb-4">
-                <div class="feature-card h-100">
-                    <div class="feature-icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                    <h5 class="feature-title">Expert Staff</h5>
-                    <p class="feature-text">
-                        Dedicated educators committed to nurturing the next generation of leaders.
-                    </p>
-                </div>
-            </div>
-
-            <!-- MODERN PLATFORM -->
-            <div class="col-md-4 mb-4">
-                <div class="feature-card h-100">
-                    <div class="feature-icon">
-                        <i class="fas fa-laptop-code"></i>
-                    </div>
-                    <h5 class="feature-title">Modern Platform</h5>
-                    <p class="feature-text">
-                        Real-time grades, instant report cards, and seamless digital administration.
-                    </p>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ========================================================= -->
-    <!-- ANNOUNCEMENTS SECTION -->
-    <!-- ========================================================= -->
-
-    {% if announcements %}
-
-    <div class="announcement-section mt-5">
-
-        <div class="container text-center text-md-left">
-
-            <h6 class="text-uppercase mb-4 font-weight-bold"
-                style="color: var(--brass-light); letter-spacing: 2px;">
-                <i class="fas fa-bullhorn mr-2"></i>
-                Official Announcements
-            </h6>
-
-            <div id="announcementCarousel"
-                 class="carousel slide"
-                 data-ride="carousel">
-
-                <div class="carousel-inner px-md-5 text-center">
-
-                    {% for announcement in announcements %}
-
-                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
-
-                        <h3 class="feature-title text-white mb-3">
-                            {{ announcement.title }}
-                        </h3>
-
-                        <div class="small mb-3" style="color: var(--brass-light);">
-                            <i class="far fa-clock mr-1"></i>
-                            {{ announcement.date_posted|date:"F j, Y" }}
-                        </div>
-
-                        {% if announcement.category %}
-                            <div class="announcement-category text-uppercase">
-                                {{ announcement.category }}
-                            </div>
-                        {% endif %}
-
-                        <p class="lead font-italic mx-auto"
-                           style="max-width: 800px; color: rgba(247,244,237,0.9);">
-                            "{{ announcement.content|truncatewords:30 }}"
-                        </p>
-
-                        <a href="{% url 'students_app:announcement_detail' announcement.pk %}"
-                           class="btn mt-3"
-                           style="background-color: transparent;
-                                  border: 1px solid var(--brass-light);
-                                  color: var(--brass-light);
-                                  border-radius: 30px;
-                                  padding: 8px 24px;">
-                            Read Full Announcement
-                        </a>
-
-                    </div>
-
-                    {% endfor %}
-
-                </div>
-
-                <a class="carousel-control-prev"
-                   href="#announcementCarousel"
-                   role="button"
-                   data-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Previous</span>
-                </a>
-
-                <a class="carousel-control-next"
-                   href="#announcementCarousel"
-                   role="button"
-                   data-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Next</span>
-                </a>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% endif %}
-
-
-    <!-- ========================================================= -->
-    <!-- CAMPUS NEWS SECTION (NEW LAYOUT) -->
-    <!-- ========================================================= -->
-
-    {% if featured_news %}
-
-    <section class="news-section">
-
-        <div class="container">
-
-            <div class="text-center mb-5">
-                <h2 class="section-heading">Campus News</h2>
-                <div class="heading-underline mx-auto"></div>
-                <p class="news-lead mx-auto">
-                    The latest stories, results and announcements from around the school.
-                </p>
-            </div>
-
-            <div class="row">
-
-                <!-- ================= FEATURED STORY ================= -->
-                <div class="{% if secondary_news %}col-lg-7{% else %}col-lg-8 mx-auto{% endif %} mb-4 news-reveal">
-
-                    <article class="news-featured">
-
-                        <a href="{% url 'students_app:news_detail' featured_news.pk %}"
-                           class="news-featured-media"
-                           tabindex="-1"
-                           aria-hidden="true">
-
-                            {% if featured_news.featured_image %}
-                                <img src="{{ featured_news.featured_image.url }}"
-                                     alt=""
-                                     loading="lazy">
-                            {% else %}
-                                <div class="news-placeholder">
-                                    <i class="fas fa-newspaper fa-3x"></i>
-                                </div>
-                            {% endif %}
-
-                            <span class="news-badge">
-                                <i class="fas fa-star mr-1"></i> Featured
-                            </span>
-
-                        </a>
-
-                        <div class="news-featured-body">
-
-                            <div class="news-date">
-                                <i class="far fa-calendar-alt mr-1"></i>
-                                {{ featured_news.publish_date|date:"M d, Y" }}
-                            </div>
-
-                            <h3 class="news-featured-title">
-                                <a href="{% url 'students_app:news_detail' featured_news.pk %}">
-                                    {{ featured_news.headline }}
-                                </a>
-                            </h3>
-
-                            <p class="news-summary">
-                                {{ featured_news.summary|truncatewords:25 }}
-                            </p>
-
-                            <a href="{% url 'students_app:news_detail' featured_news.pk %}"
-                               class="btn-news">
-                                Read More
-                                <i class="fas fa-arrow-right ml-1"></i>
-                            </a>
-
-                        </div>
-
-                    </article>
-
-                </div>
-
-
-                <!-- ================= SECONDARY STORIES ================= -->
-                {% if secondary_news %}
-
-                <div class="col-lg-5 mb-4 d-flex flex-column news-reveal news-reveal-delay">
-
-                    {% for article in secondary_news %}
-
-                    <article class="news-side">
-
-                        <a href="{% url 'students_app:news_detail' article.pk %}"
-                           class="news-side-media"
-                           tabindex="-1"
-                           aria-hidden="true">
-
-                            {% if article.featured_image %}
-                                <img src="{{ article.featured_image.url }}"
-                                     alt=""
-                                     loading="lazy">
-                            {% else %}
-                                <div class="news-placeholder">
-                                    <i class="fas fa-newspaper fa-2x"></i>
-                                </div>
-                            {% endif %}
-
-                        </a>
-
-                        <div class="news-side-body">
-
-                            <div class="news-date">
-                                {{ article.publish_date|date:"M d, Y" }}
-                            </div>
-
-                            <h4 class="news-side-title">
-                                <a href="{% url 'students_app:news_detail' article.pk %}">
-                                    {{ article.headline }}
-                                </a>
-                            </h4>
-
-                            <p class="news-summary">
-                                {{ article.summary|truncatewords:12 }}
-                            </p>
-
-                            <a href="{% url 'students_app:news_detail' article.pk %}"
-                               class="btn-news btn-news-sm">
-                                Read More
-                                <i class="fas fa-arrow-right ml-1"></i>
-                            </a>
-
-                        </div>
-
-                    </article>
-
-                    {% endfor %}
-
-                </div>
-
-                {% endif %}
-
-            </div>
-
-            {# OPTIONAL: uncomment once you have a news list page, and use your real URL name #}
-            {# <div class="text-center mt-2"> #}
-            {#     <a href="{% url 'students_app:news_list' %}" class="btn-news-outline">View all news</a> #}
-            {# </div> #}
-
-        </div>
-
-    </section>
-
-    {% endif %}
-
-
-    <!-- ========================================================= -->
-    <!-- LEADERSHIP SECTION -->
-    <!-- ========================================================= -->
-
-    {% if leaders %}
-
-    <div class="py-5" style="background-color: #fcfbf8;">
-
-        <div class="container">
-
-            <div class="text-center mb-5">
-                <h2 class="section-heading">School Leadership</h2>
-                <div class="heading-underline mx-auto"></div>
-            </div>
-
-            <div class="row justify-content-center">
-
-                {% for leader in leaders %}
-
-                <div class="col-md-6 col-lg-3 mb-4">
-
-                    <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden"
-                         style="border-radius: 0.625rem;">
-
-                        <div class="leader-card-header">
-                            {{ leader.role }}
-                        </div>
-
-                        {% if leader.photo %}
-
-                            <img src="{{ leader.photo.url }}"
-                                 class="leader-img"
-                                 alt="{{ leader.name }}">
-
-                        {% else %}
-
-                            <div class="leader-img d-flex align-items-center justify-content-center"
-                                 style="background: #eee; color: #aaa;">
-                                <i class="fas fa-user-tie fa-4x"></i>
-                            </div>
-
-                        {% endif %}
-
-                        <div class="card-body text-center py-3">
-                            <h5 class="feature-title mb-0" style="font-size: 1.1rem;">
-                                {{ leader.name }}
-                            </h5>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% endif %}
-
-</div>
-
-
-<!-- ========================================================= -->
-<!-- GALLERY MODAL -->
-<!-- ========================================================= -->
-
-{% if carousel_events %}
-
-<div class="modal fade"
-     id="galleryModal"
-     tabindex="-1"
-     role="dialog"
-     aria-hidden="true">
-
-    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
-
-        <div class="modal-content bg-transparent border-0">
-
-            <div class="modal-header border-0 pb-0 justify-content-end">
-
-                <button type="button"
-                        class="close text-white shadow-none"
-                        data-dismiss="modal"
-                        aria-label="Close"
-                        style="opacity: 1;
-                               font-size: 2.5rem;
-                               text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-
-            </div>
-
-            <div class="modal-body p-0">
-
-                <div id="largeCarousel"
-                     class="carousel slide shadow-lg rounded-lg overflow-hidden"
-                     data-ride="carousel">
-
-                    <div class="carousel-inner bg-dark rounded-lg">
-
-                        {% for event in carousel_events %}
-
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-
-                            <img src="{{ event.image.url }}"
-                                 class="d-block w-100"
-                                 alt="Event photo"
-                                 style="height: 70vh;
-                                        min-height: 500px;
-                                        object-fit: contain;
-                                        background-color: #000;">
-
-                            {% if event.title or event.description %}
-
-                            <div class="carousel-caption d-block rounded shadow-lg modal-caption">
-
-                                <h3 class="font-weight-bold text-white mb-2">
-                                    {{ event.title }}
-                                </h3>
-
-                                <p class="text-light mb-0"
-                                   style="font-size: 1.15rem; font-weight: 300;">
-                                    {{ event.description }}
-                                </p>
-
-                            </div>
-
-                            {% endif %}
-
-                        </div>
-
-                        {% endfor %}
-
-                    </div>
-
-                    <a class="carousel-control-prev"
-                       href="#largeCarousel"
-                       role="button"
-                       data-slide="prev">
-                        <span class="carousel-control-prev-icon"
-                              aria-hidden="true"
-                              style="width: 3.5rem; height: 3.5rem;"></span>
-                        <span class="sr-only">Previous</span>
-                    </a>
-
-                    <a class="carousel-control-next"
-                       href="#largeCarousel"
-                       role="button"
-                       data-slide="next">
-                        <span class="carousel-control-next-icon"
-                              aria-hidden="true"
-                              style="width: 3.5rem; height: 3.5rem;"></span>
-                        <span class="sr-only">Next</span>
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-<!-- ========================================================= -->
-<!-- STYLES -->
-<!-- ========================================================= -->
+{% block extra_css %}
 
 <style>
 
@@ -1292,6 +702,599 @@
     }
 
 </style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- ========================================================= -->
+    <!-- HERO SECTION -->
+    <!-- ========================================================= -->
+
+    <div class="hero-section d-flex align-items-center"
+         style="background-image: url('{% if school_profile and school_profile.cover_photo %}{{ school_profile.cover_photo.url }}{% else %}https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80{% endif %}');">
+
+        <div class="container">
+
+            <div class="row justify-content-center">
+                <div class="col-lg-9 col-md-11 text-center">
+
+                    <div class="hero-glass-card animate__animated animate__fadeInUp">
+
+                        <span class="hero-eyebrow mx-auto d-block">
+                            School Management Portal
+                        </span>
+
+                        <h1 class="hero-title mb-3">
+                            Welcome to <br>
+                            {{ request.tenant.name|default:request.tenant.schema_name|title }}
+                        </h1>
+
+                        <p class="hero-subtitle mb-4 mx-auto">
+                            Empowering excellence in education. Our digital management portal
+                            streamlines administration, enhances collaboration, and tracks success.
+                        </p>
+
+                        <!-- LOGIN / DASHBOARD BUTTON -->
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+
+                            {% if user.is_authenticated %}
+
+                                <a href="{% url 'students_app:dashboard' %}"
+                                   class="btn btn-hero btn-lg px-5">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    Go to Dashboard
+                                </a>
+
+                            {% else %}
+
+                                <a href="{% url 'users:login' %}"
+                                   class="btn btn-hero btn-lg px-5">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    Login to Portal
+                                </a>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- CAMPUS HIGHLIGHTS - INFINITE MARQUEE -->
+    <!-- ========================================================= -->
+
+    {% if carousel_events %}
+
+    <div class="campus-highlights-wrapper">
+
+        <div class="container mb-3">
+
+            <div class="d-flex align-items-center justify-content-between">
+
+                <h6 class="highlights-label mb-0">
+                    <i class="fas fa-camera-retro mr-2"></i>
+                    CAMPUS HIGHLIGHTS
+                </h6>
+
+                <span class="small text-muted font-italic">
+                    Live Gallery
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="marquee-container">
+
+            <div class="marquee-content">
+
+                {% for event in carousel_events %}
+
+                <div class="marquee-item"
+                     data-toggle="modal"
+                     data-target="#galleryModal"
+                     data-slide-to="{{ forloop.counter0 }}">
+
+                    <img src="{{ event.image.url }}" alt="Campus Event">
+
+                    <div class="item-overlay">
+                        <span class="small">
+                            {{ event.title|truncatechars:20 }}
+                        </span>
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+                <!-- DUPLICATE SET FOR SEAMLESS INFINITE LOOP -->
+
+                {% for event in carousel_events %}
+
+                <div class="marquee-item"
+                     data-toggle="modal"
+                     data-target="#galleryModal"
+                     data-slide-to="{{ forloop.counter0 }}">
+
+                    <img src="{{ event.image.url }}" alt="Campus Event">
+
+                    <div class="item-overlay">
+                        <span class="small">
+                            {{ event.title|truncatechars:20 }}
+                        </span>
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================= -->
+    <!-- FEATURE STRIP -->
+    <!-- ========================================================= -->
+
+    <div class="container feature-strip">
+
+        <div class="row justify-content-center">
+
+            <!-- EXPERT STAFF -->
+            <div class="col-md-4 mb-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h5 class="feature-title">Expert Staff</h5>
+                    <p class="feature-text">
+                        Dedicated educators committed to nurturing the next generation of leaders.
+                    </p>
+                </div>
+            </div>
+
+            <!-- MODERN PLATFORM -->
+            <div class="col-md-4 mb-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h5 class="feature-title">Modern Platform</h5>
+                    <p class="feature-text">
+                        Real-time grades, instant report cards, and seamless digital administration.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- ANNOUNCEMENTS SECTION -->
+    <!-- ========================================================= -->
+
+    {% if announcements %}
+
+    <div class="announcement-section mt-5">
+
+        <div class="container text-center text-md-left">
+
+            <h6 class="text-uppercase mb-4 font-weight-bold"
+                style="color: var(--brass-light); letter-spacing: 2px;">
+                <i class="fas fa-bullhorn mr-2"></i>
+                Official Announcements
+            </h6>
+
+            <div id="announcementCarousel"
+                 class="carousel slide"
+                 data-ride="carousel">
+
+                <div class="carousel-inner px-md-5 text-center">
+
+                    {% for announcement in announcements %}
+
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+
+                        <h3 class="feature-title text-white mb-3">
+                            {{ announcement.title }}
+                        </h3>
+
+                        <div class="small mb-3" style="color: var(--brass-light);">
+                            <i class="far fa-clock mr-1"></i>
+                            {{ announcement.date_posted|date:"F j, Y" }}
+                        </div>
+
+                        {% if announcement.category %}
+                            <div class="announcement-category text-uppercase">
+                                {{ announcement.category }}
+                            </div>
+                        {% endif %}
+
+                        <p class="lead font-italic mx-auto"
+                           style="max-width: 800px; color: rgba(247,244,237,0.9);">
+                            "{{ announcement.content|truncatewords:30 }}"
+                        </p>
+
+                        <a href="{% url 'students_app:announcement_detail' announcement.pk %}"
+                           class="btn mt-3"
+                           style="background-color: transparent;
+                                  border: 1px solid var(--brass-light);
+                                  color: var(--brass-light);
+                                  border-radius: 30px;
+                                  padding: 8px 24px;">
+                            Read Full Announcement
+                        </a>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <a class="carousel-control-prev"
+                   href="#announcementCarousel"
+                   role="button"
+                   data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+
+                <a class="carousel-control-next"
+                   href="#announcementCarousel"
+                   role="button"
+                   data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================= -->
+    <!-- CAMPUS NEWS SECTION (NEW LAYOUT) -->
+    <!-- ========================================================= -->
+
+    {% if featured_news %}
+
+    <section class="news-section">
+
+        <div class="container">
+
+            <div class="text-center mb-5">
+                <h2 class="section-heading">Campus News</h2>
+                <div class="heading-underline mx-auto"></div>
+                <p class="news-lead mx-auto">
+                    The latest stories, results and announcements from around the school.
+                </p>
+            </div>
+
+            <div class="row">
+
+                <!-- ================= FEATURED STORY ================= -->
+                <div class="{% if secondary_news %}col-lg-7{% else %}col-lg-8 mx-auto{% endif %} mb-4 news-reveal">
+
+                    <article class="news-featured">
+
+                        <a href="{% url 'students_app:news_detail' featured_news.pk %}"
+                           class="news-featured-media"
+                           tabindex="-1"
+                           aria-hidden="true">
+
+                            {% if featured_news.featured_image %}
+                                <img src="{{ featured_news.featured_image.url }}"
+                                     alt=""
+                                     loading="lazy">
+                            {% else %}
+                                <div class="news-placeholder">
+                                    <i class="fas fa-newspaper fa-3x"></i>
+                                </div>
+                            {% endif %}
+
+                            <span class="news-badge">
+                                <i class="fas fa-star mr-1"></i> Featured
+                            </span>
+
+                        </a>
+
+                        <div class="news-featured-body">
+
+                            <div class="news-date">
+                                <i class="far fa-calendar-alt mr-1"></i>
+                                {{ featured_news.publish_date|date:"M d, Y" }}
+                            </div>
+
+                            <h3 class="news-featured-title">
+                                <a href="{% url 'students_app:news_detail' featured_news.pk %}">
+                                    {{ featured_news.headline }}
+                                </a>
+                            </h3>
+
+                            <p class="news-summary">
+                                {{ featured_news.summary|truncatewords:25 }}
+                            </p>
+
+                            <a href="{% url 'students_app:news_detail' featured_news.pk %}"
+                               class="btn-news">
+                                Read More
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+
+                <!-- ================= SECONDARY STORIES ================= -->
+                {% if secondary_news %}
+
+                <div class="col-lg-5 mb-4 d-flex flex-column news-reveal news-reveal-delay">
+
+                    {% for article in secondary_news %}
+
+                    <article class="news-side">
+
+                        <a href="{% url 'students_app:news_detail' article.pk %}"
+                           class="news-side-media"
+                           tabindex="-1"
+                           aria-hidden="true">
+
+                            {% if article.featured_image %}
+                                <img src="{{ article.featured_image.url }}"
+                                     alt=""
+                                     loading="lazy">
+                            {% else %}
+                                <div class="news-placeholder">
+                                    <i class="fas fa-newspaper fa-2x"></i>
+                                </div>
+                            {% endif %}
+
+                        </a>
+
+                        <div class="news-side-body">
+
+                            <div class="news-date">
+                                {{ article.publish_date|date:"M d, Y" }}
+                            </div>
+
+                            <h4 class="news-side-title">
+                                <a href="{% url 'students_app:news_detail' article.pk %}">
+                                    {{ article.headline }}
+                                </a>
+                            </h4>
+
+                            <p class="news-summary">
+                                {{ article.summary|truncatewords:12 }}
+                            </p>
+
+                            <a href="{% url 'students_app:news_detail' article.pk %}"
+                               class="btn-news btn-news-sm">
+                                Read More
+                                <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            {# OPTIONAL: uncomment once you have a news list page, and use your real URL name #}
+            {# <div class="text-center mt-2"> #}
+            {#     <a href="{% url 'students_app:news_list' %}" class="btn-news-outline">View all news</a> #}
+            {# </div> #}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ========================================================= -->
+    <!-- LEADERSHIP SECTION -->
+    <!-- ========================================================= -->
+
+    {% if leaders %}
+
+    <div class="py-5" style="background-color: #fcfbf8;">
+
+        <div class="container">
+
+            <div class="text-center mb-5">
+                <h2 class="section-heading">School Leadership</h2>
+                <div class="heading-underline mx-auto"></div>
+            </div>
+
+            <div class="row justify-content-center">
+
+                {% for leader in leaders %}
+
+                <div class="col-md-6 col-lg-3 mb-4">
+
+                    <div class="card h-100 border-0 shadow-sm bg-white overflow-hidden"
+                         style="border-radius: 0.625rem;">
+
+                        <div class="leader-card-header">
+                            {{ leader.role }}
+                        </div>
+
+                        {% if leader.photo %}
+
+                            <img src="{{ leader.photo.url }}"
+                                 class="leader-img"
+                                 alt="{{ leader.name }}">
+
+                        {% else %}
+
+                            <div class="leader-img d-flex align-items-center justify-content-center"
+                                 style="background: #eee; color: #aaa;">
+                                <i class="fas fa-user-tie fa-4x"></i>
+                            </div>
+
+                        {% endif %}
+
+                        <div class="card-body text-center py-3">
+                            <h5 class="feature-title mb-0" style="font-size: 1.1rem;">
+                                {{ leader.name }}
+                            </h5>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- GALLERY MODAL -->
+<!-- ========================================================= -->
+
+{% if carousel_events %}
+
+<div class="modal fade"
+     id="galleryModal"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+
+        <div class="modal-content bg-transparent border-0">
+
+            <div class="modal-header border-0 pb-0 justify-content-end">
+
+                <button type="button"
+                        class="close text-white shadow-none"
+                        data-dismiss="modal"
+                        aria-label="Close"
+                        style="opacity: 1;
+                               font-size: 2.5rem;
+                               text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+
+            </div>
+
+            <div class="modal-body p-0">
+
+                <div id="largeCarousel"
+                     class="carousel slide shadow-lg rounded-lg overflow-hidden"
+                     data-ride="carousel">
+
+                    <div class="carousel-inner bg-dark rounded-lg">
+
+                        {% for event in carousel_events %}
+
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+
+                            <img src="{{ event.image.url }}"
+                                 class="d-block w-100"
+                                 alt="Event photo"
+                                 style="height: 70vh;
+                                        min-height: 500px;
+                                        object-fit: contain;
+                                        background-color: #000;">
+
+                            {% if event.title or event.description %}
+
+                            <div class="carousel-caption d-block rounded shadow-lg modal-caption">
+
+                                <h3 class="font-weight-bold text-white mb-2">
+                                    {{ event.title }}
+                                </h3>
+
+                                <p class="text-light mb-0"
+                                   style="font-size: 1.15rem; font-weight: 300;">
+                                    {{ event.description }}
+                                </p>
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    <a class="carousel-control-prev"
+                       href="#largeCarousel"
+                       role="button"
+                       data-slide="prev">
+                        <span class="carousel-control-prev-icon"
+                              aria-hidden="true"
+                              style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+
+                    <a class="carousel-control-next"
+                       href="#largeCarousel"
+                       role="button"
+                       data-slide="next">
+                        <span class="carousel-control-next-icon"
+                              aria-hidden="true"
+                              style="width: 3.5rem; height: 3.5rem;"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ========================================================= -->
+<!-- STYLES -->
+<!-- ========================================================= -->
+
 
 
 <!-- ========================================================= -->
