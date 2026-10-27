@@ -124,14 +124,20 @@ class SubjectRoomRequirementForm(forms.ModelForm):
 
 
 from .models import TeacherUnavailability
-
 class TeacherUnavailabilityForm(forms.ModelForm):
     class Meta:
         model = TeacherUnavailability
         fields = ['teacher', 'day', 'period_number', 'reason']
         widgets = {
-            'teacher': forms.Select(attrs={'class': 'form-select'}),
-            'day': forms.Select(attrs={'class': 'form-select'}),
-            'period_number': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Leave blank for entire day'}),
-            'reason': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Part-time off, Admin Day'}),
+            'teacher': forms.Select(attrs={'class': 'custom-select'}),
+            'day': forms.Select(attrs={'class': 'custom-select'}),
+            'period_number': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Leave blank for entire day',
+                'min': 1,
+            }),
+            'reason': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., Part-time off, Admin Day',
+            }),
         }
