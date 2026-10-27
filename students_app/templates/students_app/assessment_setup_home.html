@@ -1,254 +1,5 @@
 {% extends 'students_app/base.html' %}
-{% load static %}
-
-{% block content %}
-<div class="ah">
-<div class="ah-wrap">
-
-    <!-- ===================== FLASH MESSAGES ===================== -->
-    {% if messages %}
-    <div class="ah-messages">
-        {% for message in messages %}
-        <div class="ah-msg ah-msg-{{ message.level_tag }}" role="alert">
-            <span>{{ message }}</span>
-            <button type="button" class="ah-msg-close" aria-label="Dismiss">&times;</button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- ===================== HEADER + PERIOD ===================== -->
-    <header class="ah-header">
-        <div>
-            <h1 class="ah-title">Assessment Setup</h1>
-            <p class="ah-subtitle">
-                Set the CA and exam rules for every subject, then submit them for approval.
-            </p>
-        </div>
-
-        <div class="ah-period" role="group" aria-label="Academic period">
-            <form method="get" class="ah-year-form">
-                <input type="hidden" name="term" value="{{ term }}">
-                <label class="sr-only" for="ahYear">Academic year</label>
-                <i class="far fa-calendar-alt" aria-hidden="true"></i>
-                <select id="ahYear" name="year" onchange="this.form.submit()">
-                    {% for y in year_options %}
-                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-
-            <nav class="ah-terms" aria-label="Term">
-                {% for val, label in term_choices %}
-                    <a href="?year={{ year|urlencode }}&term={{ val }}"
-                       class="ah-term{% if val == term %} is-active{% endif %}"
-                       {% if val == term %}aria-current="true"{% endif %}>{{ label }}</a>
-                {% endfor %}
-            </nav>
-        </div>
-    </header>
-
-    <!-- ===================== OVERVIEW ===================== -->
-    <section class="ah-overview" aria-label="Overview for {{ year }}, {{ term_label }}">
-
-        <div class="ah-ring-wrap">
-            <svg viewBox="0 0 120 120" class="ah-ring" role="img"
-                 aria-label="{{ summary.percent }} percent of subjects configured">
-                <circle class="ah-ring-bg" cx="60" cy="60" r="52" pathLength="100"></circle>
-                {% if summary.percent %}
-                <circle class="ah-ring-fg" cx="60" cy="60" r="52" pathLength="100"
-                        stroke-dasharray="{{ summary.percent }} 100"
-                        transform="rotate(-90 60 60)"></circle>
-                {% endif %}
-                <text x="60" y="64" text-anchor="middle" class="ah-ring-num">{{ summary.percent }}%</text>
-            </svg>
-            <div class="ah-ring-caption">
-                <strong>{{ year }} &middot; {{ term_label }}</strong>
-                <span>{{ summary.complete }} of {{ summary.total }} subjects configured</span>
-            </div>
-        </div>
-
-        <dl class="ah-stats">
-            <div class="ah-stat">
-                <dt>Subjects</dt>
-                <dd>{{ summary.total }}</dd>
-            </div>
-            <div class="ah-stat">
-                <dt>Configured</dt>
-                <dd class="is-ok">{{ summary.complete }}</dd>
-            </div>
-            <div class="ah-stat">
-                <dt>Approved</dt>
-                <dd class="is-pub">{{ summary.approved }}</dd>
-            </div>
-            <div class="ah-stat">
-                <dt>Needs attention</dt>
-                <dd class="{% if summary.needs_attention %}is-warn{% endif %}">{{ summary.needs_attention }}</dd>
-            </div>
-        </dl>
-    </section>
-
-    {% if classes %}
-
-    <!-- ===================== TOOLBAR ===================== -->
-    <div class="ah-toolbar">
-        <div class="ah-search">
-            <i class="fas fa-search" aria-hidden="true"></i>
-            <label class="sr-only" for="ahSearch">Search subjects</label>
-            <input type="search" id="ahSearch" placeholder="Search subject, code or teacher" autocomplete="off">
-        </div>
-
-        <div class="ah-chips" role="group" aria-label="Filter by status">
-            <button type="button" class="ah-chip is-active" data-status="all" aria-pressed="true">All <span class="ah-chip-n">0</span></button>
-            <button type="button" class="ah-chip" data-status="not_configured" aria-pressed="false">Not configured <span class="ah-chip-n">0</span></button>
-            <button type="button" class="ah-chip" data-status="incomplete" aria-pressed="false">Incomplete <span class="ah-chip-n">0</span></button>
-            <button type="button" class="ah-chip" data-status="ready" aria-pressed="false">Ready <span class="ah-chip-n">0</span></button>
-            <button type="button" class="ah-chip" data-status="published" aria-pressed="false">Approved <span class="ah-chip-n">0</span></button>
-        </div>
-
-        <div class="ah-toggles">
-            <button type="button" class="ah-link-btn" id="ahExpandAll">Expand all</button>
-            <span aria-hidden="true">/</span>
-            <button type="button" class="ah-link-btn" id="ahCollapseAll">Collapse all</button>
-        </div>
-    </div>
-
-    <!-- ===================== CLASSES ===================== -->
-    {% for group in classes %}
-    <section class="ah-class{% if group.percent == 100 %} is-collapsed{% endif %}">
-
-        <button type="button" class="ah-class-head"
-                aria-expanded="{% if group.percent == 100 %}false{% else %}true{% endif %}"
-                aria-controls="ahClass{{ forloop.counter }}">
-            <span class="ah-class-title">
-                <span class="ah-class-name">{{ group.class_level.class_level }}</span>
-                <span class="ah-class-sub">
-                    {{ group.complete }} of {{ group.total }} configured{% if group.published %} &middot; {{ group.published }} published{% endif %}
-                </span>
-            </span>
-            <span class="ah-class-progress">
-                <span class="ah-bar" aria-hidden="true"><span style="width: {{ group.percent }}%"></span></span>
-                <b>{{ group.percent }}%</b>
-            </span>
-            <i class="fas fa-chevron-down ah-chevron" aria-hidden="true"></i>
-        </button>
-
-        <div class="ah-class-body" id="ahClass{{ forloop.counter }}">
-            <div class="ah-class-inner">
-                <div class="ah-grid">
-
-                    {% for card in group.cards %}
-                    <article class="ah-card st-{{ card.status }}"
-                             data-status="{{ card.status }}"
-                             data-search="{{ card.subject_name|lower }} {{ card.subject.code|lower }}{% if card.teacher %} {{ card.teacher.get_full_name|lower }} {{ card.teacher.username|lower }}{% endif %}">
-
-                        <header class="ah-card-top">
-                            <div class="ah-card-id">
-                                <h3 class="ah-card-name" title="{{ card.subject_name }}">{{ card.subject_name }}</h3>
-                                <span class="ah-code">{{ card.subject.code }}</span>
-                            </div>
-                            <span class="ah-pill">{{ card.status_label }}</span>
-                        </header>
-
-                        <div class="ah-teacher">
-                            {% if card.teacher %}
-                                {% with tname=card.teacher.get_full_name|default:card.teacher.username %}
-                                <span class="ah-avatar" aria-hidden="true">{{ tname|first|upper }}</span>
-                                <span>{{ tname }}</span>
-                                {% endwith %}
-                            {% else %}
-                                <span class="ah-avatar is-empty" aria-hidden="true"><i class="fas fa-user-slash"></i></span>
-                                <span class="ah-muted">No teacher assigned</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="ah-approval">
-                            <span class="ah-apbadge ap-{{ card.approval_status }}">{{ card.approval_label }}</span>
-                            {% if card.approval_status == 'REJECTED' and card.approval.rejection_reason %}
-                                <span class="ah-ap-note">{{ card.approval.rejection_reason|truncatechars:60 }}</span>
-                            {% endif %}
-                        </div>
-
-                        {% if card.setup %}
-                        <div class="ah-rules">
-                            <div class="ah-split" role="img"
-                                 aria-label="Continuous assessment {{ card.ca_weight|floatformat:0 }} percent, exam {{ card.exam_weight|floatformat:0 }} percent">
-                                <span class="ca" style="width: {{ card.ca_weight|floatformat:0 }}%"></span><span class="ex" style="width: {{ card.exam_weight|floatformat:0 }}%"></span>
-                            </div>
-                            <div class="ah-split-legend">
-                                <span><i class="dot ca"></i>CA {{ card.ca_weight|floatformat:0 }}%</span>
-                                <span><i class="dot ex"></i>Exam {{ card.exam_weight|floatformat:0 }}%</span>
-                            </div>
-                            <div class="ah-counts">
-                                <span><b>{{ card.ca_count }}</b> CA task{{ card.ca_count|pluralize }}</span>
-                                <span><b>{{ card.exam_count }}</b> exam paper{{ card.exam_count|pluralize }}</span>
-                            </div>
-                            {% if card.status == 'incomplete' %}
-                            <p class="ah-missing">
-                                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                                Still needs
-                                {% if not card.ca_count %}a CA task{% endif %}{% if not card.ca_count and not card.exam_count %} and {% endif %}{% if not card.exam_count %}an exam paper{% endif %}
-                            </p>
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        <p class="ah-hint">No rules set for this term yet.</p>
-                        {% endif %}
-
-                        <div class="ah-cta">
-                            {% if card.setup %}
-                                <a href="{% url 'students_app:subject_term_setup' card.subject.pk %}?{{ period_query }}"
-                                   class="ah-btn {% if card.status == 'ready' %}ah-btn-primary{% else %}ah-btn-ghost{% endif %}">
-                                    {% if card.status == 'published' %}View setup
-                                    {% elif card.status == 'ready' %}Review &amp; submit
-                                    {% else %}Continue setup{% endif %}
-                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                                </a>
-                            {% else %}
-                                <form method="post" action="{% url 'students_app:create_term_setup' card.subject.pk %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="year" value="{{ year }}">
-                                    <input type="hidden" name="term" value="{{ term }}">
-                                    <button type="submit" class="ah-btn ah-btn-primary">
-                                        <i class="fas fa-plus" aria-hidden="true"></i> Start setup
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </article>
-                    {% endfor %}
-
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endfor %}
-
-    <div class="ah-empty" id="ahNoMatch" hidden>
-        <i class="fas fa-search" aria-hidden="true"></i>
-        <p>No subjects match your search or filter.</p>
-    </div>
-
-    {% else %}
-
-    <div class="ah-empty">
-        <i class="fas fa-chalkboard" aria-hidden="true"></i>
-        <h2>No subjects to configure</h2>
-        <p>
-            {% if full_access %}
-                Subjects need to be assigned to a class before they appear here.
-            {% else %}
-                You are not assigned to any subject yet. Ask the administrator to assign you as a subject teacher.
-            {% endif %}
-        </p>
-    </div>
-
-    {% endif %}
-
-</div>
-</div>
-
-
+{% block extra_css %}
 <style>
     .ah {
         --ink: #16213e;
@@ -561,6 +312,258 @@
     .ah-apbadge.ap-REJECTED { background: #fde8e8; color: #b42318; }
     .ah-ap-note { font-size: .78rem; color: #b42318; }
 </style>
+{% endblock %}
+{% load static %}
+
+{% block content %}
+<div class="ah">
+<div class="ah-wrap">
+
+    <!-- ===================== FLASH MESSAGES ===================== -->
+    {% if messages %}
+    <div class="ah-messages">
+        {% for message in messages %}
+        <div class="ah-msg ah-msg-{{ message.level_tag }}" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="ah-msg-close" aria-label="Dismiss">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ===================== HEADER + PERIOD ===================== -->
+    <header class="ah-header">
+        <div>
+            <h1 class="ah-title">Assessment Setup</h1>
+            <p class="ah-subtitle">
+                Set the CA and exam rules for every subject, then submit them for approval.
+            </p>
+        </div>
+
+        <div class="ah-period" role="group" aria-label="Academic period">
+            <form method="get" class="ah-year-form">
+                <input type="hidden" name="term" value="{{ term }}">
+                <label class="sr-only" for="ahYear">Academic year</label>
+                <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                <select id="ahYear" name="year" onchange="this.form.submit()">
+                    {% for y in year_options %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <nav class="ah-terms" aria-label="Term">
+                {% for val, label in term_choices %}
+                    <a href="?year={{ year|urlencode }}&term={{ val }}"
+                       class="ah-term{% if val == term %} is-active{% endif %}"
+                       {% if val == term %}aria-current="true"{% endif %}>{{ label }}</a>
+                {% endfor %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <section class="ah-overview" aria-label="Overview for {{ year }}, {{ term_label }}">
+
+        <div class="ah-ring-wrap">
+            <svg viewBox="0 0 120 120" class="ah-ring" role="img"
+                 aria-label="{{ summary.percent }} percent of subjects configured">
+                <circle class="ah-ring-bg" cx="60" cy="60" r="52" pathLength="100"></circle>
+                {% if summary.percent %}
+                <circle class="ah-ring-fg" cx="60" cy="60" r="52" pathLength="100"
+                        stroke-dasharray="{{ summary.percent }} 100"
+                        transform="rotate(-90 60 60)"></circle>
+                {% endif %}
+                <text x="60" y="64" text-anchor="middle" class="ah-ring-num">{{ summary.percent }}%</text>
+            </svg>
+            <div class="ah-ring-caption">
+                <strong>{{ year }} &middot; {{ term_label }}</strong>
+                <span>{{ summary.complete }} of {{ summary.total }} subjects configured</span>
+            </div>
+        </div>
+
+        <dl class="ah-stats">
+            <div class="ah-stat">
+                <dt>Subjects</dt>
+                <dd>{{ summary.total }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Configured</dt>
+                <dd class="is-ok">{{ summary.complete }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Approved</dt>
+                <dd class="is-pub">{{ summary.approved }}</dd>
+            </div>
+            <div class="ah-stat">
+                <dt>Needs attention</dt>
+                <dd class="{% if summary.needs_attention %}is-warn{% endif %}">{{ summary.needs_attention }}</dd>
+            </div>
+        </dl>
+    </section>
+
+    {% if classes %}
+
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="ah-toolbar">
+        <div class="ah-search">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <label class="sr-only" for="ahSearch">Search subjects</label>
+            <input type="search" id="ahSearch" placeholder="Search subject, code or teacher" autocomplete="off">
+        </div>
+
+        <div class="ah-chips" role="group" aria-label="Filter by status">
+            <button type="button" class="ah-chip is-active" data-status="all" aria-pressed="true">All <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="not_configured" aria-pressed="false">Not configured <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="incomplete" aria-pressed="false">Incomplete <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="ready" aria-pressed="false">Ready <span class="ah-chip-n">0</span></button>
+            <button type="button" class="ah-chip" data-status="published" aria-pressed="false">Approved <span class="ah-chip-n">0</span></button>
+        </div>
+
+        <div class="ah-toggles">
+            <button type="button" class="ah-link-btn" id="ahExpandAll">Expand all</button>
+            <span aria-hidden="true">/</span>
+            <button type="button" class="ah-link-btn" id="ahCollapseAll">Collapse all</button>
+        </div>
+    </div>
+
+    <!-- ===================== CLASSES ===================== -->
+    {% for group in classes %}
+    <section class="ah-class{% if group.percent == 100 %} is-collapsed{% endif %}">
+
+        <button type="button" class="ah-class-head"
+                aria-expanded="{% if group.percent == 100 %}false{% else %}true{% endif %}"
+                aria-controls="ahClass{{ forloop.counter }}">
+            <span class="ah-class-title">
+                <span class="ah-class-name">{{ group.class_level.class_level }}</span>
+                <span class="ah-class-sub">
+                    {{ group.complete }} of {{ group.total }} configured{% if group.published %} &middot; {{ group.published }} published{% endif %}
+                </span>
+            </span>
+            <span class="ah-class-progress">
+                <span class="ah-bar" aria-hidden="true"><span style="width: {{ group.percent }}%"></span></span>
+                <b>{{ group.percent }}%</b>
+            </span>
+            <i class="fas fa-chevron-down ah-chevron" aria-hidden="true"></i>
+        </button>
+
+        <div class="ah-class-body" id="ahClass{{ forloop.counter }}">
+            <div class="ah-class-inner">
+                <div class="ah-grid">
+
+                    {% for card in group.cards %}
+                    <article class="ah-card st-{{ card.status }}"
+                             data-status="{{ card.status }}"
+                             data-search="{{ card.subject_name|lower }} {{ card.subject.code|lower }}{% if card.teacher %} {{ card.teacher.get_full_name|lower }} {{ card.teacher.username|lower }}{% endif %}">
+
+                        <header class="ah-card-top">
+                            <div class="ah-card-id">
+                                <h3 class="ah-card-name" title="{{ card.subject_name }}">{{ card.subject_name }}</h3>
+                                <span class="ah-code">{{ card.subject.code }}</span>
+                            </div>
+                            <span class="ah-pill">{{ card.status_label }}</span>
+                        </header>
+
+                        <div class="ah-teacher">
+                            {% if card.teacher %}
+                                {% with tname=card.teacher.get_full_name|default:card.teacher.username %}
+                                <span class="ah-avatar" aria-hidden="true">{{ tname|first|upper }}</span>
+                                <span>{{ tname }}</span>
+                                {% endwith %}
+                            {% else %}
+                                <span class="ah-avatar is-empty" aria-hidden="true"><i class="fas fa-user-slash"></i></span>
+                                <span class="ah-muted">No teacher assigned</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="ah-approval">
+                            <span class="ah-apbadge ap-{{ card.approval_status }}">{{ card.approval_label }}</span>
+                            {% if card.approval_status == 'REJECTED' and card.approval.rejection_reason %}
+                                <span class="ah-ap-note">{{ card.approval.rejection_reason|truncatechars:60 }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if card.setup %}
+                        <div class="ah-rules">
+                            <div class="ah-split" role="img"
+                                 aria-label="Continuous assessment {{ card.ca_weight|floatformat:0 }} percent, exam {{ card.exam_weight|floatformat:0 }} percent">
+                                <span class="ca" style="width: {{ card.ca_weight|floatformat:0 }}%"></span><span class="ex" style="width: {{ card.exam_weight|floatformat:0 }}%"></span>
+                            </div>
+                            <div class="ah-split-legend">
+                                <span><i class="dot ca"></i>CA {{ card.ca_weight|floatformat:0 }}%</span>
+                                <span><i class="dot ex"></i>Exam {{ card.exam_weight|floatformat:0 }}%</span>
+                            </div>
+                            <div class="ah-counts">
+                                <span><b>{{ card.ca_count }}</b> CA task{{ card.ca_count|pluralize }}</span>
+                                <span><b>{{ card.exam_count }}</b> exam paper{{ card.exam_count|pluralize }}</span>
+                            </div>
+                            {% if card.status == 'incomplete' %}
+                            <p class="ah-missing">
+                                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                Still needs
+                                {% if not card.ca_count %}a CA task{% endif %}{% if not card.ca_count and not card.exam_count %} and {% endif %}{% if not card.exam_count %}an exam paper{% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="ah-hint">No rules set for this term yet.</p>
+                        {% endif %}
+
+                        <div class="ah-cta">
+                            {% if card.setup %}
+                                <a href="{% url 'students_app:subject_term_setup' card.subject.pk %}?{{ period_query }}"
+                                   class="ah-btn {% if card.status == 'ready' %}ah-btn-primary{% else %}ah-btn-ghost{% endif %}">
+                                    {% if card.status == 'published' %}View setup
+                                    {% elif card.status == 'ready' %}Review &amp; submit
+                                    {% else %}Continue setup{% endif %}
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            {% else %}
+                                <form method="post" action="{% url 'students_app:create_term_setup' card.subject.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="year" value="{{ year }}">
+                                    <input type="hidden" name="term" value="{{ term }}">
+                                    <button type="submit" class="ah-btn ah-btn-primary">
+                                        <i class="fas fa-plus" aria-hidden="true"></i> Start setup
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endfor %}
+
+    <div class="ah-empty" id="ahNoMatch" hidden>
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <p>No subjects match your search or filter.</p>
+    </div>
+
+    {% else %}
+
+    <div class="ah-empty">
+        <i class="fas fa-chalkboard" aria-hidden="true"></i>
+        <h2>No subjects to configure</h2>
+        <p>
+            {% if full_access %}
+                Subjects need to be assigned to a class before they appear here.
+            {% else %}
+                You are not assigned to any subject yet. Ask the administrator to assign you as a subject teacher.
+            {% endif %}
+        </p>
+    </div>
+
+    {% endif %}
+
+</div>
+</div>
+
+
+
 
 
 <script>
