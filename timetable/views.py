@@ -328,6 +328,13 @@ def setup_constraints_view(request):
             req_room_type = request.POST.get(f'room_type_{sub_id}', TimetableRoom.RoomType.CLASSROOM)
             spec_room_id = request.POST.get(f'specific_room_{sub_id}')
 
+            time_pref = request.POST.get(f'time_pref_{sub_id}')
+            valid_prefs = {code for code, _ in SubjectConstraint.TimePreference.choices}
+            constraint.time_preference = (
+                time_pref if time_pref in valid_prefs
+                else SubjectConstraint.TimePreference.ANYTIME
+            )
+
             # Update SubjectConstraint
             constraint.periods_per_week = int(periods) if periods else 5
             constraint.allow_double_periods = allow_double
@@ -355,6 +362,7 @@ def setup_constraints_view(request):
         'subject_rows': subject_rows,
         'rooms': rooms,
         'room_types': room_types,
+        'time_preferences': SubjectConstraint.TimePreference.choices,
     })
 
 
@@ -435,5 +443,87 @@ def setup_teachers_view(request):
     return render(request, 'timetable/teachers.html', {
         'active_tab': 'teachers',
         'unavailabilities': unavailabilities,
+        'form': form,
+    })
+
+
+
+
+
+
+from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+from .decorators import role_required
+from .models import Timetable
+from .forms import TimetableForm
+
+
+@login_required
+@role_required(allowed_roles=['Admin', 'Principal', 'Headteacher', 'Deputy'])
+def setup_timetables_view(request):
+    timetables = Timetable.objects.select_related('settings')
+    form = TimetableForm()
+
+    if request.method == 'POST':
+        # ---- Create ----
+        if 'save_timetable' in request.POST:
+            form = TimetableForm(request.POST)
+            if form.is_valid():
+                try:
+                    form.save()
+                    messages.success(request, "Timetable created as a draft.")
+                    return redirect('timetable:setup_timetables')
+                except ValidationError as e:
+                    messages.error(request, "; ".join(e.messages))
+            else:
+                messages.error(request, "Failed to create timetable. Please check the errors.")
+
+        # ---- Actions on an existing timetable ----
+        else:
+            timetable = get_object_or_404(Timetable, id=request.POST.get('timetable_id'))
+
+            try:
+                if 'publish_timetable' in request.POST:
+                    timetable.status = Timetable.Status.PUBLISHED
+                    timetable.save()
+                    messages.success(request, f"'{timetable.name}' published.")
+
+                elif 'activate_timetable' in request.POST:
+                    # Deactivate the others first. The model's full_clean() runs
+                    # before its own deactivation step, so the unique "one active
+                    # timetable" constraint would otherwise reject this save.
+                    with transaction.atomic():
+                        Timetable.objects.filter(is_active=True).exclude(pk=timetable.pk).update(is_active=False)
+                        timetable.status = Timetable.Status.PUBLISHED
+                        timetable.is_active = True
+                        timetable.save()
+                    messages.success(request, f"'{timetable.name}' is now the active timetable.")
+
+                elif 'archive_timetable' in request.POST:
+                    timetable.is_active = False
+                    timetable.status = Timetable.Status.ARCHIVED
+                    timetable.save()
+                    messages.success(request, f"'{timetable.name}' archived.")
+
+                elif 'delete_timetable' in request.POST:
+                    if timetable.is_active:
+                        messages.error(request, "You cannot delete the active timetable. Archive it first.")
+                    else:
+                        name = timetable.name
+                        timetable.delete()
+                        messages.success(request, f"'{name}' and all its entries were deleted.")
+
+            except ValidationError as e:
+                messages.error(request, "; ".join(e.messages))
+
+            return redirect('timetable:setup_timetables')
+
+    return render(request, 'timetable/timetables.html', {
+        'active_tab': 'timetables',
+        'timetables': timetables,
         'form': form,
     })

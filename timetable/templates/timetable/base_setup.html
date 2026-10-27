@@ -22,26 +22,34 @@
                     <i class="fas fa-sliders-h me-2"></i> 1. General Settings
                 </a>
 
+
+                 <a href="{% url 'timetable:setup_timetables' %}"
+                   class="list-group-item list-group-item-action {% if active_tab == 'timetables' %}active{% endif %}">
+                    <i class="fas fa-calendar-alt mr-2"></i> 2. Timetables
+                 </a>
+
                 <!-- Tab 2: Rooms -->
                 <a href="{% url 'timetable:setup_rooms' %}"
                    class="list-group-item list-group-item-action {% if active_tab == 'rooms' %}active{% endif %}">
-                    <i class="fas fa-door-open me-2"></i> 2. Rooms
+                    <i class="fas fa-door-open me-2"></i> 3. Rooms
                 </a>
 
                 <a href="{% url 'timetable:setup_teachers' %}" class="list-group-item list-group-item-action {% if active_tab == 'teachers' %}active fw-bold shadow-sm{% else %}text-secondary{% endif %} border-0 py-3 rounded mb-1">
-                   <i class="fas fa-user-clock me-3 {% if active_tab == 'teachers' %}text-white{% else %}text-muted{% endif %}"></i>Staff Availability
+                   <i class="fas fa-user-clock me-3 {% if active_tab == 'teachers' %}text-white{% else %}text-muted{% endif %}"></i>4. Staff Availability
                 </a>
 
                 <!-- Tab 3: Subject Constraints -->
                 <a href="{% url 'timetable:setup_constraints' %}"
                    class="list-group-item list-group-item-action {% if active_tab == 'constraints' %}active{% endif %}">
-                    <i class="fas fa-book me-2"></i> 3. Subject Rules
+                    <i class="fas fa-book me-2"></i> 5. Subject Rules
                 </a>
+
+
 
                 <!-- Tab 4: Generate -->
                 <a href="{% url 'timetable:setup_generate' %}"
                    class="list-group-item list-group-item-action {% if active_tab == 'generate' %}active{% endif %}">
-                    <i class="fas fa-magic me-2"></i> 4. Generate & Review
+                    <i class="fas fa-magic me-2"></i> 6. Generate & Review
                 </a>
 
             </div>

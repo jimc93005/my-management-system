@@ -18,4 +18,5 @@ urlpatterns = [
     path('setup/constraints/', views.setup_constraints_view, name='setup_constraints'),
     path('setup/generate/', views.setup_generate_view, name='setup_generate'),
     path('setup/teachers/', views.setup_teachers_view, name='setup_teachers'),
+    path('setup/timetables/', views.setup_timetables_view, name='setup_timetables'),
 ]

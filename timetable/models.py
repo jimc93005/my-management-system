@@ -244,6 +244,11 @@ class SubjectConstraint(models.Model):
     Stores scheduling rules per Subject (e.g., 5 periods/week, max 2 double periods).
     """
     # Changed from 'assignment' to 'subject'
+
+    class TimePreference(models.TextChoices):
+        ANYTIME = "ANYTIME", "Any time (default)"
+        MORNING = "MORNING", "Morning (before the second break)"
+        AFTERNOON = "AFTERNOON", "Afternoon (after the second break)"
     subject = models.OneToOneField(
         'students_app.Subject',  # Pointing directly to your Subject model
         on_delete=models.CASCADE,
@@ -261,6 +266,12 @@ class SubjectConstraint(models.Model):
     allow_double_periods = models.BooleanField(
         default=True,
         help_text="Whether consecutive periods (double periods) are allowed."
+    )
+    time_preference = models.CharField(
+        max_length=10,
+        choices=TimePreference.choices,
+        default=TimePreference.ANYTIME,
+        help_text="Preferred part of the day. The generator tries this first and relaxes it if needed."
     )
 
     def __str__(self):

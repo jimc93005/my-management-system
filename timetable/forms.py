@@ -141,3 +141,47 @@ class TeacherUnavailabilityForm(forms.ModelForm):
                 'placeholder': 'e.g., Part-time off, Admin Day',
             }),
         }
+
+
+
+import datetime
+from django import forms
+from .models import Timetable, TimetableSettings
+
+
+class TimetableForm(forms.ModelForm):
+    class Meta:
+        model = Timetable
+        fields = ['name', 'academic_year', 'term', 'settings']
+        labels = {
+            'settings': 'Timetable Settings',
+            'academic_year': 'Academic Year',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., 2026 Term 1 Main',
+            }),
+            'academic_year': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 2000,
+                'max': 2100,
+            }),
+            'term': forms.Select(
+                choices=[(1, 'Term 1'), (2, 'Term 2'), (3, 'Term 3')],
+                attrs={'class': 'custom-select'},
+            ),
+            'settings': forms.Select(attrs={'class': 'custom-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Show the active settings first, and preselect it for new timetables
+        self.fields['settings'].queryset = TimetableSettings.objects.order_by('-is_active', 'name')
+        self.fields['settings'].empty_label = "Select settings..."
+
+        if not self.is_bound:
+            self.fields['academic_year'].initial = datetime.date.today().year
+            active = TimetableSettings.objects.filter(is_active=True).first()
+            if active:
+                self.fields['settings'].initial = active.pk
