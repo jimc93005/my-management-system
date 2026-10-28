@@ -1,24 +1,59 @@
+from collections import defaultdict
 from django.db import transaction
 from timetable.models import Timetable, TimetableEntry, SubjectConstraint, TeacherUnavailability
 
-from django.db import transaction
-
-from django.db import transaction
-
-from django.db import transaction
-
-from django.db import transaction
+MORNING = SubjectConstraint.TimePreference.MORNING
+AFTERNOON = SubjectConstraint.TimePreference.AFTERNOON
+ANYTIME = SubjectConstraint.TimePreference.ANYTIME
 
 
+# ---------------------------------------------------------------------------
+# Scoring helpers
+# ---------------------------------------------------------------------------
+def get_zone_boundary(break_after_periods, periods_per_day):
+    """
+    Last period that counts as 'morning'.
+    Two or more breaks -> the second break. One break -> that break.
+    No breaks -> split the day in half.
+    """
+    breaks = sorted(break_after_periods)
+    if len(breaks) >= 2:
+        return breaks[1]
+    if len(breaks) == 1:
+        return breaks[0]
+    return (periods_per_day + 1) // 2
 
 
+def zone_penalty(preference, period, boundary):
+    """0 = matches the preferred zone, 1 = no preference, 2 = against the preference."""
+    if preference == ANYTIME:
+        return 1
+    is_morning = period <= boundary
+    if preference == MORNING:
+        return 0 if is_morning else 2
+    return 0 if not is_morning else 2  # AFTERNOON
 
 
-from collections import defaultdict
-from django.db import transaction
+def spread_penalty(constraint, day, used_days, day_pos):
+    """
+    0 = placing a lesson on `day` keeps the subject well spaced across the week.
+    Higher = closer to a day the subject already uses.
+    """
+    n_days = len(day_pos)
+    # A double period occupies one day, so it counts once
+    days_needed = max(1, constraint.periods_per_week - constraint.double_periods_per_week)
+
+    if not used_days or days_needed >= n_days:
+        return 0  # nothing to space, or the subject needs every day anyway
+
+    ideal_gap = -(-n_days // days_needed)  # ceil(n_days / days_needed)
+    nearest = min(abs(day_pos[day] - day_pos[d]) for d in used_days)
+    return max(0, ideal_gap - nearest)
 
 
-
+# ---------------------------------------------------------------------------
+# Generator
+# ---------------------------------------------------------------------------
 @transaction.atomic
 def generate_greedy_timetable(timetable_id):
     timetable = Timetable.objects.get(id=timetable_id)
@@ -32,22 +67,24 @@ def generate_greedy_timetable(timetable_id):
         'subject', 'subject__teacher_subject', 'subject__target_class'
     ).all())
 
-    # --- STRATEGY 1: Prioritize Busiest Teachers ---
+    # --- Prioritize busiest teachers (used as the final tie-breaker) ---
     teacher_loads = defaultdict(int)
     for c in constraints:
         if c.subject.teacher_subject:
             teacher_loads[c.subject.teacher_subject.id] += c.periods_per_week
 
-    # Sort by: Busiest Teacher -> Needs Double -> Total Periods
     constraints.sort(key=lambda c: (
         teacher_loads.get(c.subject.teacher_subject.id if c.subject.teacher_subject else 0, 0),
         c.double_periods_per_week,
         c.periods_per_week
     ), reverse=True)
+    order_index = {c.id: i for i, c in enumerate(constraints)}
 
     working_days = list(settings.working_days)
+    day_pos = {d: i for i, d in enumerate(working_days)}
     periods_per_day = settings.periods_per_day
     break_after_periods = list(settings.breaks.values_list('after_period', flat=True))
+    zone_boundary = get_zone_boundary(break_after_periods, periods_per_day)
 
     # 3. Pre-load Blocked Slots & Teacher Unavailability
     blocked_matrix = {(bs.day, bs.period_number) for bs in settings.blocked_slots.all()}
@@ -59,6 +96,23 @@ def generate_greedy_timetable(timetable_id):
     placement_tracker = {c.id: c.periods_per_week for c in constraints}
     doubles_tracker = {c.id: c.double_periods_per_week for c in constraints}
     target_classes = list(set(c.subject.target_class for c in constraints if c.subject.target_class))
+
+    if not target_classes:
+        raise ValueError("No subjects are linked to a class, so there is nothing to schedule.")
+
+    # In-memory record of where each subject already sits (used for spreading)
+    lessons_on_day = defaultdict(int)   # (subject_id, day) -> lessons
+    days_used = defaultdict(set)        # subject_id -> {days}
+
+    def place(constraint, day, periods):
+        subject = constraint.subject
+        for p in periods:
+            TimetableEntry.objects.create(
+                timetable=timetable, subject=subject, day=day, period_number=p
+            )
+        placement_tracker[constraint.id] -= len(periods)
+        lessons_on_day[(subject.id, day)] += len(periods)
+        days_used[subject.id].add(day)
 
     def is_free(day_val, period_val, subj, ignore_entry_id=None):
         if (day_val, period_val) in blocked_matrix: return False
@@ -84,8 +138,8 @@ def generate_greedy_timetable(timetable_id):
     while any(v > 0 for v in placement_tracker.values()) and attempts < max_attempts:
         attempts += 1
 
-        # --- STRATEGY 2: Relax Double Periods on Later Attempts ---
-        relax_doubles = (attempts >= 3)
+        relax_doubles = (attempts >= 3)   # split doubles on later attempts
+        strict_zones = (attempts <= 2)    # honour Morning/Afternoon on early attempts
 
         for period in range(1, periods_per_day + 1):
             rotated_classes = target_classes[(period % len(target_classes)):] + target_classes[
@@ -101,68 +155,124 @@ def generate_greedy_timetable(timetable_id):
                                          c.subject.target_class == target_class and placement_tracker[c.id] > 0]
                     placed_this_slot = False
 
-                    # A. ATTEMPT TO PLACE A DOUBLE PERIOD (Skipped if relaxed)
-                    if not relax_doubles:
+                    # A. DOUBLE PERIOD (skipped once doubles are relaxed)
+                    if not relax_doubles and period < periods_per_day and period not in break_after_periods:
+                        double_candidates = []
                         for constraint in class_constraints:
                             subject = constraint.subject
-                            if TimetableEntry.objects.filter(timetable=timetable, day=day,
-                                                             subject=subject).exists(): continue
+                            if lessons_on_day[(subject.id, day)] > 0:
+                                continue
+                            if not (doubles_tracker[constraint.id] > 0 and placement_tracker[constraint.id] >= 2):
+                                continue
 
-                            needs_double = doubles_tracker[constraint.id] > 0 and placement_tracker[constraint.id] >= 2
+                            zone = max(
+                                zone_penalty(constraint.time_preference, period, zone_boundary),
+                                zone_penalty(constraint.time_preference, period + 1, zone_boundary),
+                            )
+                            if strict_zones and zone == 2:
+                                continue
 
-                            if needs_double and period < periods_per_day and period not in break_after_periods:
-                                if is_free(day, period, subject) and is_free(day, period + 1, subject):
-                                    TimetableEntry.objects.create(timetable=timetable, subject=subject, day=day,
-                                                                  period_number=period)
-                                    TimetableEntry.objects.create(timetable=timetable, subject=subject, day=day,
-                                                                  period_number=period + 1)
-                                    placement_tracker[constraint.id] -= 2
-                                    doubles_tracker[constraint.id] -= 1
-                                    placed_this_slot = True
-                                    break
+                            spread = spread_penalty(constraint, day, days_used[subject.id], day_pos)
+                            if attempts == 1 and spread > 0:
+                                continue  # first pass: doubles only on well-spaced days
 
-                    if placed_this_slot: continue
+                            double_candidates.append(((spread, zone, order_index[constraint.id]), constraint))
 
-                    # B. FALLBACK TO SINGLE PERIOD
+                        double_candidates.sort(key=lambda item: item[0])
+                        for _, constraint in double_candidates:
+                            subject = constraint.subject
+                            if is_free(day, period, subject) and is_free(day, period + 1, subject):
+                                place(constraint, day, [period, period + 1])
+                                doubles_tracker[constraint.id] -= 1
+                                placed_this_slot = True
+                                break
+
+                    if placed_this_slot:
+                        continue
+
+                    # B. SINGLE PERIOD
+                    single_candidates = []
                     for constraint in class_constraints:
                         subject = constraint.subject
 
-                        # Soft day limit: Allow 2 of the same subject per day ONLY on final attempt
-                        same_day_count = TimetableEntry.objects.filter(timetable=timetable, day=day,
-                                                                       subject=subject).count()
-                        if same_day_count >= (2 if attempts == max_attempts else 1):
+                        zone = zone_penalty(constraint.time_preference, period, zone_boundary)
+                        if strict_zones and zone == 2:
                             continue
 
-                        # If we aren't relaxing doubles yet, preserve them
+                        # Soft day limit: allow 2 of the same subject per day ONLY on the final attempt
+                        if lessons_on_day[(subject.id, day)] >= (2 if attempts == max_attempts else 1):
+                            continue
+
+                        # While doubles are still protected, don't burn them as singles
                         if not relax_doubles and doubles_tracker[constraint.id] > 0 and placement_tracker[
                             constraint.id] >= 2:
                             continue
 
-                        if is_free(day, period, subject):
-                            TimetableEntry.objects.create(timetable=timetable, subject=subject, day=day,
-                                                          period_number=period)
-                            placement_tracker[constraint.id] -= 1
+                        spread = spread_penalty(constraint, day, days_used[subject.id], day_pos)
+                        single_candidates.append(((spread, zone, order_index[constraint.id]), constraint))
+
+                    single_candidates.sort(key=lambda item: item[0])
+                    for _, constraint in single_candidates:
+                        if is_free(day, period, constraint.subject):
+                            place(constraint, day, [period])
 
                             # Deduct from doubles tracker if we were forced to split it
                             if relax_doubles and doubles_tracker[constraint.id] > 0:
                                 doubles_tracker[constraint.id] -= 1
-
-                            placed_this_slot = True
                             break
 
     # 4. Fill remaining odd gaps, then compress everything to the left
-    fill_remaining_gaps(timetable, target_classes, placement_tracker, constraints, working_days, periods_per_day,
-                        is_free)
-    compact_timetable(timetable, target_classes, working_days, periods_per_day, is_free)
+    # 4. Fill remaining odd gaps, then compress everything toward the morning
+    # 4. Fill remaining odd gaps, then compress everything toward the morning
+    preferences = {c.subject_id: c.time_preference for c in constraints}
 
-    return "Generation Complete"
+    fill_remaining_gaps(timetable, target_classes, placement_tracker, constraints, working_days,
+                        periods_per_day, is_free, place, lessons_on_day, days_used, day_pos, zone_boundary)
+    compact_timetable(timetable, target_classes, working_days, periods_per_day, is_free,
+                      preferences, zone_boundary)
 
+    # 5. Summarise the result
+    unplaced = []
+    for c in constraints:
+        remaining = placement_tracker[c.id]
+        if remaining > 0:
+            unplaced.append({
+                'subject': c.subject.name,
+                'class_name': str(c.subject.target_class) if c.subject.target_class else 'No class assigned',
+                'missing': remaining,
+            })
 
-def compact_timetable(timetable, target_classes, working_days, periods_per_day, is_free):
+    preference_misses = sum(
+        1 for subject_id, period in
+        TimetableEntry.objects.filter(timetable=timetable).values_list('subject_id', 'period_number')
+        if zone_penalty(preferences.get(subject_id, ANYTIME), period, zone_boundary) == 2
+    )
+
+    return {
+        'requested': sum(c.periods_per_week for c in constraints),
+        'placed': TimetableEntry.objects.filter(timetable=timetable).count(),
+        'unplaced': unplaced,
+        'preference_misses': preference_misses,
+    }
+def compact_timetable(timetable, target_classes, working_days, periods_per_day, is_free,
+                      preferences, zone_boundary):
     """
-    Applies 'gravity' to the timetable, pulling lessons as early in the day as
-    possible to eliminate isolated mid-morning gaps.
+    'Gravity': pull lessons earlier in the day to close gaps, but
+      - never into a worse zone for the subject's Morning/Afternoon preference
+      - never by splitting a double period
     """
+
+    def zone_ok(subject_id, from_period, to_period):
+        pref = preferences.get(subject_id, ANYTIME)
+        return (zone_penalty(pref, to_period, zone_boundary)
+                <= zone_penalty(pref, from_period, zone_boundary))
+
+    def is_part_of_double(entry):
+        return TimetableEntry.objects.filter(
+            timetable=timetable, day=entry.day, subject=entry.subject,
+            period_number__in=[entry.period_number - 1, entry.period_number + 1],
+        ).exists()
+
     compaction_made = True
     passes = 0
 
@@ -174,37 +284,45 @@ def compact_timetable(timetable, target_classes, working_days, periods_per_day, 
         for day in working_days:
             for target_class in target_classes:
 
-                # Scan periods from left (morning) to right (afternoon)
                 for empty_period in range(1, periods_per_day):
 
                     is_empty = not TimetableEntry.objects.filter(
-                        timetable=timetable, day=day, period_number=empty_period, subject__target_class=target_class
+                        timetable=timetable, day=day, period_number=empty_period,
+                        subject__target_class=target_class
                     ).exists()
+                    if not is_empty:
+                        continue
 
-                    if is_empty:
-                        # Find the first lesson later in the day to pull forward
-                        for later_period in range(empty_period + 1, periods_per_day + 1):
-                            entry_to_move = TimetableEntry.objects.filter(
-                                timetable=timetable, day=day, period_number=later_period,
-                                subject__target_class=target_class
-                            ).first()
+                    # Find the first later lesson that can legally move into the hole
+                    for later_period in range(empty_period + 1, periods_per_day + 1):
+                        entry_to_move = TimetableEntry.objects.filter(
+                            timetable=timetable, day=day, period_number=later_period,
+                            subject__target_class=target_class
+                        ).select_related('subject').first()
 
-                            if entry_to_move:
-                                # Ensure moving this lesson doesn't create a teacher clash at the new time
-                                if is_free(day, empty_period, entry_to_move.subject, ignore_entry_id=entry_to_move.id):
-                                    # Shift the lesson
-                                    entry_to_move.period_number = empty_period
-                                    entry_to_move.save()
-                                    compaction_made = True
-                                    break  # Gap filled, move to the next empty_period slot
+                        if not entry_to_move:
+                            continue
+                        if is_part_of_double(entry_to_move):
+                            continue
+                        if not zone_ok(entry_to_move.subject_id, later_period, empty_period):
+                            continue
+
+                        if is_free(day, empty_period, entry_to_move.subject, ignore_entry_id=entry_to_move.id):
+                            entry_to_move.period_number = empty_period
+                            entry_to_move.save()
+                            compaction_made = True
+                            break  # hole filled, move on to the next empty period
 
 
-
-
-def fill_remaining_gaps(timetable, target_classes, placement_tracker, constraints, working_days, periods_per_day, is_free):
+def fill_remaining_gaps(timetable, target_classes, placement_tracker, constraints, working_days,
+                        periods_per_day, is_free, place, lessons_on_day, days_used, day_pos, zone_boundary):
+    """
+    Last resort for lessons that are still unplaced. Zones are only a preference here,
+    but the best-spaced, best-fitting subject is still tried first.
+    """
     filled_count = 0
 
-    # --- FIX: Loop Periods FIRST to patch morning gaps ---
+    # Loop periods FIRST so morning gaps are patched before afternoon ones
     for period in range(1, periods_per_day + 1):
         for day in working_days:
             for target_class in target_classes:
@@ -216,34 +334,27 @@ def fill_remaining_gaps(timetable, target_classes, placement_tracker, constraint
                 if already_filled:
                     continue
 
-                candidates = [
-                    c for c in constraints
-                    if c.subject.target_class == target_class and placement_tracker[c.id] > 0
-                ]
-
-                for constraint in candidates:
+                candidates = []
+                for constraint in constraints:
                     subject = constraint.subject
-
+                    if subject.target_class != target_class or placement_tracker[constraint.id] <= 0:
+                        continue
                     # Allow a second single period on the same day as a last resort
-                    same_day_count = TimetableEntry.objects.filter(
-                        timetable=timetable, day=day, subject=subject
-                    ).count()
-                    if same_day_count >= 2:
+                    if lessons_on_day[(subject.id, day)] >= 2:
                         continue
 
-                    if is_free(day, period, subject):
-                        TimetableEntry.objects.create(
-                            timetable=timetable, subject=subject, day=day,
-                            period_number=period, room=None
-                        )
-                        placement_tracker[constraint.id] -= 1
+                    spread = spread_penalty(constraint, day, days_used[subject.id], day_pos)
+                    zone = zone_penalty(constraint.time_preference, period, zone_boundary)
+                    candidates.append(((spread, zone), constraint))
+
+                candidates.sort(key=lambda item: item[0])
+                for _, constraint in candidates:
+                    if is_free(day, period, constraint.subject):
+                        place(constraint, day, [period])
                         filled_count += 1
                         break
 
     return filled_count
-
-
-
 
 
 from datetime import datetime as dt, timedelta

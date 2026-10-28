@@ -1,44 +1,104 @@
 {% extends 'timetable/base_setup.html' %}
 
 {% block setup_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Review & Generate</h4>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <h4 class="mb-0"><i class="fas fa-cogs mr-2 text-primary"></i>Review & Generate</h4>
     <p class="text-muted small mb-0">Verify your parameters before starting the auto-scheduler.</p>
 </div>
 
+<!-- Result of the last generation -->
+{% if result %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-success text-white">
+        <i class="fas fa-check-circle mr-2"></i>Generated: <strong>{{ result.timetable_name }}</strong>
+    </div>
+    <div class="card-body">
+        <div class="row text-center mb-3">
+            <div class="col-md-4 mb-2">
+                <div class="h3 mb-0 text-success">{{ result.placed }} <small class="text-muted">/ {{ result.requested }}</small></div>
+                <div class="small text-muted">Lessons placed</div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="h3 mb-0 {% if result.unplaced %}text-danger{% else %}text-success{% endif %}">{{ result.unplaced|length }}</div>
+                <div class="small text-muted">Subjects with missing lessons</div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="h3 mb-0 {% if result.preference_misses %}text-warning{% else %}text-success{% endif %}">{{ result.preference_misses }}</div>
+                <div class="small text-muted">Lessons outside preferred time</div>
+            </div>
+        </div>
+
+        {% if result.unplaced %}
+        <div class="alert alert-warning">
+            <strong>Some lessons could not be placed.</strong> Usually the teacher or class has no free slot left.
+            Check teacher availability, blocked slots, or reduce periods per week.
+        </div>
+        <table class="table table-sm">
+            <thead class="thead-light">
+                <tr><th>Subject</th><th>Class</th><th class="text-right">Lessons missing</th></tr>
+            </thead>
+            <tbody>
+                {% for u in result.unplaced %}
+                <tr>
+                    <td>{{ u.subject }}</td>
+                    <td>{{ u.class_name }}</td>
+                    <td class="text-right"><span class="badge badge-danger">{{ u.missing }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <a href="{% url 'timetable:master_timetable' result.timetable_id %}" class="btn btn-primary">
+            <i class="fas fa-table mr-2"></i>View Master Timetable
+        </a>
+    </div>
+</div>
+{% endif %}
+
 <!-- Pre-Flight Checklist Summary -->
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+<div class="row mb-2">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-sm h-100" style="border: 0; border-left: 4px solid #007bff;">
             <div class="card-body">
-                <h6 class="fw-bold text-muted mb-3">Configuration Status</h6>
+                <h6 class="font-weight-bold text-muted mb-3">Configuration Status</h6>
                 {% if settings %}
-                    <h3 class="mb-1 text-success"><i class="fas fa-check-circle me-2"></i>Active</h3>
+                    <h3 class="mb-1 text-success"><i class="fas fa-check-circle mr-2"></i>Active</h3>
                     <p class="small text-muted mb-0">{{ settings.name }} ({{ settings.periods_per_day }} periods/day)</p>
                 {% else %}
-                    <h3 class="mb-1 text-danger"><i class="fas fa-times-circle me-2"></i>Missing</h3>
+                    <h3 class="mb-1 text-danger"><i class="fas fa-times-circle mr-2"></i>Missing</h3>
                     <p class="small text-muted mb-0">Please complete General Settings.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-sm h-100" style="border: 0; border-left: 4px solid #17a2b8;">
             <div class="card-body">
-                <h6 class="fw-bold text-muted mb-3">Available Rooms</h6>
+                <h6 class="font-weight-bold text-muted mb-3">Available Rooms</h6>
                 <h3 class="mb-1">{{ rooms_count }}</h3>
                 <p class="small text-muted mb-0">Active rooms mapped for scheduling.</p>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-sm h-100" style="border: 0; border-left: 4px solid #ffc107;">
             <div class="card-body">
-                <h6 class="fw-bold text-muted mb-3">Total Subjects</h6>
+                <h6 class="font-weight-bold text-muted mb-3">Total Subjects</h6>
                 <h3 class="mb-1">{{ subjects_count }}</h3>
                 <p class="small text-muted mb-0">Total subjects across all classes.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-sm h-100" style="border: 0; border-left: 4px solid #28a745;">
+            <div class="card-body">
+                <h6 class="font-weight-bold text-muted mb-3">Draft Timetables</h6>
+                <h3 class="mb-1 {% if not draft_timetables %}text-danger{% endif %}">{{ draft_timetables|length }}</h3>
+                <p class="small text-muted mb-0">Drafts available to generate into.</p>
             </div>
         </div>
     </div>
@@ -49,25 +109,58 @@
     <div class="card-body text-center p-5">
         {% if is_ready %}
             <i class="fas fa-rocket fa-3x text-primary mb-3"></i>
-            <h5 class="fw-bold">All Systems Go</h5>
+            <h5 class="font-weight-bold">All Systems Go</h5>
             <p class="text-muted mb-4">Your constraints, rooms, and configurations are set. The generation algorithm will attempt to place all periods without conflicts.</p>
 
-            <form method="post" onsubmit="return confirm('This will clear any existing draft timetables and generate a new one. Proceed?');">
+            <form method="post" id="generateForm" class="mx-auto" style="max-width: 460px;">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-lg shadow px-5">
-                    <i class="fas fa-magic me-2"></i>Generate Timetable
+                <div class="form-group text-left">
+                    <label class="font-weight-bold" for="timetable_id">Generate into</label>
+                    <select name="timetable_id" id="timetable_id" class="custom-select">
+                        {% for t in draft_timetables %}
+                            <option value="{{ t.id }}" data-entries="{{ t.entry_count }}">
+                                {{ t.name }} ({{ t.academic_year }} Term {{ t.term }}){% if t.entry_count %} - {{ t.entry_count }} lessons already{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">
+                        Only drafts are listed. Any lessons already in the selected draft are replaced.
+                    </small>
+                </div>
+
+                <button type="submit" id="generateBtn" class="btn btn-primary btn-lg shadow px-5">
+                    <i class="fas fa-magic mr-2"></i>Generate Timetable
                 </button>
             </form>
         {% else %}
             <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-            <h5 class="fw-bold text-danger">Action Required</h5>
+            <h5 class="font-weight-bold text-danger">Action Required</h5>
             <p class="text-muted mb-3">The timetable engine cannot start until the following issues are resolved:</p>
-            <ul class="list-unstyled text-start d-inline-block text-danger bg-white p-3 rounded border border-danger">
+            <ul class="list-unstyled text-left d-inline-block text-danger bg-white p-3 rounded border border-danger">
                 {% for error in readiness_errors %}
-                    <li><i class="fas fa-times me-2"></i>{{ error }}</li>
+                    <li><i class="fas fa-times mr-2"></i>{{ error }}</li>
                 {% endfor %}
             </ul>
         {% endif %}
     </div>
 </div>
+
+{% if is_ready %}
+<script>
+document.getElementById('generateForm').addEventListener('submit', function (e) {
+    var sel = this.querySelector('select[name="timetable_id"]');
+    var existing = parseInt(sel.options[sel.selectedIndex].getAttribute('data-entries') || '0', 10);
+
+    if (existing > 0 && !confirm('This timetable already has ' + existing + ' lessons. They will be replaced. Continue?')) {
+        e.preventDefault();
+        return;
+    }
+
+    // Lock the button so a double click can't start two runs
+    var btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+});
+</script>
+{% endif %}
 {% endblock %}

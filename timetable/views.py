@@ -373,6 +373,8 @@ from .decorators import role_required
 from .models import TimetableSettings, TimetableRoom, SubjectConstraint
 from students_app.models import Subject
 
+from django.db.models import Count
+
 
 @login_required
 @role_required(allowed_roles=['Admin', 'Principal', 'Headteacher', 'Deputy'])
@@ -381,15 +383,21 @@ def setup_generate_view(request):
     rooms_count = TimetableRoom.objects.filter(is_active=True).count()
     subjects_count = Subject.objects.count()
 
+    # Only drafts can be generated into, so a published timetable is never overwritten
+    draft_timetables = Timetable.objects.filter(
+        status=Timetable.Status.DRAFT
+    ).select_related('settings').annotate(entry_count=Count('entries'))
+
     # Pre-flight readiness checks
     readiness_errors = []
-
     if not settings:
         readiness_errors.append("No active timetable configuration found. Please save settings.")
     if rooms_count == 0:
         readiness_errors.append("No active rooms exist. Please add at least one room.")
     if subjects_count == 0:
         readiness_errors.append("No subjects exist in the database.")
+    if not draft_timetables.exists():
+        readiness_errors.append("No draft timetable exists. Create one in the Timetables tab first.")
 
     is_ready = len(readiness_errors) == 0
 
@@ -397,10 +405,21 @@ def setup_generate_view(request):
         if not is_ready:
             messages.error(request, "Cannot generate timetable. Please resolve the errors below.")
         else:
-            # Placeholder for the actual scheduling algorithm call
-            # e.g., generate_timetable_task(settings.id)
-            messages.success(request, "Timetable generation algorithm triggered successfully!")
-            return redirect('timetable:setup_generate')
+            timetable = get_object_or_404(draft_timetables, id=request.POST.get('timetable_id'))
+            try:
+                stats = generate_greedy_timetable(timetable.id)
+            except Exception as e:
+                messages.error(request, f"Generation failed: {e}")
+            else:
+                # Stash the summary for the page we redirect to (a refresh won't re-run the generator)
+                request.session['generation_result'] = {
+                    'timetable_id': timetable.id,
+                    'timetable_name': timetable.name,
+                    **stats,
+                }
+                return redirect('timetable:setup_generate')
+
+    result = request.session.pop('generation_result', None)
 
     return render(request, 'timetable/generate.html', {
         'active_tab': 'generate',
@@ -409,9 +428,9 @@ def setup_generate_view(request):
         'subjects_count': subjects_count,
         'is_ready': is_ready,
         'readiness_errors': readiness_errors,
+        'draft_timetables': draft_timetables,
+        'result': result,
     })
-
-
 from .models import TeacherUnavailability
 from .forms import TeacherUnavailabilityForm
 
