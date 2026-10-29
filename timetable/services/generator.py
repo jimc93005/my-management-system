@@ -237,7 +237,7 @@ def generate_greedy_timetable(timetable_id):
         remaining = placement_tracker[c.id]
         if remaining > 0:
             unplaced.append({
-                'subject': c.subject.name,
+                'subject': str(c.subject.name),
                 'class_name': str(c.subject.target_class) if c.subject.target_class else 'No class assigned',
                 'missing': remaining,
             })
